@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP + H2H Manual</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f6f6f6;padding:16px}
+.container{max-width:960px;margin:auto;background:#fff;padding:16px;border-radius:10px;
+           box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h2{text-align:center;margin-bottom:12px}
+label{display:block;margin-top:12px;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.row>div{flex:1 1 140px}
+select,input,button{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+button{margin-top:16px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer}
+.result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px;white-space:pre-wrap}
+.table{width:100%;border-collapse:collapse;margin-top:10px}
+.table td,.table th{border:1px solid #eee;padding:6px;text-align:center}
+.reco{background:#e8f5e9;color:#2e7d32;padding:6px;border-radius:6px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Kalkulator HDP + Over/Under + H2H Manual</h2>
+
+<!-- 1X2 -->
+<label>Odds 1X2</label>
+<div class="row">
+  <div><select id="oddsHome"></select></div>
+  <div><select id="oddsDraw"></select></div>
+  <div><select id="oddsAway"></select></div>
+</div>
+
+<!-- HDP -->
+<label>Odds HDP</label>
+<div class="row">
+  <div><select id="hdpHome"></select></div>
+  <div><select id="hdpAway"></select></div>
+</div>
+
+<!-- Over/Under -->
+<label>Odds Over/Under</label>
+<div class="row">
+  <div><select id="over"></select></div>
+  <div><select id="under"></select></div>
+</div>
+
+<!-- Data gol untuk model Poisson -->
+<label>Total Gol & Kebobolan (5 laga terakhir)</label>
+<div class="row">
+  <div><input id="golHome" type="number" placeholder="Gol Home"></div>
+  <div><input id="kebHome" type="number" placeholder="Kebobolan Home"></div>
+  <div><input id="golAway" type="number" placeholder="Gol Away"></div>
+  <div><input id="kebAway" type="number" placeholder="Kebobolan Away"></div>
+</div>
+
+<!-- H2H manual -->
+<label>H2H (isi manual)</label>
+<div class="row">
+  <div><input id="h2hHome" type="text" placeholder="Nama Tim Home"></div>
+  <div><input id="h2hAway" type="text" placeholder="Nama Tim Away"></div>
+</div>
+<div class="row">
+  <div><input id="scoreHome" type="number" placeholder="Skor Home"></div>
+  <div><input id="scoreAway" type="number" placeholder="Skor Away"></div>
+</div>
+
+<button id="btnAnalisis">Analisis</button>
+
+<div id="hasil" class="result">Hasil akan tampil di sini</div>
+
+<table class="table" id="tbl" style="display:none">
+  <thead><tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th><th>BTTS</th></tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<div id="rekom" class="reco" style="display:none"></div>
+
+<canvas id="chart" height="160" style="margin-top:12px"></canvas>
+</div>
+
+<script>
+// helper isi dropdown odds
+function fill(sel,start,end,step){
+  const s=document.getElementById(sel);s.innerHTML="";
+  const def=document.createElement("option");def.value="";def.text="--";s.appendChild(def);
+  for(let v=start;v<=end+1e-9;v+=step){
+    const o=document.createElement("option");
+    o.value=v.toFixed(2); o.text=v.toFixed(2); s.appendChild(o);
+  }
+}
+function factorial(n){return n<=1?1:Array.from({length:n},(_,i)=>i+1).reduce((a,b)=>a*b,1);}
+function poisson(k,l){return Math.exp(-l)*Math.pow(l,k)/factorial(k);}
+function distrib(l,max=10){
+  const arr=[]; let sum=0;
+  for(let k=0;k<=max;k++){const p=poisson(k,l);arr.push(p);sum+=p;}
+  if(sum<1)arr[max]+=1-sum; return arr;
+}
+function matchProb(lh,la){
+  const dh=distrib(lh),da=distrib(la);
+  let pH=0,pD=0,pA=0,pBTTS=0;
+  const total=Array(21).fill(0);
+  for(let i=0;i<=10;i++)for(let j=0;j<=10;j++){
+    const p=dh[i]*da[j];
+    if(i>j)pH+=p; else if(i===j)pD+=p; else pA+=p;
+    if(i>0&&j>0)pBTTS+=p;
+    total[i+j]+=p;
+  }
+  return {pH,pD,pA,pBTTS,total};
+}
+function fair3(a,b,c){
+  const im=[1/a,1/b,1/c],s=im[0]+im[1]+im[2];
+  return im.map(x=>x/s);
+}
+function fair2(a,b){
+  const ia=1/a,ib=1/b,s=ia+ib;
+  return [ia/s,ib/s];
+}
+function kelly(p,o){
+  const b=o-1;
+  return Math.max(0,(b*p-(1-p))/b);
+}
+
+let chart;
+document.addEventListener('DOMContentLoaded',()=>{
+  fill('oddsHome',1,20,0.01);
+  fill('oddsDraw',1,20,0.01);
+  fill('oddsAway',1,20,0.01);
+  fill('hdpHome',1,5,0.01);
+  fill('hdpAway',1,5,0.01);
+  fill('over',1,3,0.01);
+  fill('under',1,3,0.01);
+  btnAnalisis.onclick=analisis;
+});
+
+function analisis(){
+  const oh=parseFloat(oddsHome.value),od=parseFloat(oddsDraw.value),oa=parseFloat(oddsAway.value);
+  const hh=parseFloat(hdpHome.value),ha=parseFloat(hdpAway.value);
+  const ov=parseFloat(over.value),un=parseFloat(under.value);
+  const gH=parseFloat(golHome.value)||0,kH=parseFloat(kebHome.value)||0,
+        gA=parseFloat(golAway.value)||0,kA=parseFloat(kebAway.value)||0;
+  const n=5; // default 5 laga
+  const lH=(gH/n + kA/n)/2, lA=(gA/n + kH/n)/2;
+  const m=matchProb(Math.max(0.2,lH),Math.max(0.2,lA));
+
+  const model={home:m.pH,draw:m.pD,away:m.pA,over:ov?m.total.slice(Math.ceil(ov)+1).reduce((a,b)=>a+b,0):null,
+               under:un?m.total.slice(0,Math.floor(un)+1).reduce((a,b)=>a+b,0):null,btts:m.pBTTS};
+  const market={};
+  if(oh&&od&&oa){const f=fair3(oh,od,oa);market.home=f[0];market.draw=f[1];market.away=f[2];}
+  if(ov&&un){const f=fair2(ov,un);market.over=f[0];market.under=f[1];}
+  if(hh&&ha){const f=fair2(hh,ha);market.hdpHome=f[0];market.hdpAway=f[1];}
+
+  const wM=0.6,wK=0.4;
+  function blend(m,v){return (m==null)?v:(v==null)?m:wM*v+wK*m;}
+  const b={
+    home:blend(market.home,model.home),
+    draw:blend(market.draw,model.draw),
+    away:blend(market.away,model.away),
+    over:blend(market.over,model.over),
+    under:blend(market.under,model.under),
+    btts:model.btts
+  };
+
+  const body=document.getElementById('tbody');body.innerHTML='';
+  function pct(x){return x?(x*100).toFixed(1)+'%':'--';}
+  body.innerHTML+=`<tr><td>Model</td><td>${pct(model.home)}</td><td>${pct(model.draw)}</td><td>${pct(model.away)}</td>
+                    <td>${pct(model.over)}</td><td>${pct(model.under)}</td><td>${pct(model.btts)}</td></tr>`;
+  body.innerHTML+=`<tr><td>Market</td><td>${pct(market.home)}</td><td>${pct(market.draw)}</td><td>${pct(market.away)}</td>
+                    <td>${pct(market.over)}</td><td>${pct(market.under)}</td><td>--</td></tr>`;
+  body.innerHTML+=`<tr><td>Blended</td><td>${pct(b.home)}</td><td>${pct(b.draw)}</td><td>${pct(b.away)}</td>
+                    <td>${pct(b.over)}</td><td>${pct(b.under)}</td><td>${pct(b.btts)}</td></tr>`;
+  document.getElementById('tbl').style.display='table';
+
+  // rekomendasi
+  const rec=document.getElementById('rekom');rec.style.display='block';rec.innerHTML='';
+  [['Home',oh,b.home],['Draw',od,b.draw],['Away',oa,b.away],
+   ['Over',ov,b.over],['Under',un,b.under]].forEach(x=>{
+    if(x[1] && x[2] && (x[2]>0.55 || x[2]-1/x[1]>0.05)){
+      rec.innerHTML+=`${x[0]} → Blended ${(x[2]*100).toFixed(1)}% | Kelly ${(kelly(x[2],x[1])*100).toFixed(1)}%<br>`;
+    }
+  });
+
+  if(chart)chart.destroy();
+  chart=new Chart(document.getElementById('chart'),{
+    type:'bar',
+    data:{labels:['Home','Draw','Away'],
+      datasets:[
+        {label:'Market',data:[market.home||0,market.draw||0,market.away||0],backgroundColor:'#FFC107'},
+        {label:'Model',data:[model.home,model.draw,model.away],backgroundColor:'#4CAF50'},
+        {label:'Blended',data:[b.home,b.draw,b.away],backgroundColor:'#1976D2'}]},
+    options:{plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
+  });
+
+  hasil.textContent=
+   `Lambda Home ${lH.toFixed(2)} | Lambda Away ${lA.toFixed(2)}
+H2H Manual: ${h2hHome.value||'-'} ${scoreHome.value||'-'} - ${scoreAway.value||'-'} ${h2hAway.value||'-'}`;
+}
+</script>
+</body>
+</html>
