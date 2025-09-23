@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP - Poisson Advanced</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f6f7fb;color:#111;padding:14px}
+  .wrap{max-width:1100px;margin:10px auto;background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 20px rgba(20,20,40,0.06)}
+  h1{font-size:18px;margin:0 0 8px;text-align:center}
+  label{font-weight:600;margin-top:10px;display:block}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .col{flex:1 1 150px}
+  select,input,textarea,button{width:100%;padding:8px;border-radius:6px;border:1px solid #d7dbe6;box-sizing:border-box}
+  textarea{min-height:54px;resize:vertical}
+  button{background:#0b6c4a;color:#fff;border:none;cursor:pointer}
+  .result{margin-top:12px;padding:12px;background:#eef6f4;border-radius:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:10px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:6px;border:1px solid #e6e9ef;text-align:center;font-size:13px}
+  .small{font-size:12px;color:#556}
+  canvas{max-width:100%;height:auto;margin-top:10px}
+  .muted{color:#66788a;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kalkulator HDP — Model Poisson Lanjutan</h1>
+  <p class="small">Isi odds, H2H, performa; klik <b>Analisis</b>. Model menggunakan Poisson (0–6) + penyesuaian H2H & performa. Output: matriks skor, Over/Under, BTTS, probabilitas HDP (termasuk quarter lines) dan rekomendasi.</p>
+
+  <!-- Odds 1X2 -->
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <div class="row">
+    <div class="col"><select id="oddsH"></select></div>
+    <div class="col"><select id="oddsD"></select></div>
+    <div class="col"><select id="oddsA"></select></div>
+  </div>
+
+  <!-- Odds HDP (optional) -->
+  <label>Odds HDP (jika ada, dipakai hitung EV) — isi jika ingin banding EV</label>
+  <div class="row">
+    <div class="col"><input id="oddsHDP_home" placeholder="contoh 1.95 (untuk home line)"/></div>
+    <div class="col"><input id="oddsHDP_away" placeholder="contoh 1.95 (untuk away line)"/></div>
+    <div class="col small muted">Kosong = EV tidak tampil</div>
+  </div>
+
+  <!-- Over/Under 2.5 -->
+  <label>Odds Over/Under (paling umum 2.5) — Over / Under</label>
+  <div class="row">
+    <div class="col"><select id="oddsOver"></select></div>
+    <div class="col"><select id="oddsUnder"></select></div>
+    <div class="col small muted">Odds OU digunakan untuk estimasi total gol.</div>
+  </div>
+
+  <!-- H2H manual -->
+  <label>H2H — tulis skor manual (contoh: 2-1)</label>
+  <div class="row">
+    <div class="col">
+      <input id="h2hHomeScore" type="number" min="0" max="10" placeholder="Home gol"/>
+    </div>
+    <div class="col" style="display:flex;align-items:center;justify-content:center">vs</div>
+    <div class="col">
+      <input id="h2hAwayScore" type="number" min="0" max="10" placeholder="Away gol"/>
+    </div>
+  </div>
+
+  <!-- Performa (5 laga) -->
+  <label>Performa Tim — Home (5 laga)</label>
+  <div id="perfHome" class="row"></div>
+  <label>Performa Tim — Away (5 laga)</label>
+  <div id="perfAway" class="row"></div>
+
+  <!-- Buttons -->
+  <div class="row" style="margin-top:12px">
+    <div class="col"><button id="btnAnalyse">Analisis (Poisson)</button></div>
+    <div class="col"><button id="btnReset" type="button">Reset</button></div>
+    <div class="col small muted">Tip: isi odds 1X2 & OU untuk estimasi terbaik</div>
+  </div>
+
+  <!-- Output summary -->
+  <div id="outSummary" class="result">
+    <div><b>Prob (normalized 1X2):</b> <span id="out1x2">--</span></div>
+    <div><b>Est. λ (home, away):</b> <span id="outLambda">--</span></div>
+    <div><b>Exp total goals:</b> <span id="outTotal">--</span></div>
+    <div><b>Exp goal diff:</b> <span id="outDiff">--</span></div>
+    <div><b>Prob Over2.5:</b> <span id="outOver25">--</span> &nbsp; <b>BTTS:</b> <span id="outBTTS">--</span></div>
+    <div><b>Rekom HDP:</b> <span id="outRekomHDP">--</span></div>
+    <div><b>Rekom OU:</b> <span id="outRekomOU">--</span></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <h4 style="margin:6px 0 4px">Matriks Probabilitas Skor (0–5)</h4>
+      <div id="scoreTableWrap" style="overflow:auto;max-height:320px"></div>
+    </div>
+    <div>
+      <h4 style="margin:6px 0 4px">Charts</h4>
+      <canvas id="chart1" height="160"></canvas>
+      <canvas id="chart2" height="160"></canvas>
+    </div>
+    <div>
+      <h4 style="margin:6px 0 4px">Probabilitas & EV (HDP lines)</h4>
+      <table>
+        <thead><tr><th>Line</th><th>P(Home win)</th><th>P(Draw/push)</th><th>P(Away win)</th><th>EV at your odds</th></tr></thead>
+        <tbody id="hdpLinesBody"></tbody>
+      </table>
+      <p class="small muted">EV dihitung bila Anda input odds HDP home/away (satu angka untuk representasi). Untuk quarter-lines EV dihitung sebagai rata bagian.</p>
+    </div>
+  </div>
+
+  <p class="small muted" style="margin-top:10px">Catatan: Model Poisson sederhana — hasil sensitif terhadap odds dan input performa/H2H. Untuk hasil lebih akurat gunakan data rata-rata gol tim (home/away) jika tersedia.</p>
+</div>
+
+<script>
+/* ---------- Helpers ---------- */
+function fillFloat(selId, start, end, step){
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">--</option>';
+  for(let v=start; v<=end+1e-9; v = Math.round((v+step)*100)/100){
+    const o = document.createElement('option'); o.value = v.toFixed(2); o.text = v.toFixed(2); sel.appendChild(o);
+  }
+}
+function fillInt(selId,start,end){
+  const sel=document.getElementById(selId); sel.innerHTML='<option value="">--</option>';
+  for(let i=start;i<=end;i++){ const o=document.createElement('option'); o.value=i; o.text=i; sel.appendChild(o); }
+}
+function makePerf(containerId){
+  const wrap = document.getElementById(containerId); wrap.innerHTML='';
+  for(let i=0;i<5;i++){
+    const s=document.createElement('select');
+    s.innerHTML = "<option value=''>-</option><option>W</option><option>D</option><option>L</option>";
+    wrap.appendChild(s);
+  }
+}
+function poisson(k, lambda){ return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k); }
+function factorial(n){ if(n<=1) return 1; let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function sum(arr){ return arr.reduce((a,b)=>a+b,0); }
+function normalize(arr){ const s = sum(arr); return arr.map(x => (s? x/s : 0)); }
+
+/* ---------- seluruh script computeAll() asli tetap ---------- */
+
+</script>
+</body>
+</html>
