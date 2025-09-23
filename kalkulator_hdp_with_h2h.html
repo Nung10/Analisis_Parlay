@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP + H2H (Lengkap)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;padding:18px}
+.container{max-width:900px;margin:auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h2{text-align:center;margin:0 0 12px}
+label{display:block;margin-top:10px;font-weight:600}
+select,textarea,input,button{width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+textarea{min-height:56px;resize:vertical}
+button{background:#2e7d32;color:#fff;border:none;cursor:pointer;padding:10px;font-size:16px}
+button:hover{opacity:.95}
+.result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px}
+.small{font-size:13px;color:#555;margin-top:6px}
+.row{display:flex;gap:8px}
+.row > *{flex:1}
+.chart-wrap{margin-top:12px}
+canvas{max-width:100%}
+.kv{font-weight:700}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Kalkulator HDP, Over/Under, BTTS & H2H</h2>
+
+  <label>Odds 1X2 — Home / Draw / Away</label>
+  <div class="row">
+    <select id="oddsHome1x2"></select>
+    <select id="oddsDraw1x2"></select>
+    <select id="oddsAway1x2"></select>
+  </div>
+
+  <label>Odds HDP — Home / Away</label>
+  <div class="row">
+    <select id="hdpHome"></select>
+    <select id="hdpAway"></select>
+  </div>
+
+  <label>Over / Under</label>
+  <div class="row">
+    <select id="over"></select>
+    <select id="under"></select>
+  </div>
+
+  <label>Total Gol & Kebobolan (Home)</label>
+  <div class="row">
+    <select id="golHome"></select>
+    <select id="kebobolanHome"></select>
+  </div>
+
+  <label>Total Gol & Kebobolan (Away)</label>
+  <div class="row">
+    <select id="golAway"></select>
+    <select id="kebobolanAway"></select>
+  </div>
+
+  <label>Performa Tim (format: W D L ... ) — Home</label>
+  <textarea id="formHome" placeholder="Contoh: W W D L W"></textarea>
+
+  <label>Performa Tim — Away</label>
+  <textarea id="formAway" placeholder="Contoh: L D W W L"></textarea>
+
+  <label>Head-to-Head (H2H) — tulis hasil pertemuan terakhir</label>
+  <textarea id="h2h" placeholder="Contoh: Home 2-1 Away, Away 1-1 Home"></textarea>
+
+  <label>Jumlah laga terakhir yang dipakai (untuk rata-rata)</label>
+  <select id="matchCount">
+    <option value="5">5 laga</option>
+    <option value="10">10 laga</option>
+    <option value="all">Semua</option>
+  </select>
+
+  <button id="btnAnalisis">Analisis</button>
+
+  <div id="ringkasan" class="result">Ringkasan Prediksi: <span id="ringText">--</span></div>
+
+  <div id="detail" class="result" style="display:none">
+    <div><span class="kv">1X2:</span> <span id="prob1x2">--</span></div>
+    <div><span class="kv">HDP:</span> <span id="probHDP">--</span></div>
+    <div><span class="kv">Over/Under:</span> <span id="probOU">--</span></div>
+    <div><span class="kv">BTTS:</span> <span id="probBTTS">--</span></div>
+    <div><span class="kv">H2H Data:</span> <span id="infoH2H">--</span></div>
+  </div>
+
+  <div class="chart-wrap">
+    <canvas id="chart1x2" height="140"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="chartHDP" height="140"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="chartOU" height="140"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="chartBTTS" height="140"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="chartForm" height="140"></canvas>
+  </div>
+
+  <p class="small">Jika dropdown masih kosong: coba buka file di <b>Firefox</b> atau di PC, atau pastikan JavaScript aktif.</p>
+</div>
+
+<script>
+/* Utility: isi dropdown numeric */
+function fillDropdown(id, start, end, step){
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  const def = document.createElement('option'); def.value=''; def.text='-- Pilih --'; sel.appendChild(def);
+  for(let v=start; v<=end+1e-9; v+=step){
+    const o = document.createElement('option');
+    o.value = v.toFixed(2); o.text = v.toFixed(2);
+    sel.appendChild(o);
+  }
+}
+function fillInt(id,start,end){
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  const def = document.createElement('option'); def.value=''; def.text='-- Pilih --'; sel.appendChild(def);
+  for(let v=start; v<=end; v++){
+    const o = document.createElement('option');
+    o.value = v; o.text = v;
+    sel.appendChild(o);
+  }
+}
+
+/* Chart helper */
+let c1,c2,c3,c4,c5;
+function renderPie(canvasId, labels, data, existingChart){
+  if(existingChart) existingChart.destroy();
+  return new Chart(document.getElementById(canvasId), {
+    type: 'pie',
+    data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#4CAF50','#FFC107','#2196F3','#9C27B0'] }] },
+    options: { responsive:true, plugins:{legend:{position:'bottom'}} }
+  });
+}
+function renderLine(canvasId, labels, datasets){
+  if(c5) c5.destroy();
+  return new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: { responsive:true, plugins:{legend:{position:'bottom'}} }
+  });
+}
+
+/* parse W/D/L into numbers for chart */
+function parseFormTrend(text, count){
+  if(!text) return [];
+  const toks = text.trim().split(/\s+/).filter(Boolean);
+  const use = (count === 'all') ? toks : toks.slice(0, Math.max(0, Math.min(toks.length, parseInt(count))));
+  return use.map(t => {
+    const c = t.toUpperCase();
+    if(c==='W') return 3;
+    if(c==='D') return 1;
+    return 0;
+  });
+}
+
+/* Analisis utama */
+function analisis(){
+  const oh = parseFloat(document.getElementById('oddsHome1x2').value);
+  const od = parseFloat(document.getElementById('oddsDraw1x2').value);
+  const oa = parseFloat(document.getElementById('oddsAway1x2').value);
+  const hh = parseFloat(document.getElementById('hdpHome').value);
+  const ha = parseFloat(document.getElementById('hdpAway').value);
+  const ov = parseFloat(document.getElementById('over').value);
+  const un = parseFloat(document.getElementById('under').value);
+  const gH = parseFloat(document.getElementById('golHome').value);
+  const kH = parseFloat(document.getElementById('kebobolanHome').value);
+  const gA = parseFloat(document.getElementById('golAway').value);
+  const kA = parseFloat(document.getElementById('kebobolanAway').value);
+  const matchCount = document.getElementById('matchCount').value;
+  const h2hText = document.getElementById('h2h').value.trim();
+
+  const detail = document.getElementById('detail');
+  const infoH2H = document.getElementById('infoH2H');
+  detail.style.display = 'block';
+  infoH2H.textContent = h2hText ? h2hText : '--';
+
+  let summary = [];
+
+  // 1X2
+  if(!isNaN(oh) && !isNaN(od) && !isNaN(oa)){
+    const imp = (1/oh) + (1/od) + (1/oa);
+    const pH = (1/oh)/imp*100;
+    const pD = (1/od)/imp*100;
+    const pA = (1/oa)/imp*100;
+    document.getElementById('prob1x2').textContent = `Home ${pH.toFixed(1)}% | Draw ${pD.toFixed(1)}% | Away ${pA.toFixed(1)}%`;
+    c1 = renderPie('chart1x2', ['Home','Draw','Away'], [pH,pD,pA], c1);
+    if(pH>50) summary.push('Home Win'); else if(pA>50) summary.push('Away Win');
+  }
+
+  // HDP
+  if(!isNaN(hh) && !isNaN(ha)){
+    const imp = (1/hh) + (1/ha);
+    const pHH = (1/hh)/imp*100;
+    const pAA = (1/ha)/imp*100;
+    document.getElementById('probHDP').textContent = `HDP Home ${pHH.toFixed(1)}% | HDP Away ${pAA.toFixed(1)}%`;
+    c2 = renderPie('chartHDP', ['HDP Home','HDP Away'], [pHH,pAA], c2);
+    if(pHH>55) summary.push('HDP Home'); else if(pAA>55) summary.push('HDP Away');
+  }
+
+  // Over/Under
+  if(!isNaN(ov) && !isNaN(un)){
+    const imp = (1/ov) + (1/un);
+    const pO = (1/ov)/imp*100;
+    const pU = (1/un)/imp*100;
+    document.getElementById('probOU').textContent = `Over ${pO.toFixed(1)}% | Under ${pU.toFixed(1)}%`;
+    c3 = renderPie('chartOU', ['Over','Under'], [pO,pU], c3);
+    if(pO>60) summary.push('Over'); else if(pU>60) summary.push('Under');
+  }
+
+  // BTTS (simple heuristic)
+  if(!isNaN(gH) && !isNaN(kH) && !isNaN(gA) && !isNaN(kA)){
+    const totalMatches = (matchCount === 'all') ? 5 : Math.max(1, parseInt(matchCount));
+    const avgHome = gH / totalMatches;
+    const avgConcedeHome = kH / totalMatches;
+    const avgAway = gA / totalMatches;
+    const avgConcedeAway = kA / totalMatches;
+    let score = (avgHome * avgConcedeAway) + (avgAway * avgConcedeHome);
+    let pYes = score / (score + 1);
+    let pNo = 1 - pYes;
+    document.getElementById('probBTTS').textContent = `Yes ${(pYes*100).toFixed(1)}% | No ${(pNo*100).toFixed(1)}%`;
+    c4 = renderPie('chartBTTS', ['BTTS Yes','BTTS No'], [pYes*100,pNo*100], c4);
+    if(pYes>0.6) summary.push('BTTS Yes'); else if(pYes<0.4) summary.push('BTTS No');
+  }
+
+  // Tren Performa (line)
+  const th = parseFormTrend(document.getElementById('formHome').value, matchCount);
+  const ta = parseFormTrend(document.getElementById('formAway').value, matchCount);
+  if(th.length || ta.length){
+    const labels = Array.from({length: Math.max(th.length, ta.length)}, (_,i) => 'Laga '+(i+1));
+    const ds = [
+      { label: 'Home', data: th, borderColor:'#4CAF50', fill:false, tension:0.2 },
+      { label: 'Away', data: ta, borderColor:'#F44336', fill:false, tension:0.2 }
+    ];
+    c5 && c5.destroy();
+    c5 = renderLine('chartForm', labels, ds);
+  }
+
+  // Ringkasan
+  document.getElementById('ringText').textContent = summary.length ? summary.join(' & ') : '--';
+}
+
+/* Inisialisasi dropdown ketika DOM siap */
+document.addEventListener('DOMContentLoaded', function(){
+  fillDropdown('oddsHome1x2', 1.00, 20.00, 0.25);
+  fillDropdown('oddsDraw1x2', 1.00, 20.00, 0.25);
+  fillDropdown('oddsAway1x2', 1.00, 20.00, 0.25);
+  fillDropdown('hdpHome', 1.00, 20.00, 0.25);
+  fillDropdown('hdpAway', 1.00, 20.00, 0.25);
+  fillDropdown('over', 1.00, 2.50, 0.05);
+  fillDropdown('under', 1.00, 2.50, 0.05);
+  fillInt('golHome', 0, 50);
+  fillInt('kebobolanHome', 0, 50);
+  fillInt('golAway', 0, 50);
+  fillInt('kebobolanAway', 0, 50);
+
+  document.getElementById('btnAnalisis').addEventListener('click', analisis);
+});
+</script>
+</body>
+  </html>
