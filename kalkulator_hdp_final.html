@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP Final</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f6f6f6;padding:18px}
+.container{max-width:920px;margin:auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+h2{text-align:center;margin-bottom:12px}
+label{display:block;margin-top:12px;font-weight:600}
+select,button{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+button{background:#2e7d32;color:#fff;font-size:16px;margin-top:18px;cursor:pointer;border:none;border-radius:6px}
+button:hover{opacity:.95}
+.result{margin-top:15px;padding:12px;background:#e8f5e9;border-radius:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row > div{flex:1 1 120px}
+.chart{margin-top:15px}
+canvas{max-width:100%}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Kalkulator HDP + Over/Under + H2H + Performa</h2>
+
+<!-- 1X2 -->
+<label>Odds 1X2</label>
+<div class="row">
+  <div><select id="oddsHome1x2"></select></div>
+  <div><select id="oddsDraw1x2"></select></div>
+  <div><select id="oddsAway1x2"></select></div>
+</div>
+
+<!-- HDP -->
+<label>Odds HDP</label>
+<div class="row">
+  <div><select id="hdpHome"></select></div>
+  <div><select id="hdpAway"></select></div>
+</div>
+
+<!-- Over/Under -->
+<label>Over / Under</label>
+<div class="row">
+  <div><select id="over"></select></div>
+  <div><select id="under"></select></div>
+</div>
+
+<!-- H2H -->
+<label>Head to Head (1–5 laga terakhir)</label>
+<div class="row">
+  <div><select id="h2hHome"></select></div>
+  <div><select id="h2hAway"></select></div>
+</div>
+
+<!-- Performa Tim -->
+<label>Performa Tim (4–5 laga, pilih W/D/L)</label>
+<div class="row" id="perfHome"></div>
+<div class="row" id="perfAway"></div>
+
+<button id="btnAnalisis">Analisis</button>
+
+<div id="hasil" class="result">Hasil: <span id="ringkasan">--</span></div>
+
+<div class="chart"><canvas id="chart1x2"></canvas></div>
+<div class="chart"><canvas id="chartHDP"></canvas></div>
+<div class="chart"><canvas id="chartOU"></canvas></div>
+</div>
+
+<script>
+let c1,c2,c3;
+
+function fillFloat(id,start,end,step){
+  const sel=document.getElementById(id); sel.innerHTML="";
+  const def=document.createElement("option"); def.value=""; def.text="--"; sel.appendChild(def);
+  for(let v=start; v<=end+1e-9; v+=step){
+    const o=document.createElement("option");
+    o.value=v.toFixed(2);
+    o.text=v.toFixed(2);
+    sel.appendChild(o);
+  }
+}
+function fillInt(id,start,end){
+  const sel=document.getElementById(id); sel.innerHTML="";
+  const def=document.createElement("option"); def.value=""; def.text="--"; sel.appendChild(def);
+  for(let v=start; v<=end; v++){
+    const o=document.createElement("option");
+    o.value=v; o.text=v;
+    sel.appendChild(o);
+  }
+}
+function perfRow(containerId,label){
+  const wrap=document.getElementById(containerId); wrap.innerHTML="";
+  for(let i=1;i<=5;i++){
+    const s=document.createElement("select");
+    s.innerHTML="<option value=''>-</option><option>W</option><option>D</option><option>L</option>";
+    wrap.appendChild(s);
+  }
+}
+function pie(canvasId,labels,data,chartRef){
+  if(chartRef) chartRef.destroy();
+  return new Chart(document.getElementById(canvasId),{
+    type:'pie',
+    data:{labels:labels,datasets:[{data:data,backgroundColor:['#4CAF50','#FFC107','#2196F3']}]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+}
+
+function analisis(){
+  const oh=parseFloat(oddsHome1x2.value),
+        od=parseFloat(oddsDraw1x2.value),
+        oa=parseFloat(oddsAway1x2.value),
+        hh=parseFloat(hdpHome.value),
+        ha=parseFloat(hdpAway.value),
+        ov=parseFloat(over.value),
+        un=parseFloat(under.value),
+        h2hH=parseInt(h2hHome.value),
+        h2hA=parseInt(h2hAway.value);
+
+  let summary=[];
+
+  // 1X2
+  if(!isNaN(oh)&&!isNaN(od)&&!isNaN(oa)){
+    const sum=1/oh+1/od+1/oa;
+    const pH=(1/oh)/sum*100, pD=(1/od)/sum*100, pA=(1/oa)/sum*100;
+    c1=pie("chart1x2",["Home","Draw","Away"],[pH,pD,pA],c1);
+    if(pH>50) summary.push("Home Win"); else if(pA>50) summary.push("Away Win");
+  }
+
+  // HDP
+  if(!isNaN(hh)&&!isNaN(ha)){
+    const sum=1/hh+1/ha;
+    const pHH=(1/hh)/sum*100, pAA=(1/ha)/sum*100;
+    c2=pie("chartHDP",["HDP Home","HDP Away"],[pHH,pAA],c2);
+    if(pHH>55) summary.push("HDP Home"); else if(pAA>55) summary.push("HDP Away");
+  }
+
+  // Over/Under
+  if(!isNaN(ov)&&!isNaN(un)){
+    const sum=1/ov+1/un;
+    const pO=(1/ov)/sum*100, pU=(1/un)/sum*100;
+    c3=pie("chartOU",["Over","Under"],[pO,pU],c3);
+    if(pO>60) summary.push("Over"); else if(pU>60) summary.push("Under");
+  }
+
+  // H2H
+  if(!isNaN(h2hH)&&!isNaN(h2hA)){
+    if(h2hH>h2hA) summary.push(`H2H unggul Home (${h2hH}-${h2hA})`);
+    else if(h2hA>h2hH) summary.push(`H2H unggul Away (${h2hA}-${h2hH})`);
+    else summary.push(`H2H imbang (${h2hH}-${h2hA})`);
+  }
+
+  // Performa Tim
+  function perfScore(container){
+    const sels=[...document.getElementById(container).querySelectorAll("select")];
+    let s=0,c=0;
+    sels.forEach(e=>{
+      if(e.value==="W"){s+=3;c++;}
+      else if(e.value==="D"){s+=1;c++;}
+      else if(e.value==="L"){c++;}
+    });
+    return c>0?s/c:0;
+  }
+  const pHome=perfScore("perfHome"), pAway=perfScore("perfAway");
+  if(pHome>pAway) summary.push("Performa Home lebih baik");
+  else if(pAway>pHome) summary.push("Performa Away lebih baik");
+
+  ringkasan.textContent = summary.length?summary.join(" | "):"--";
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  // 1X2
+  fillFloat("oddsHome1x2",1.00,20.00,0.01);
+  fillFloat("oddsDraw1x2",1.00,20.00,0.01);
+  fillFloat("oddsAway1x2",1.00,20.00,0.01);
+  // HDP
+  fillFloat("hdpHome",1.00,5.00,0.01);
+  fillFloat("hdpAway",1.00,5.00,0.01);
+  // Over/Under
+  fillFloat("over",1.00,3.00,0.01);
+  fillFloat("under",1.00,3.00,0.01);
+  // H2H
+  fillInt("h2hHome",1,20);
+  fillInt("h2hAway",1,20);
+  // Performa
+  perfRow("perfHome");
+  perfRow("perfAway");
+
+  document.getElementById("btnAnalisis").addEventListener("click",analisis);
+});
+</script>
+</body>
+  </html>
