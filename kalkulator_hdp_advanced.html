@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP (Advanced)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;padding:16px}
+.container{max-width:940px;margin:auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h2{text-align:center;margin:0 0 12px}
+label{display:block;margin-top:12px;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.row>div{flex:1 1 140px}
+select,textarea,button{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+textarea{min-height:56px}
+button{background:#1976d2;color:#fff;border:none;cursor:pointer;font-size:15px;padding:10px}
+.result{margin-top:14px;padding:12px;background:#e8f5e9;border-radius:6px;white-space:pre-wrap}
+.kv{font-weight:700}
+.small{font-size:13px;color:#444;margin-top:6px}
+.canvas-wrap{margin-top:10px}
+@media(min-width:900px){ .row>div{flex:1} }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Kalkulator HDP Advanced (implied probability + heuristik)</h2>
+
+  <!-- 1X2 -->
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <div class="row">
+    <div><select id="oddsHome1x2"></select></div>
+    <div><select id="oddsDraw1x2"></select></div>
+    <div><select id="oddsAway1x2"></select></div>
+  </div>
+
+  <!-- HDP -->
+  <label>Odds HDP (Home / Away)</label>
+  <div class="row">
+    <div><select id="hdpHome"></select></div>
+    <div><select id="hdpAway"></select></div>
+  </div>
+
+  <!-- Over/Under -->
+  <label>Over / Under</label>
+  <div class="row">
+    <div><select id="over"></select></div>
+    <div><select id="under"></select></div>
+  </div>
+
+  <!-- H2H -->
+  <label>Head to Head (pilih tim & skor 1–10)</label>
+  <div class="row">
+    <div><select id="h2hHomeTeam"><option>Home</option><option>Away</option></select></div>
+    <div><select id="h2hAwayTeam"><option>Away</option><option>Home</option></select></div>
+  </div>
+  <div class="row">
+    <div><select id="h2hHomeScore"></select></div>
+    <div style="align-self:center">vs</div>
+    <div><select id="h2hAwayScore"></select></div>
+  </div>
+
+  <!-- Performa -->
+  <label>Performa Tim – Home (5 laga W/D/L)</label>
+  <div class="row" id="perfHome"></div>
+
+  <label>Performa Tim – Away (5 laga W/D/L)</label>
+  <div class="row" id="perfAway"></div>
+
+  <button id="btnAnalisis">Analisis (Advanced)</button>
+
+  <div id="hasil" class="result">
+    <div><span class="kv">Prob (normalized):</span> <span id="p1x2">--</span></div>
+    <div><span class="kv">Exp Goal Diff:</span> <span id="expDiff">--</span> &nbsp; <span class="small">(positif = keunggulan Home)</span></div>
+    <div><span class="kv">Exp Total Goals:</span> <span id="expTotal">--</span></div>
+    <div><span class="kv">Rekomendasi HDP:</span> <span id="rekomHDP">--</span></div>
+    <div><span class="kv">Rekomendasi OU:</span> <span id="rekomOU">--</span></div>
+    <div><span class="kv">BTTS:</span> <span id="rekomBTTS">--</span></div>
+    <div><span class="kv">H2H Input:</span> <span id="h2hOut">--</span></div>
+    <div><span class="kv">Performa Home:</span> <span id="ph">--</span></div>
+    <div><span class="kv">Performa Away:</span> <span id="pa">--</span></div>
+  </div>
+
+  <div class="canvas-wrap"><canvas id="chart1x2" height="120"></canvas></div>
+  <div class="canvas-wrap"><canvas id="chartHDP" height="120"></canvas></div>
+  <div class="canvas-wrap"><canvas id="chartOU" height="120"></canvas></div>
+
+  <p class="small">Catatan: model ini menggunakan heuristik berbasis implied probability. Hasil bukan jaminan — gunakan bersama analisa tim/H2H/performa.</p>
+</div>
+
+<script>
+/* helper fill */
+function fillFloat(id,start,end,step){
+  const sel=document.getElementById(id); sel.innerHTML='';
+  const d=document.createElement('option'); d.value=''; d.text='--'; sel.appendChild(d);
+  for(let v=start; v<=end+1e-9; v+=step){
+    const o=document.createElement('option'); o.value=v.toFixed(2); o.text=v.toFixed(2); sel.appendChild(o);
+  }
+}
+function fillInt(id,start,end){
+  const sel=document.getElementById(id); sel.innerHTML='';
+  const d=document.createElement('option'); d.value=''; d.text='--'; sel.appendChild(d);
+  for(let v=start; v<=end; v++){ const o=document.createElement('option'); o.value=v; o.text=v; sel.appendChild(o); }
+}
+function makePerf(containerId){
+  const c=document.getElementById(containerId); c.innerHTML='';
+  for(let i=0;i<5;i++){
+    const s=document.createElement('select');
+    s.innerHTML="<option value=''>-</option><option>W</option><option>D</option><option>L</option>";
+    c.appendChild(s);
+  }
+}
+
+/* charts */
+let ch1,ch2,ch3;
+function renderPie(canvasId, labels, data, ref){
+  if(ref) ref.destroy();
+  return new Chart(document.getElementById(canvasId), {
+    type: 'pie',
+    data: { labels: labels, datasets: [{ data: data, backgroundColor:['#4CAF50','#FFC107','#2196F3','#9C27B0'] }]},
+    options:{ plugins:{legend:{position:'bottom'}}, responsive:true}
+  });
+}
+
+/* advanced calculations */
+function normalizeProb(vals){
+  // vals: array of implied (1/odds)
+  const sum = vals.reduce((a,b)=>a+b,0);
+  return vals.map(v => v/sum);
+}
+
+function computeAdvanced(){
+  // read inputs
+  const oh = parseFloat(document.getElementById('oddsHome1x2').value);
+  const od = parseFloat(document.getElementById('oddsDraw1x2').value);
+  const oa = parseFloat(document.getElementById('oddsAway1x2').value);
+  const hh = parseFloat(document.getElementById('hdpHome').value);
+  const ha = parseFloat(document.getElementById('hdpAway').value);
+  const ov = parseFloat(document.getElementById('over').value);
+  const un = parseFloat(document.getElementById('under').value);
+
+  // H2H & performa raw
+  const h2hHomeTeam = document.getElementById('h2hHomeTeam').value;
+  const h2hAwayTeam = document.getElementById('h2hAwayTeam').value;
+  const h2hHS = document.getElementById('h2hHomeScore').value;
+  const h2hAS = document.getElementById('h2hAwayScore').value;
+  const perfHome = [...document.querySelectorAll('#perfHome select')].map(s=>s.value||'-');
+  const perfAway = [...document.querySelectorAll('#perfAway select')].map(s=>s.value||'-');
+
+  // 1) normalize 1X2 implied probabilities (remove margin)
+  let pH_norm = pD_norm = pA_norm = null;
+  if(!isNaN(oh) && !isNaN(od) && !isNaN(oa)){
+    const imp = [1/oh, 1/od, 1/oa];
+    const norm = normalizeProb(imp);
+    [pH_norm, pD_norm, pA_norm] = norm.map(x => x*100); // percent
+    // render pie
+    ch1 = renderPie('chart1x2',['Home','Draw','Away'],[pH_norm,pD_norm,pA_norm], ch1);
+  }
+
+  // 2) HDP implied probabilities (home vs away)
+  let pHdpH = pHdpA = null;
+  if(!isNaN(hh) && !isNaN(ha)){
+    const impHDP = [1/hh, 1/ha];
+    const normHDP = normalizeProb(impHDP);
+    pHdpH = normHDP[0]*100; pHdpA = normHDP[1]*100;
+    ch2 = renderPie('chartHDP',['HDP Home','HDP Away'],[pHdpH,pHdpA], ch2);
+  }
+
+  // 3) Over/Under implied probability
+  let pOver = pUnder = null;
+  if(!isNaN(ov) && !isNaN(un)){
+    const impOU = [1/ov, 1/un];
+    const normOU = normalizeProb(impOU);
+    pOver = normOU[0]*100; pUnder = normOU[1]*100;
+    ch3 = renderPie('chartOU',['Over','Under'],[pOver,pUnder], ch3);
+  }
+
+  // 4) Estimate expected goal difference from pH_norm & pA_norm
+  // Heuristic: scale (pH - pA) into expected goal diff range [-1.6, +1.6]
+  let expGoalDiff = null;
+  if(pH_norm!=null && pA_norm!=null){
+    expGoalDiff = ((pH_norm - pA_norm)/100) * 1.6; // tunable scale
+    // clamp
+    if(expGoalDiff>2) expGoalDiff=2; if(expGoalDiff<-2) expGoalDiff=-2;
+  }
+
+  // 5) Estimate expected total goals from pOver
+  // Heuristic: assume pOver correlates with higher totals; scale to 0.5 - 4.5
+  let expTotalGoals = null;
+  if(pOver!=null){
+    expTotalGoals = (pOver/100) * 3.5; // 3.5 max expectation roughly
+    if(expTotalGoals<0.2) expTotalGoals=0.2;
+  }
+
+  // 6) BTTS estimation (heuristic using H2H/perf not heavy)
+  // For simplicity combine per-match averages from perf selections:
+  function perfStats(perfArr){
+    const W = perfArr.filter(x=>x==='W').length;
+    const D = perfArr.filter(x=>x==='D').length;
+    const L = perfArr.filter(x=>x==='L').length;
+    // simple goals-heuristic: W->1.8, D->1.0, L->0.6 average per match
+    const totalMatches = perfArr.filter(v=>v!=='-').length || 1;
+    const estGoals = (W*1.8 + D*1.0 + L*0.6) / totalMatches;
+    return { estGoals, matches: totalMatches };
+  }
+  const phStat = perfStats(perfHome), paStat = perfStats(perfAway);
+  // BTTS probability: heuristic formula using both estimated goals
+  let pBTTS = null;
+  if(phStat && paStat){
+    const score = phStat.estGoals * paStat.estGoals; // product gives chance both score-ish
+    pBTTS = score / (score + 1); // maps to 0..1
+  }
+
+  // 7) Make recommendations using thresholds (tunable)
+  let rekomHDP = '--', rekomOU='--', rekomBTTS='--';
+  if(expGoalDiff!=null){
+    if(expGoalDiff > 1.1) rekomHDP = `Rekom: Home -1 (expDiff ${expGoalDiff.toFixed(2)})`;
+    else if(expGoalDiff > 0.6) rekomHDP = `Rekom: Home -0.5 (expDiff ${expGoalDiff.toFixed(2)})`;
+    else if(expGoalDiff < -1.1) rekomHDP = `Rekom: Away -1 (expDiff ${expGoalDiff.toFixed(2)})`;
+    else if(expGoalDiff < -0.6) rekomHDP = `Rekom: Away -0.5 (expDiff ${expGoalDiff.toFixed(2)})`;
+    else rekomHDP = `HDP seimbang (expDiff ${expGoalDiff.toFixed(2)})`;
+  }
+  if(expTotalGoals!=null){
+    if(expTotalGoals > 2.6) rekomOU = `Rekom: Over 2.5 (expTotal ${expTotalGoals.toFixed(2)})`;
+    else if(expTotalGoals > 2.1) rekomOU = `Rekom: Over 2.0 (expTotal ${expTotalGoals.toFixed(2)})`;
+    else if(expTotalGoals < 1.2) rekomOU = `Rekom: Under 1.5 (expTotal ${expTotalGoals.toFixed(2)})`;
+    else rekomOU = `OU netral (expTotal ${expTotalGoals.toFixed(2)})`;
+  }
+  if(pBTTS!=null){
+    if(pBTTS > 0.65) rekomBTTS = `BTTS Yes (${(pBTTS*100).toFixed(1)}%)`;
+    else if(pBTTS < 0.35) rekomBTTS = `BTTS No (${(pBTTS*100).toFixed(1)}%)`;
+    else rekomBTTS = `BTTS seimbang (${(pBTTS*100).toFixed(1)}%)`;
+  }
+
+  // 8) Display results
+  document.getElementById('p1x2').textContent =
+    (pH_norm!=null? `Home ${pH_norm.toFixed(1)}% `:'') +
+    (pD_norm!=null? `| Draw ${pD_norm.toFixed(1)}% `:'') +
+    (pA_norm!=null? `| Away ${pA_norm.toFixed(1)}%`:'');
+  document.getElementById('expDiff').textContent = (expGoalDiff!=null? expGoalDiff.toFixed(2) : '--');
+  document.getElementById('expTotal').textContent = (expTotalGoals!=null? expTotalGoals.toFixed(2) : '--');
+  document.getElementById('rekomHDP').textContent = rekomHDP;
+  document.getElementById('rekomOU').textContent = rekomOU;
+  document.getElementById('rekomBTTS').textContent = rekomBTTS;
+  document.getElementById('h2hOut').textContent = (h2hHS && h2hAS)? `${h2hHomeTeam} ${h2hHS} - ${h2hAS} ${h2hAwayTeam}` : '--';
+  document.getElementById('ph').textContent = perfHome.join(' ');
+  document.getElementById('pa').textContent = perfAway.join(' ');
+
+  // return values for debug if needed
+  return {
+    pH_norm,pD_norm,pA_norm,
+    pHdpH,pHdpA,
+    pOver,pUnder,
+    expGoalDiff, expTotalGoals, pBTTS,
+    rekomHDP, rekomOU, rekomBTTS
+  };
+}
+
+/* init UI */
+document.addEventListener('DOMContentLoaded', function(){
+  fillFloat('oddsHome1x2', 1.00, 20.00, 0.01);
+  fillFloat('oddsDraw1x2', 1.00, 20.00, 0.01);
+  fillFloat('oddsAway1x2', 1.00, 20.00, 0.01);
+  fillFloat('hdpHome', 1.00, 5.00, 0.01);
+  fillFloat('hdpAway', 1.00, 5.00, 0.01);
+  fillFloat('over', 1.00, 3.00, 0.01);
+  fillFloat('under', 1.00, 3.00, 0.01);
+  fillInt('h2hHomeScore',1,10); fillInt('h2hAwayScore',1,10);
+  makePerf('perfHome'); makePerf('perfAway');
+
+  document.getElementById('btnAnalisis').addEventListener('click', function(){
+    computeAdvanced();
+  });
+});
+</script>
+</body>
+</html>
