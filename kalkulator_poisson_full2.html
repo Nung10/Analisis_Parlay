@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP - Poisson Advanced (multi H2H)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f6f7fb;color:#111;padding:14px}
+  .wrap{max-width:1100px;margin:10px auto;background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 20px rgba(20,20,40,0.06)}
+  h1{font-size:18px;margin:0 0 8px;text-align:center}
+  label{font-weight:600;margin-top:10px;display:block}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .col{flex:1 1 150px}
+  select,input,textarea,button{width:100%;padding:8px;border-radius:6px;border:1px solid #d7dbe6;box-sizing:border-box}
+  textarea{min-height:54px;resize:vertical}
+  button{background:#0b6c4a;color:#fff;border:none;cursor:pointer}
+  .result{margin-top:12px;padding:12px;background:#eef6f4;border-radius:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:10px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:6px;border:1px solid #e6e9ef;text-align:center;font-size:13px}
+  .small{font-size:12px;color:#556}
+  canvas{max-width:100%;height:auto;margin-top:10px}
+  .muted{color:#66788a;font-size:13px}
+  .h2h-row { margin-bottom:6px }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kalkulator HDP — Model Poisson Lanjutan</h1>
+  <p class="small">Isi odds, H2H multi, performa; klik <b>Analisis</b>. Model menggunakan Poisson (0–6) + penyesuaian H2H & performa. Output: matriks skor, Over/Under, BTTS, probabilitas HDP dan rekomendasi.</p>
+
+  <!-- Odds 1X2 -->
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <div class="row">
+    <div class="col"><select id="oddsH"></select></div>
+    <div class="col"><select id="oddsD"></select></div>
+    <div class="col"><select id="oddsA"></select></div>
+  </div>
+
+  <!-- Odds HDP (optional) -->
+  <label>Odds HDP (jika ada, dipakai hitung EV)</label>
+  <div class="row">
+    <div class="col"><input id="oddsHDP_home" placeholder="contoh 1.95 (untuk Home bet)"/></div>
+    <div class="col"><input id="oddsHDP_away" placeholder="contoh 1.95 (untuk Away bet)"/></div>
+    <div class="col small muted">Kosong = EV tidak tampil</div>
+  </div>
+
+  <!-- Over/Under 2.5 -->
+  <label>Odds Over/Under (paling umum 2.5) — Over / Under</label>
+  <div class="row">
+    <div class="col"><select id="oddsOver"></select></div>
+    <div class="col"><select id="oddsUnder"></select></div>
+    <div class="col small muted">Odds OU digunakan untuk estimasi total gol.</div>
+  </div>
+
+  <!-- H2H multi input -->
+  <label>H2H — isi sampai 5 pertandingan (Home vs Away, skor 0–15)</label>
+  <div id="h2hWrap">
+    <div class="row h2h-row"><div class="col"><input id="h2hHomeScore1" type="number" min="0" max="15" placeholder="Home"/></div><div class="col" style="display:flex;align-items:center;justify-content:center">vs</div><div class="col"><input id="h2hAwayScore1" type="number" min="0" max="15" placeholder="Away"/></div></div>
+    <div class="row h2h-row"><div class="col"><input id="h2hHomeScore2" type="number" min="0" max="15" placeholder="Home"/></div><div class="col" style="display:flex;align-items:center;justify-content:center">vs</div><div class="col"><input id="h2hAwayScore2" type="number" min="0" max="15" placeholder="Away"/></div></div>
+    <div class="row h2h-row"><div class="col"><input id="h2hHomeScore3" type="number" min="0" max="15" placeholder="Home"/></div><div class="col" style="display:flex;align-items:center;justify-content:center">vs</div><div class="col"><input id="h2hAwayScore3" type="number" min="0" max="15" placeholder="Away"/></div></div>
+    <div class="row h2h-row"><div class="col"><input id="h2hHomeScore4" type="number" min="0" max="15" placeholder="Home"/></div><div class="col" style="display:flex;align-items:center;justify-content:center">vs</div><div class="col"><input id="h2hAwayScore4" type="number" min="0" max="15" placeholder="Away"/></div></div>
+    <div class="row h2h-row"><div class="col"><input id="h2hHomeScore5" type="number" min="0" max="15" placeholder="Home"/></div><div class="col" style="display:flex;align-items:center;justify-content:center">vs</div><div class="col"><input id="h2hAwayScore5" type="number" min="0" max="15" placeholder="Away"/></div></div>
+    <div class="small muted">Kosongkan baris bila tidak ada hasil.</div>
+  </div>
+
+  <!-- Performa (5 laga) -->
+  <label>Performa Tim — Home (5 laga)</label>
+  <div id="perfHome" class="row"></div>
+  <label>Performa Tim — Away (5 laga)</label>
+  <div id="perfAway" class="row"></div>
+
+  <!-- Buttons -->
+  <div class="row" style="margin-top:12px">
+    <div class="col"><button id="btnAnalyse">Analisis (Poisson)</button></div>
+    <div class="col"><button id="btnReset" type="button">Reset</button></div>
+    <div class="col small muted">Tip: isi odds 1X2 & OU untuk estimasi terbaik</div>
+  </div>
+
+  <!-- Output summary -->
+  <div id="outSummary" class="result">
+    <div><b>Prob (normalized 1X2):</b> <span id="out1x2">--</span></div>
+    <div><b>Est. λ (home, away):</b> <span id="outLambda">--</span></div>
+    <div><b>Exp total goals:</b> <span id="outTotal">--</span></div>
+    <div><b>Exp goal diff:</b> <span id="outDiff">--</span></div>
+    <div><b>Prob Over2.5:</b> <span id="outOver25">--</span> &nbsp; <b>BTTS:</b> <span id="outBTTS">--</span></div>
+    <div><b>Rekom HDP:</b> <span id="outRekomHDP">--</span></div>
+    <div><b>Rekom OU:</b> <span id="outRekomOU">--</span></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <h4 style="margin:6px 0 4px">Matriks Probabilitas Skor (0–5)</h4>
+      <div id="scoreTableWrap" style="overflow:auto;max-height:320px"></div>
+    </div>
+    <div>
+      <h4 style="margin:6px 0 4px">Charts</h4>
+      <canvas id="chart1" height="160"></canvas>
+      <canvas id="chart2" height="160"></canvas>
+    </div>
+    <div>
+      <h4 style="margin:6px 0 4px">Probabilitas & EV (HDP lines)</h4>
+      <table>
+        <thead><tr><th>Line</th><th>P(Home win)</th><th>P(Draw/push)</th><th>P(Away win)</th><th>EV at your odds</th></tr></thead>
+        <tbody id="hdpLinesBody"></tbody>
+      </table>
+      <p class="small muted">EV dihitung bila Anda input odds HDP home/away (satu angka untuk representasi). Untuk quarter-lines EV dihitung sebagai rata bagian.</p>
+    </div>
+  </div>
+
+  <p class="small muted" style="margin-top:10px">Catatan: Model Poisson sederhana — hasil sensitif terhadap odds dan input performa/H2H. Gunakan hati-hati.</p>
+</div>
+
+<script>
+/* ---------- Helpers ---------- */
+function fillFloat(selId, start, end, step){
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">--</option>';
+  for(let v=start; v<=end+1e-9; v = Math.round((v+step)*100)/100){
+    const o = document.createElement('option'); o.value = v.toFixed(2); o.text = v.toFixed(2); sel.appendChild(o);
+  }
+}
+function fillInt(selId,start,end){
+  const sel=document.getElementById(selId); sel.innerHTML='<option value="">--</option>';
+  for(let i=start;i<=end;i++){ const o=document.createElement('option'); o.value=i; o.text=i; sel.appendChild(o); }
+}
+function makePerf(containerId){
+  const wrap = document.getElementById(containerId); wrap.innerHTML='';
+  for(let i=0;i<5;i++){
+    const s=document.createElement('select');
+    s.innerHTML = "<option value=''>-</option><option>W</option><option>D</option><option>L</option>";
+    wrap.appendChild(s);
+  }
+}
+function poisson(k, lambda){ return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k); }
+function factorial(n){ if(n<=1) return 1; let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function sum(arr){ return arr.reduce((a,b)=>a+b,0); }
+function normalize(arr){ const s = sum(arr); return arr.map(x => (s? x/s : 0)); }
+
+/* Asian-handicap probability functions using score matrix P(home=i,away=j) */
+function calcOutcomeProbabilities(scoreMatrix){
+  let ph=0, pd=0, pa=0;
+  const max = scoreMatrix.length;
+  for(let i=0;i<max;i++){
+    for(let j=0;j<max;j++){
+      const p = scoreMatrix[i][j];
+      if(i>j) ph += p;
+      else if(i==j) pd += p;
+      else pa += p;
+    }
+  }
+  return {ph,pd,pa};
+}
+function probDiffGreater(scoreMatrix, h){
+  let p=0, eq=0;
+  const max=scoreMatrix.length;
+  for(let i=0;i<max;i++){
+    for(let j=0;j<max;j++){
+      const d = i - j;
+      if(d > h) p += scoreMatrix[i][j];
+      if(d == h) eq += scoreMatrix[i][j];
+    }
+  }
+  return {p,eq};
+}
+function probOutcomeForHandicap(scoreMatrix, handicap){
+  function singleHand(h){
+    const res = probDiffGreater(scoreMatrix, h);
+    return {win: res.p, push: res.eq, lose: 1 - res.p - res.eq};
+  }
+  if(Math.abs(handicap % 1) < 1e-9) return singleHand(handicap);
+  const frac = Math.abs(handicap - Math.trunc(handicap));
+  if(Math.abs(frac - 0.5) < 1e-9) return singleHand(Math.floor(handicap)+0.5);
+  if(Math.abs(frac - 0.25) < 1e-9){
+    const a = singleHand(Math.trunc(handicap)+0);
+    const b = singleHand(Math.trunc(handicap)+0.5);
+    return {win: (a.win + b.win)/2, push: (a.push + b.push)/2, lose: (a.lose + b.lose)/2};
+  }
+  if(Math.abs(frac - 0.75) < 1e-9){
+    const a = singleHand(Math.trunc(handicap)+0.5);
+    const b = singleHand(Math.trunc(handicap)+1.0);
+    return {win: (a.win + b.win)/2, push: (a.push + b.push)/2, lose: (a.lose + b.lose)/2};
+  }
+  return singleHand(handicap);
+}
+function buildScoreMatrix(lambdaH, lambdaA, maxGoal=6){
+  const mat = Array.from({length:maxGoal+1}, ()=> Array(maxGoal+1).fill(0));
+  let total=0;
+  for(let i=0;i<=maxGoal;i++){
+    const pI = poisson(i, lambdaH);
+    for(let j=0;j<=maxGoal;j++){
+      const pJ = poisson(j, lambdaA);
+      const p = pI * pJ;
+      mat[i][j] = p;
+      total += p;
+    }
+  }
+  for(let i=0;i<=maxGoal;i++){
+    for(let j=0;j<=maxGoal;j++){
+      mat[i][j] /= total;
+    }
+  }
+  return mat;
+}
+function calcEV(probWin, probLose, odds){
+  if(!odds || odds <= 0) return null;
+  return probWin * (odds - 1) - probLose;
+}
+
+/* ---------- Main compute flow ---------- */
+function computeAll(){
+  // read inputs
+  const oddsH = parseFloat(document.getElementById('oddsH').value);
+  const oddsD = parseFloat(document.getElementById('oddsD').value);
+  const oddsA = parseFloat(document.getElementById('oddsA').value);
+  const oddsOver = parseFloat(document.getElementById('oddsOver').value);
+  const oddsUnder = parseFloat(document.getElementById('oddsUnder').value);
+
+  const oddsHdpHome = parseFloat(document.getElementById('oddsHDP_home').value);
+  const oddsHdpAway = parseFloat(document.getElementById('oddsHDP_away').value);
+
+  // H2H multi: ambil rata-rata selisih gol (h2hDiff)
+  let h2hDiffTotal = 0, h2hCount = 0;
+  for(let i=1;i<=5;i++){
+    const hsRaw = document.getElementById('h2hHomeScore'+i).value;
+    const asRaw = document.getElementById('h2hAwayScore'+i).value;
+    const hs = hsRaw === "" ? NaN : parseInt(hsRaw);
+    const as = asRaw === "" ? NaN : parseInt(asRaw);
+    if(!isNaN(hs) && !isNaN(as)){
+      h2hDiffTotal += (hs - as);
+      h2hCount++;
+    }
+  }
+  const h2hDiff = (h2hCount>0) ? (h2hDiffTotal / h2hCount) : 0;
+
+  // perf arrays
+  const perfHomeArr = [...document.querySelectorAll('#perfHome select')].map(s=>s.value);
+  const perfAwayArr = [...document.querySelectorAll('#perfAway select')].map(s=>s.value);
+
+  // 1) normalize implied probs from 1X2 if provided
+  let pH_norm = pD_norm = pA_norm = null;
+  if(!isNaN(oddsH) && !isNaN(oddsD) && !isNaN(oddsA)){
+    const imp = [1/oddsH, 1/oddsD, 1/oddsA];
+    const norm = normalize(imp);
+    pH_norm = norm[0]; pD_norm = norm[1]; pA_norm = norm[2];
+  }
+
+  // 2) estimate total expected goals (lambda_total) using OU odds if available
+  let pOver = null, pUnder = null, lambdaTotal = null;
+  if(!isNaN(oddsOver) && !isNaN(oddsUnder)){
+    const impOU = [1/oddsOver, 1/oddsUnder];
+    const normOU = normalize(impOU);
+    pOver = normOU[0]; pUnder = normOU[1];
+    // map pOver to lambdaTotal between 0.8 and 4.2 (tunable)
+    lambdaTotal = 0.8 + pOver * (4.2 - 0.8);
+  } else {
+    lambdaTotal = 2.6;
+  }
+
+  // 3) split lambdaTotal into lambdaH / lambdaA based on 1X2 if available
+  let lambdaH = lambdaA = lambdaTotal/2;
+  if(pH_norm != null && pA_norm != null){
+    const totalShare = pH_norm + pA_norm;
+    if(totalShare > 0){
+      lambdaH = lambdaTotal * (pH_norm / totalShare);
+      lambdaA = lambdaTotal * (pA_norm / totalShare);
+    }
+  }
+
+  // 4) adjust lambdas with H2H & performance
+  // H2H adjustment: diff * 0.12 (tunable)
+  const adjustH2H = h2hDiff * 0.12;
+  // Performa offsets: W=+0.35, D=0, L=-0.25 per match (tunable)
+  function perfOffset(arr){
+    let w=0,d=0,l=0,cnt=0;
+    arr.forEach(v=>{ if(v==='W') w++; else if(v==='D') d++; else if(v==='L') l++; if(v) cnt++; });
+    if(cnt===0) return 0;
+    return (w*0.35 + d*0 + l*(-0.25)) / Math.max(1,cnt);
+  }
+  const offsetHome = perfOffset(perfHomeArr) + (adjustH2H>0 ? Math.min(adjustH2H,0.6) : 0);
+  const offsetAway = perfOffset(perfAwayArr) + (adjustH2H<0 ? Math.min(-adjustH2H,0.6) : 0);
+
+  lambdaH = Math.max(0.05, lambdaH + offsetHome);
+  lambdaA = Math.max(0.05, lambdaA + offsetAway);
+
+  // 5) build score matrix up to 6 (0..6)
+  const maxGoal = 6;
+  const scoreMatrix = buildScoreMatrix(lambdaH, lambdaA, maxGoal);
+
+  // 6) derive probabilities
+  const outcome = calcOutcomeProbabilities(scoreMatrix);
+  const probs = {home: outcome.ph, draw: outcome.pd, away: outcome.pa};
+
+  // Over2.5 and BTTS
+  let pOver25 = 0, pBTTS = 0;
+  for(let i=0;i<=maxGoal;i++){
+    for(let j=0;j<=maxGoal;j++){
+      const p = scoreMatrix[i][j];
+      if(i + j > 2) pOver25 += p;
+      if(i>0 && j>0) pBTTS += p;
+    }
+  }
+
+  const expDiff = lambdaH - lambdaA;
+  const expTotal = lambdaH + lambdaA;
+
+  // 7) HDP lines & EV
+  const lines = [-1.5, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.5];
+  const hdpResults = [];
+  for(const line of lines){
+    const res = probOutcomeForHandicap(scoreMatrix, line);
+    let evHome = null, evAway = null;
+    if(!isNaN(oddsHdpHome)) evHome = calcEV(res.win, res.lose, oddsHdpHome);
+    // For away EV we'd need away odds mapping; approximated using oddsHdpAway
+    if(!isNaN(oddsHdpAway)) evAway = calcEV(res.lose, res.win, oddsHdpAway);
+    hdpResults.push({line, win: res.win, push: res.push, lose: res.lose, evHome, evAway});
+  }
+
+  // 8) recommendations
+  let rekomHDP = '--';
+  const allEVHome = hdpResults.filter(r=>r.evHome!==null && r.evHome>0).sort((a,b)=>b.evHome - a.evHome);
+  if(allEVHome.length) rekomHDP = `EV Home terbaik: ${allEVHome[0].line} (EV ${allEVHome[0].evHome.toFixed(3)})`;
+  else {
+    if(expDiff > 1.0) rekomHDP = "Rekom: Home -1 atau -0.5";
+    else if(expDiff > 0.5) rekomHDP = "Rekom: Home -0.5";
+    else if(expDiff < -1.0) rekomHDP = "Rekom: Away -1 atau -0.5";
+    else if(expDiff < -0.5) rekomHDP = "Rekom: Away -0.5";
+    else rekomHDP = "HDP netral";
+  }
+  let rekomOU = '--';
+  if(pOver25 > 0.6) rekomOU = 'Rekom: Over 2.5';
+  else if(pOver25 < 0.35) rekomOU = 'Rekom: Under 2.5';
+  else rekomOU = 'OU netral';
+  let rekomBTTS = (pBTTS>0.65) ? 'BTTS Yes' : ((pBTTS<0.35) ? 'BTTS No' : 'BTTS netral');
+
+  // 9) fill outputs
+  document.getElementById('out1x2').textContent = (!isNaN(pH_norm) ? `Home ${(pH_norm*100).toFixed(1)}% | ` : '') +
+                                                   (!isNaN(pD_norm) ? `Draw ${(pD_norm*100).toFixed(1)}% | ` : '') +
+                                                   (!isNaN(pA_norm) ? `Away ${(pA_norm*100).toFixed(1)}%` : '');
+  document.getElementById('outLambda').textContent = `${lambdaH.toFixed(2)} , ${lambdaA.toFixed(2)} (home, away)`;
+  document.getElementById('outTotal').textContent = `${expTotal.toFixed(2)}`;
+  document.getElementById('outDiff').textContent = `${expDiff.toFixed(2)}`;
+  document.getElementById('outOver25').textContent = `${(pOver25*100).toFixed(1)}%`;
+  document.getElementById('outBTTS').textContent = `${(pBTTS*100).toFixed(1)}%`;
+  document.getElementById('outRekomHDP').textContent = rekomHDP + '  |  ' + rekomBTTS;
+  document.getElementById('outRekomOU').textContent = rekomOU;
+
+  // build score table 0..5
+  const maxShow = 5;
+  let html = '<table><thead><tr><th></th>';
+  for(let j=0;j<=maxShow;j++) html += `<th>${j}</th>`;
+  html += '</tr></thead><tbody>';
+  for(let i=0;i<=maxShow;i++){
+    html += `<tr><th>${i}</th>`;
+    for(let j=0;j<=maxShow;j++){
+      html += `<td>${(scoreMatrix[i][j]*100).toFixed(2)}%</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('scoreTableWrap').innerHTML = html;
+
+  // charts
+  const chart1Data = [probs.home*100, probs.draw*100, probs.away*100];
+  const chart2Data = [pOver25*100, (1-pOver25)*100];
+  if(window.ch1) window.ch1.destroy();
+  window.ch1 = new Chart(document.getElementById('chart1'), {
+    type: 'pie',
+    data: {labels:['Home','Draw','Away'], datasets:[{data:chart1Data, backgroundColor:['#2e7d32','#ffc107','#d32f2f']}]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+  if(window.ch2) window.ch2.destroy();
+  window.ch2 = new Chart(document.getElementById('chart2'), {
+    type: 'pie',
+    data: {labels:['Over2.5','Under2.5'], datasets:[{data:chart2Data, backgroundColor:['#1565c0','#90caf9']}]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+
+  // fill HDP lines table
+  const tbody = document.getElementById('hdpLinesBody'); tbody.innerHTML = '';
+  for(const r of hdpResults){
+    const evText = (r.evHome===null) ? '--' : r.evHome.toFixed(3);
+    const lineLabel = (r.line>=0 ? `+${r.line}` : `${r.line}`);
+    const tr = `<tr>
+      <td>${lineLabel}</td>
+      <td>${(r.win*100).toFixed(1)}%</td>
+      <td>${(r.push*100).toFixed(1)}%</td>
+      <td>${(r.lose*100).toFixed(1)}%</td>
+      <td>${evText}</td>
+    </tr>`;
+    tbody.insertAdjacentHTML('beforeend', tr);
+  }
+
+  // return debug (optional)
+  return { lambdaH, lambdaA, scoreMatrix, probs, pOver25, pBTTS, hdpResults, h2hDiff, h2hCount };
+}
+
+/* ---------- init UI ---------- */
+document.addEventListener('DOMContentLoaded', function(){
+  fillFloat('oddsH', 1.00, 20.00, 0.01);
+  fillFloat('oddsD', 1.00, 20.00, 0.01);
+  fillFloat('oddsA', 1.00, 20.00, 0.01);
+  fillFloat('oddsOver', 1.00, 3.00, 0.01);
+  fillFloat('oddsUnder', 1.00, 3.00, 0.01);
+
+  makePerf('perfHome'); makePerf('perfAway');
+
+  document.getElementById('btnAnalyse').addEventListener('click', function(){
+    try{
+      computeAll();
+    }catch(e){
+      alert('Error saat menghitung: ' + e.message);
+      console.error(e);
+    }
+  });
+
+  document.getElementById('btnReset').addEventListener('click', function(){
+    document.querySelectorAll('select').forEach(s=>s.selectedIndex=0);
+    document.querySelectorAll('input').forEach(i=>i.value='');
+    document.getElementById('perfHome').querySelectorAll('select').forEach(s=>s.selectedIndex=0);
+    document.getElementById('perfAway').querySelectorAll('select').forEach(s=>s.selectedIndex=0);
+    document.getElementById('scoreTableWrap').innerHTML='';
+    document.getElementById('out1x2').textContent='--';
+    document.getElementById('outLambda').textContent='--';
+    document.getElementById('outTotal').textContent='--';
+    document.getElementById('outDiff').textContent='--';
+    document.getElementById('outOver25').textContent='--';
+    document.getElementById('outBTTS').textContent='--';
+    document.getElementById('outRekomHDP').textContent='--';
+    document.getElementById('outRekomOU').textContent='--';
+    document.getElementById('hdpLinesBody').innerHTML='';
+    if(window.ch1) { window.ch1.destroy(); window.ch1=null; }
+    if(window.ch2) { window.ch2.destroy(); window.ch2=null; }
+  });
+});
+</script>
+</body>
+  </html>
