@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP + Parlay Builder (Manual Input)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;padding:16px}
+.container{max-width:1100px;margin:auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h2{text-align:center;margin:6px 0 12px}
+label{display:block;margin-top:10px;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.row>div{flex:1 1 140px}
+input,button,textarea,select{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+button{margin-top:12px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:15px;cursor:pointer}
+.result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px;white-space:pre-wrap}
+.table{width:100%;border-collapse:collapse;margin-top:10px}
+.table td,.table th{border:1px solid #eee;padding:6px;text-align:center}
+.reco-box{background:#fff7e6;border-left:4px solid #ffb300;padding:10px;margin-top:10px;border-radius:6px}
+.reco-strong{background:#e8f5e9;color:#2e7d32;padding:8px;border-radius:6px;margin-top:8px}
+.reco-good{background:#e3f2fd;color:#0d47a1;padding:8px;border-radius:6px;margin-top:8px}
+.small{font-size:13px;color:#666;margin-top:6px}
+.parlay{margin-top:12px;padding:12px;background:#eef7ff;border-radius:6px}
+.parlay strong{display:block;margin-bottom:6px}
+.kv{display:flex;gap:8px;flex-wrap:wrap}
+.kv>div{flex:1 1 180px;background:#fff;padding:8px;border-radius:6px;border:1px solid #e6f0fb}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Kalkulator HDP + Parlay Builder</h2>
+
+  <div style="display:flex;gap:12px;align-items:end">
+    <div style="flex:3">
+      <label>Odds 1X2 (Home / Draw / Away)</label>
+      <div class="row">
+        <div><input id="oddsHome" type="number" step="0.01" placeholder="Home"></div>
+        <div><input id="oddsDraw" type="number" step="0.01" placeholder="Draw"></div>
+        <div><input id="oddsAway" type="number" step="0.01" placeholder="Away"></div>
+      </div>
+
+      <label>Odds Over/Under (Over / Under)</label>
+      <div class="row">
+        <div><input id="over" type="number" step="0.01" placeholder="Over"></div>
+        <div><input id="under" type="number" step="0.01" placeholder="Under"></div>
+      </div>
+
+      <label>Odds HDP (Home / Away)</label>
+      <div class="row">
+        <div><input id="hdpHome" type="number" step="0.01" placeholder="HDP Home"></div>
+        <div><input id="hdpAway" type="number" step="0.01" placeholder="HDP Away"></div>
+      </div>
+    </div>
+
+    <div style="flex:2">
+      <label>Total Gol & Kebobolan (jumlah gol di X laga terakhir)</label>
+      <div class="row">
+        <div><input id="golHome" type="number" placeholder="Total gol Home"></div>
+        <div><input id="kebHome" type="number" placeholder="Total kebobolan Home"></div>
+      </div>
+      <div class="row">
+        <div><input id="golAway" type="number" placeholder="Total gol Away"></div>
+        <div><input id="kebAway" type="number" placeholder="Total kebobolan Away"></div>
+      </div>
+      <div class="row">
+        <div><input id="matchCount" type="number" value="5" min="1" placeholder="Jumlah laga"></div>
+        <div><input id="bankroll" type="number" value="100" min="1" placeholder="Bankroll"></div>
+      </div>
+      <label>Jumlah Leg Parlay</label>
+      <select id="parlayLegs"><option value="2">2</option><option value="3">3</option></select>
+    </div>
+  </div>
+
+  <div style="margin-top:12px">
+    <label>Head-to-Head (H2H)</label>
+    <textarea id="h2hText" rows="2" placeholder="Contoh: Home 2-1 Away"></textarea>
+  </div>
+
+  <div class="small">Blending: 60% Model Poisson + 40% Market fair. Pilih leg parlay di dropdown lalu klik Analisis.</div>
+
+  <button id="btnAnalisis">Analisis & Bangun Parlay</button>
+
+  <div id="hasil" class="result">Hasil akan tampil di sini</div>
+
+  <table class="table" id="tbl" style="display:none">
+    <thead><tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th><th>BTTS</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div id="rekomContainer" class="reco-box" style="display:none">
+    <strong>Rekomendasi Terbaik (per kandidat)</strong>
+    <div id="rekomList"></div>
+  </div>
+
+  <div class="parlay" id="parlayBox" style="display:none">
+    <strong>Parlay Builder (otomatis pilih top legs)</strong>
+    <div class="kv">
+      <div id="parlaySummary"></div>
+      <div id="parlayMetrics"></div>
+      <div id="parlayStake"></div>
+    </div>
+    <div style="margin-top:8px" id="parlayLegDetails"></div>
+  </div>
+
+  <canvas id="chart" height="160" style="margin-top:12px"></canvas>
+</div>
+
+<script>
+// helper functions
+function factorial(n){ if(n<=1) return 1; let f=1; for(let i=2;i<=n;i++) f*=i; return f; }
+function poissonP(k, lambda){ return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k); }
+function goalDist(lambda, maxGoals=10){ const arr=[]; let sum=0; for(let k=0;k<=maxGoals;k++){ const p=poissonP(k, lambda); arr.push(p); sum+=p; } if(sum<1) arr[arr.length-1]+=1-sum; return arr; }
+function computeMatchProbs(lambdaHome, lambdaAway, maxG=10){ const distH=goalDist(lambdaHome,maxG); const distA=goalDist(lambdaAway,maxG); let pHome=0,pDraw=0,pAway=0,pBoth=0; const totalDist=Array(maxG*2+1).fill(0); for(let i=0;i<=maxG;i++){ for(let j=0;j<=maxG;j++){ const p=distH[i]*distA[j]; if(i>j) pHome+=p; else if(i===j) pDraw+=p; else pAway+=p; if(i>0&&j>0) pBoth+=p; totalDist[i+j]+=p; } } return {pHome,pDraw,pAway,pBoth,totalDist}; }
+function safeParseFloat(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+function fairifyOddsArray(oddsArr){ const valid=oddsArr.map(o=>safeParseFloat(o)); if(valid.some(v=>v===null||v<=0)) return [null,null,null]; const imps=valid.map(o=>1/o); const sum=imps.reduce((a,b)=>a+b,0); return imps.map(i=>i/sum); }
+function fairifyTwo(a,b){ const ia=safeParseFloat(a), ib=safeParseFloat(b); if(ia===null||ib===null||ia<=0||ib<=0) return [null,null]; const ra=1/ia, rb=1/ib; const s=ra+rb; return [ra/s, rb/s]; }
+function kellyFraction(p,odd){ if(p==null||odd==null) return 0; const b=odd-1; if(b<=0) return 0; const k=(b*p-(1-p))/b; return Math.max(0,k); }
+function valuePP(blend,marketFair){ if(blend==null||marketFair==null) return null; return (blend-marketFair)*100; }
+
+function computeRecommendations(market,blended,oddsObj){
+  const candidates=[];
+  function pushCandidate(key,label,blendVal,marketFair,odd){
+    if(blendVal==null) return;
+    const val=(marketFair!=null)?valuePP(blendVal,marketFair):null;
+    const kelly=odd?kellyFraction(blendVal,odd):0;
+    candidates.push({key,label,blend:blendVal,marketFair,odd,val,kelly});
+  }
+  pushCandidate('home','1X2 Home',blended.home,market.home,oddsObj.home);
+  pushCandidate('draw','1X2 Draw',blended.draw,market.draw,oddsObj.draw);
+  pushCandidate('away','1X2 Away',blended.away,market.away,oddsObj.away);
+  pushCandidate('over','Over',blended.over,market.over,oddsObj.over);
+  pushCandidate('under','Under',blended.under,market.under,oddsObj.under);
+  pushCandidate('hdpHome','HDP Home',blended.hdpHome ?? market.hdpHome,market.hdpHome,oddsObj.hdpHome);
+  pushCandidate('hdpAway','HDP Away',blended.hdpAway ?? market.hdpAway,market.hdpAway,oddsObj.hdpAway);
+
+  candidates.forEach(c=>{
+    let score=0;
+    if(c.val!==null && c.val>=5) score+=100;
+    if(c.blend!==null && c.blend>0.55) score+=60;
+    score += (c.kelly||0)*100;
+    score += (c.blend||0)*10;
+    c.score = score;
+  });
+
+  return candidates.sort((a,b)=>b.score-a.score);
+}
+
+// main
+let chart=null;
+function analyzeAll(){
+  const oh=safeParseFloat(document.getElementById('oddsHome').value);
+  const od=safeParseFloat(document.getElementById('oddsDraw').value);
+  const oa=safeParseFloat(document.getElementById('oddsAway').value);
+  const ov=safeParseFloat(document.getElementById('over').value);
+  const un=safeParseFloat(document.getElementById('under').value);
+  const hh=safeParseFloat(document.getElementById('hdpHome').value);
+  const ha=safeParseFloat(document.getElementById('hdpAway').value);
+  const golHome=parseFloat(document.getElementById('golHome').value)||0;
+  const kebHome=parseFloat(document.getElementById('kebHome').value)||0;
+  const golAway=parseFloat(document.getElementById('golAway').value)||0;
+  const kebAway=parseFloat(document.getElementById('kebAway').value)||0;
+  let matches=parseInt(document.getElementById('matchCount').value)||5;
+  const bankroll=parseFloat(document.getElementById('bankroll').value)||100;
+  const parlayLegs = parseInt(document.getElementById('parlayLegs').value)||2;
+  if(matches<=0) matches=5;
+
+  const avgGoalsHome=golHome/matches;
+  const avgConcedeAway=kebAway/matches;
+  const avgGoalsAway=golAway/matches;
+  const avgConcedeHome=kebHome/matches;
+  let lambdaHome=(avgGoalsHome+avgConcedeAway)/2;
+  let lambdaAway=(avgGoalsAway+avgConcedeHome)/2;
+  lambdaHome=Math.max(0.2,lambdaHome);
+  lambdaAway=Math.max(0.2,lambdaAway);
+
+  const match=computeMatchProbs(lambdaHome,lambdaAway,10);
+  const model={ home:match.pHome, draw:match.pDraw, away:match.pAway,
+    overProb:(function(){ if(ov==null) return null; let p=0; for(let t=Math.round(ov)+1;t<match.totalDist.length;t++) p+=match.totalDist[t]; return p; })(),
+    underProb:(function(){ if(un==null) return null; let p=0; for(let t=0;t<=Math.round(un);t++) p+=match.totalDist[t]; return p; })(),
+    btts:match.pBoth };
+
+  const market={};
+  const fair = fairifyOddsArray([oh,od,oa]);
+  if(fair[0]!==null){ market.home=fair[0]; market.draw=fair[1]; market.away=fair[2]; }
+  const f_ou = fairifyTwo(ov,un);
+  if(f_ou[0]!==null){ market.over=f_ou[0]; market.under=f_ou[1]; }
+  const f_hdp = fairifyTwo(hh,ha);
+  if(f_hdp[0]!==null){ market.hdpHome=f_hdp[0]; market.hdpAway=f_hdp[1]; }
+
+  const wm=0.6, wk=0.4;
+  function blend(mkt,mdl){ return (mkt==null)?mdl:(mdl==null)?mkt: wm*mdl + wk*mkt; }
+  const blended={ home:blend(market.home,model.home), draw:blend(market.draw,model.draw), away:blend(market.away,model.away),
+    over:blend(market.over,model.overProb), under:blend(market.under,model.underProb), hdpHome:market.hdpHome, hdpAway:market.hdpAway, btts:model.btts };
+
+  // populate table
+  const body=document.getElementById('tbody'); body.innerHTML='';
+  function pct(x){ return x==null? '--' : (x*100).toFixed(1)+'%'; }
+  body.innerHTML += `<tr><td>Model</td><td>${pct(model.home)}</td><td>${pct(model.draw)}</td><td>${pct(model.away)}</td><td>${pct(model.overProb)}</td><td>${pct(model.underProb)}</td><td>${pct(model.btts)}</td></tr>`;
+  body.innerHTML += `<tr><td>Market (fair)</td><td>${pct(market.home)}</td><td>${pct(market.draw)}</td><td>${pct(market.away)}</td><td>${pct(market.over)}</td><td>${pct(market.under)}</td><td>--</td></tr>`;
+  body.innerHTML += `<tr><td>Blended</td><td>${pct(blended.home)}</td><td>${pct(blended.draw)}</td><td>${pct(blended.away)}</td><td>${pct(blended.over)}</td><td>${pct(blended.under)}</td><td>${pct(blended.btts)}</td></tr>`;
+  document.getElementById('tbl').style.display='table';
+
+  const oddsObj={ home:oh, draw:od, away:oa, over:ov, under:un, hdpHome:hh, hdpAway:ha };
+  const candidates = computeRecommendations(market,blended,oddsObj);
+
+  // show candidates
+  const listDiv = document.getElementById('rekomList'); listDiv.innerHTML='';
+  candidates.forEach((c,i)=>{
+    const el = document.createElement('div');
+    const val = c.val!==null? (c.val.toFixed(1)+' pp') : '--';
+    const prob = (c.blend*100).toFixed(1)+'%';
+    el.innerHTML = `<div style="margin-top:8px"><b>${i+1}. ${c.label}</b> — Prob ${prob} — Odds ${c.odd||'--'} — Value ${val} — Kelly ${(c.kelly*100).toFixed(1)}%</div>`;
+    listDiv.appendChild(el);
+  });
+  document.getElementById('rekomContainer').style.display = candidates.length? 'block':'none';
+
+  // build parlay from top N candidates (only those with odds available)
+  const topWithOdds = candidates.filter(c=>c.odd && c.odd>0);
+  const pick = topWithOdds.slice(0, parlayLegs);
+  const parlayBox = document.getElementById('parlayBox');
+  if(pick.length < 2){
+    parlayBox.style.display='none';
+  } else {
+    parlayBox.style.display='block';
+    // compute parlay metrics
+    const parlayOdds = pick.reduce((s,c)=>s * c.odd, 1);
+    const blendedParlayProb = pick.reduce((s,c)=>s * c.blend, 1); // assume independence
+    const impliedParlayProb = 1 / parlayOdds;
+    const parlayValuePP = (blendedParlayProb - impliedParlayProb) * 100;
+    // Kelly for parlay
+    const b = parlayOdds - 1;
+    let kellyParlay = 0;
+    if(b>0){
+      const p = blendedParlayProb;
+      kellyParlay = Math.max(0, ((b * p) - (1 - p)) / b);
+    }
+    // suggested stake: conservative cap
+    const suggestedStake = Math.max(0, Math.min(bankroll * kellyParlay, bankroll * 0.1)); // cap at 10% bankroll
+
+    // display summary
+    document.getElementById('parlaySummary').innerHTML = `<div><strong>Total Odds:</strong> ${parlayOdds.toFixed(2)}</div><div><strong>Blended Parlay Prob (prod):</strong> ${(blendedParlayProb*100).toFixed(2)}%</div><div><strong>Implied Prob (1/odds):</strong> ${(impliedParlayProb*100).toFixed(2)}%</div>`;
+    document.getElementById('parlayMetrics').innerHTML = `<div><strong>Value:</strong> ${parlayValuePP.toFixed(2)} pp</div><div><strong>Kelly (parlay):</strong> ${(kellyParlay*100).toFixed(2)}%</div>`;
+    document.getElementById('parlayStake').innerHTML = `<div><strong>Bankroll:</strong> ${bankroll.toFixed(2)}</div><div><strong>Suggested Stake:</strong> ${suggestedStake.toFixed(2)} (${(suggestedStake/bankroll*100).toFixed(2)}% of bankroll)</div>`;
+
+    // leg details
+    const details = pick.map((c,idx)=>{
+      return `<div style="margin-top:6px"><b>Leg ${idx+1}:</b> ${c.label} — Odds ${c.odd} — Blended ${(c.blend*100).toFixed(1)}% — Value ${c.val!==null?c.val.toFixed(1)+' pp':'--'} — Kelly ${(c.kelly*100).toFixed(1)}%</div>`;
+    }).join('');
+    document.getElementById('parlayLegDetails').innerHTML = details;
+  }
+
+  // chart
+  if(chart) chart.destroy();
+  chart = new Chart(document.getElementById('chart'), {
+    type:'bar',
+    data:{
+      labels:['Home','Draw','Away'],
+      datasets:[
+        { label:'Market', data:[market.home||0, market.draw||0, market.away||0] },
+        { label:'Model', data:[model.home, model.draw, model.away] },
+        { label:'Blended', data:[blended.home, blended.draw, blended.away] }
+      ]
+    },
+    options:{ responsive:true, plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:true}} }
+  });
+
+  document.getElementById('hasil').textContent = `Lambda Home: ${lambdaHome.toFixed(2)} | Lambda Away: ${lambdaAway.toFixed(2)}\nH2H: ${document.getElementById('h2hText').value || '-' }\n(Blended = 0.6×Model + 0.4×Market)`;
+}
+
+document.getElementById('btnAnalisis').addEventListener('click', analyzeAll);
+</script>
+</body>
+</html>
