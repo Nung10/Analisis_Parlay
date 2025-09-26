@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kalkulator HDP Final — Poisson + BTTS + Blending + Kelly</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{--blue:#1976d2;--green:#2e7d32;--amber:#ffb300}
+  body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f6f6f6;padding:18px;color:#222}
+  .container{max-width:1000px;margin:12px auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  h1{font-size:20px;margin:0 0 8px}
+  label{display:block;margin-top:10px;font-weight:600}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .row>div{flex:1 1 140px}
+  input,textarea,select,button{width:100%;padding:8px;border-radius:6px;border:1px solid #d9d9d9;box-sizing:border-box}
+  textarea{min-height:64px;}
+  button{background:var(--blue);color:#fff;border:none;cursor:pointer;font-weight:700}
+  .result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px;white-space:pre-wrap}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{border:1px solid #eee;padding:8px;text-align:center;font-size:13px}
+  .reco-box{background:#fff7e6;border-left:4px solid var(--amber);padding:12px;margin-top:12px;border-radius:6px}
+  .reco-strong{background:#e8f5e9;color:var(--green);padding:8px;border-radius:6px;margin-top:8px}
+  .reco-good{background:#e3f2fd;color:var(--blue);padding:8px;border-radius:6px;margin-top:8px}
+  .small{font-size:13px;color:#666;margin-top:6px}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .perf-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .perf-table td,.perf-table th{border:1px solid #f0f0f0;padding:6px;text-align:left}
+  .muted{color:#666;font-size:13px}
+  hr{border:none;border-top:1px solid #eee;margin:10px 0}
+  @media (max-width:720px){ .row>div{flex:1 1 100%} }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Kalkulator HDP Final — Poisson + Market Blending + BTTS + Kelly</h1>
+  <div class="muted">Isi semua odds dan data, lalu klik <b>Analisis & Rekomendasi</b></div>
+
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <div class="row">
+    <div><input id="oddsHome" type="number" step="0.01" placeholder="Odds Home (mis. 2.10)"></div>
+    <div><input id="oddsDraw" type="number" step="0.01" placeholder="Odds Draw (mis. 3.30)"></div>
+    <div><input id="oddsAway" type="number" step="0.01" placeholder="Odds Away (mis. 3.80)"></div>
+  </div>
+
+  <label>Odds HDP (Home / Away) — gunakan jika tersedia</label>
+  <div class="row">
+    <div><input id="hdpHome" type="number" step="0.01" placeholder="Odds HDP Home (mis. 1.80)"></div>
+    <div><input id="hdpAway" type="number" step="0.01" placeholder="Odds HDP Away (mis. 2.00)"></div>
+  </div>
+
+  <label>Odds Over/Under (Over / Under)</label>
+  <div class="row">
+    <div><input id="over" type="number" step="0.01" placeholder="Odds Over (mis. 1.95)"></div>
+    <div><input id="under" type="number" step="0.01" placeholder="Odds Under (mis. 1.85)"></div>
+  </div>
+
+  <label>Odds BTTS (Yes / No)</label>
+  <div class="row">
+    <div><input id="bttsYes" type="number" step="0.01" placeholder="Odds BTTS Yes (mis. 1.95)"></div>
+    <div><input id="bttsNo" type="number" step="0.01" placeholder="Odds BTTS No (mis. 1.85)"></div>
+  </div>
+
+  <label>Total Gol & Kebobolan (jumlah gol di X laga terakhir)</label>
+  <div class="row">
+    <div><input id="golHome" type="number" placeholder="Total gol Home (mis. 8)"></div>
+    <div><input id="kebHome" type="number" placeholder="Total kebobolan Home (mis. 6)"></div>
+    <div><input id="golAway" type="number" placeholder="Total gol Away (mis. 7)"></div>
+    <div><input id="kebAway" type="number" placeholder="Total kebobolan Away (mis. 9)"></div>
+  </div>
+
+  <div class="row">
+    <div><input id="matchCount" type="number" value="5" min="1" placeholder="Jumlah laga (mis.5)"></div>
+    <div><input id="bankroll" type="number" value="100" min="1" placeholder="Bankroll (mis.100)"></div>
+    <div>
+      <label style="font-weight:600;margin-bottom:6px">Blending (Model / Market)</label>
+      <div style="display:flex;gap:6px">
+        <input id="blendModel" type="number" value="60" min="0" max="100" step="1" placeholder="Model %" />
+        <input id="blendMarket" type="number" value="40" min="0" max="100" step="1" placeholder="Market %"/>
+      </div>
+    </div>
+  </div>
+
+  <label>Performa Tim (W–D–L) — Home & Away</label>
+  <div class="row">
+    <div><input id="perfHomeW" type="number" placeholder="Home Wins (mis.3)"></div>
+    <div><input id="perfHomeD" type="number" placeholder="Home Draws"></div>
+    <div><input id="perfHomeL" type="number" placeholder="Home Losses"></div>
+    <div><input id="perfAwayW" type="number" placeholder="Away Wins"></div>
+    <div><input id="perfAwayD" type="number" placeholder="Away Draws"></div>
+    <div><input id="perfAwayL" type="number" placeholder="Away Losses"></div>
+  </div>
+
+  <label>Head-to-Head (H2H) — contoh: Home 2-1 Away, Away 1-1 Home</label>
+  <textarea id="h2hText" placeholder="Masukkan H2H jika ada"></textarea>
+
+  <div class="flex-between" style="margin-top:12px">
+    <div class="small">Kelly fractional recommended: ubah secara manual (mis. 0.25 untuk 1/4 Kelly)</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="kellyFraction" type="number" step="0.01" value="0.25" style="width:80px" title="Fractional Kelly (0-1)"/>
+      <button id="btnAnalisis">Analisis & Rekomendasi</button>
+    </div>
+  </div>
+
+  <div id="hasil" class="result">Hasil akan tampil di sini</div>
+
+  <table id="tbl" style="display:none">
+    <thead>
+      <tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th><th>BTTS Yes</th><th>BTTS No</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div id="rekomContainer" class="reco-box" style="display:none">
+    <strong>Rekomendasi Terbaik</strong>
+    <div id="rekomTop" style="margin-top:8px"></div>
+    <hr>
+    <div id="rekomAll" style="font-size:13px;color:#333"></div>
+  </div>
+
+  <canvas id="chart" height="160" style="margin-top:14px"></canvas>
+  <div id="performaBox" class="small"></div>
+</div>
+
+<script>
+/* ---------- Helpers ---------- */
+function safeNum(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+function factorial(n){ if(n<=1) return 1; let f=1; for(let i=2;i<=n;i++) f*=i; return f; }
+function poissonP(k, lambda){ return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k); }
+function goalDist(lambda, maxGoals=10){
+  const arr=[]; let sum=0;
+  for(let k=0;k<=maxGoals;k++){ const p=poissonP(k, lambda); arr.push(p); sum+=p; }
+  if(sum < 1) arr[arr.length-1] += 1 - sum;
+  return arr;
+}
+function computeMatchProbs(lambdaH, lambdaA, maxG=10){
+  const dH = goalDist(lambdaH, maxG), dA = goalDist(lambdaA, maxG);
+  let pHome=0, pDraw=0, pAway=0, pBoth=0;
+  const totalDist = Array(maxG*2+1).fill(0);
+  for(let i=0;i<=maxG;i++){
+    for(let j=0;j<=maxG;j++){
+      const p = dH[i] * dA[j];
+      if(i>j) pHome += p; else if(i===j) pDraw += p; else pAway += p;
+      if(i>0 && j>0) pBoth += p;
+      totalDist[i+j] += p;
+    }
+  }
+  return {pHome,pDraw,pAway,pBoth,totalDist};
+}
+function fairifyTwo(a,b){
+  const A = safeNum(a), B = safeNum(b);
+  if(!A || !B) return [null,null];
+  const ia = 1/A, ib = 1/B, s = ia + ib;
+  return [ia/s, ib/s];
+}
+function fairifyArray(arr){
+  const vals = arr.map(x => safeNum(x));
+  if(vals.some(v => !v)) return [null,null,null];
+  const imps = vals.map(v => 1/v); const sum = imps.reduce((a,b)=>a+b,0);
+  return imps.map(i => i/sum);
+}
+function kellyFraction(p, odd){
+  if(p==null || odd==null) return 0;
+  const b = odd - 1;
+  if(b <= 0) return 0;
+  const k = (b*p - (1 - p)) / b;
+  return Math.max(0, k);
+}
+function formatPct(x){ return x==null ? '--' : (x*100).toFixed(1) + '%' }
+function formatNum(x){ return x==null ? '--' : (Math.round(x*100)/100).toFixed(2) }
+
+/* ---------- Main Analysis ---------- */
+let mainChart = null;
+function analyzeAll(){
+  // read odds
+  const oh = safeNum(document.getElementById('oddsHome').value);
+  const od = safeNum(document.getElementById('oddsDraw').value);
+  const oa = safeNum(document.getElementById('oddsAway').value);
+  const hh = safeNum(document.getElementById('hdpHome').value);
+  const ha = safeNum(document.getElementById('hdpAway').value);
+  const ov = safeNum(document.getElementById('over').value);
+  const un = safeNum(document.getElementById('under').value);
+  const by = safeNum(document.getElementById('bttsYes').value);
+  const bn = safeNum(document.getElementById('bttsNo').value);
+
+  // read goals/perf
+  const golHome = parseFloat(document.getElementById('golHome').value) || 0;
+  const kebHome = parseFloat(document.getElementById('kebHome').value) || 0;
+  const golAway = parseFloat(document.getElementById('golAway').value) || 0;
+  const kebAway = parseFloat(document.getElementById('kebAway').value) || 0;
+  let matches = parseInt(document.getElementById('matchCount').value) || 5;
+  if(matches <= 0) matches = 5;
+  const bankroll = safeNum(document.getElementById('bankroll').value) || 100;
+  let blendModel = parseFloat(document.getElementById('blendModel').value) || 60;
+  let blendMarket = parseFloat(document.getElementById('blendMarket').value) || 40;
+  // normalize blend if not sum 100
+  const blendSum = (blendModel + blendMarket);
+  if(blendSum === 0){ blendModel = 60; blendMarket = 40; }
+  blendModel = blendModel / (blendModel + blendMarket);
+  blendMarket = blendMarket / (blendModel + blendMarket); // will become complement but safe
+
+  // calibrate (ensure percentages sum to 1): we'll use model weight = blendModel, market weight = 1 - blendModel
+  const wm = blendModel;
+  const wk = 1 - wm;
+
+  // perf inputs
+  const perfHomeW = parseInt(document.getElementById('perfHomeW').value) || 0;
+  const perfHomeD = parseInt(document.getElementById('perfHomeD').value) || 0;
+  const perfHomeL = parseInt(document.getElementById('perfHomeL').value) || 0;
+  const perfAwayW = parseInt(document.getElementById('perfAwayW').value) || 0;
+  const perfAwayD = parseInt(document.getElementById('perfAwayD').value) || 0;
+  const perfAwayL = parseInt(document.getElementById('perfAwayL').value) || 0;
+
+  // estimate lambdas (simple average of goals scored and conceded)
+  const avgGoalsHome = golHome / matches;
+  const avgConcedeAway = kebAway / matches;
+  const avgGoalsAway = golAway / matches;
+  const avgConcedeHome = kebHome / matches;
+  let lambdaHome = (avgGoalsHome + avgConcedeAway) / 2;
+  let lambdaAway = (avgGoalsAway + avgConcedeHome) / 2;
+  lambdaHome = Math.max(0.15, lambdaHome);
+  lambdaAway = Math.max(0.15, lambdaAway);
+
+  const match = computeMatchProbs(lambdaHome, lambdaAway, 10);
+  const model = {
+    home: match.pHome,
+    draw: match.pDraw,
+    away: match.pAway,
+    overProb: (function(){
+      if(!ov) return null;
+      let p = 0;
+      const cut = Math.round(ov);
+      for(let t = cut+1; t < match.totalDist.length; t++) p += (match.totalDist[t] || 0);
+      return p;
+    })(),
+    underProb: (function(){
+      if(!un) return null;
+      let p = 0;
+      const cut = Math.round(un);
+      for(let t = 0; t <= cut; t++) p += (match.totalDist[t] || 0);
+      return p;
+    })(),
+    btts: match.pBoth
+  };
+
+  // market fair probabilities
+  const market = {};
+  const fair123 = fairifyArray([oh, od, oa]);
+  if(fair123[0] != null){ market.home = fair123[0]; market.draw = fair123[1]; market.away = fair123[2]; }
+  const f_ou = fairifyTwo(ov, un);
+  if(f_ou[0] != null){ market.over = f_ou[0]; market.under = f_ou[1]; }
+  const f_hdp = fairifyTwo(hh, ha);
+  if(f_hdp[0] != null){ market.hdpHome = f_hdp[0]; market.hdpAway = f_hdp[1]; }
+  const f_btts = fairifyTwo(by, bn);
+  if(f_btts[0] != null){ market.bttsYes = f_btts[0]; market.bttsNo = f_btts[1]; }
+
+  // blended probabilities (model weighted + market weighted)
+  function blend(mkt, mdl){
+    if(mkt == null && mdl == null) return null;
+    if(mkt == null) return mdl;
+    if(mdl == null) return mkt;
+    return wm * mdl + (1 - wm) * mkt;
+  }
+  const blended = {
+    home: blend(market.home, model.home),
+    draw: blend(market.draw, model.draw),
+    away: blend(market.away, model.away),
+    over: blend(market.over, model.overProb),
+    under: blend(market.under, model.underProb),
+    hdpHome: market.hdpHome || null,
+    hdpAway: market.hdpAway || null,
+    bttsYes: blend(market.bttsYes, model.btts),
+    bttsNo: blend(market.bttsNo, 1 - model.btts)
+  };
+
+  // populate table
+  const body = document.getElementById('tbody'); body.innerHTML = '';
+  function pct(x){ return x == null ? '--' : (x*100).toFixed(1) + '%' }
+  body.innerHTML += `<tr><td>Model</td><td>${pct(model.home)}</td><td>${pct(model.draw)}</td><td>${pct(model.away)}</td><td>${pct(model.overProb)}</td><td>${pct(model.underProb)}</td><td>${pct(model.btts)}</td><td>${pct(1-model.btts)}</td></tr>`;
+  body.innerHTML += `<tr><td>Market (fair)</td><td>${pct(market.home)}</td><td>${pct(market.draw)}</td><td>${pct(market.away)}</td><td>${pct(market.over)}</td><td>${pct(market.under)}</td><td>${pct(market.bttsYes)}</td><td>${pct(market.bttsNo)}</td></tr>`;
+  body.innerHTML += `<tr><td>Blended</td><td>${pct(blended.home)}</td><td>${pct(blended.draw)}</td><td>${pct(blended.away)}</td><td>${pct(blended.over)}</td><td>${pct(blended.under)}</td><td>${pct(blended.bttsYes)}</td><td>${pct(blended.bttsNo)}</td></tr>`;
+  document.getElementById('tbl').style.display = 'table';
+
+  // recommendations: assemble candidates
+  const candidates = [];
+  function pushCandidate(key,label,blendProb,marketProb,odds){
+    if(blendProb==null) return;
+    // if marketProb absent but odds present, get implied from odds
+    let marketFair = marketProb;
+    if(marketFair == null && odds) marketFair = 1 / odds;
+    const value = (marketFair != null) ? (blendProb - marketFair) : (blendProb - (1/odds));
+    const kelly = odds ? kellyFraction(blendProb, odds) : 0;
+    const kellyFractionalSetting = Math.max(0, Math.min(1, safeNum(document.getElementById('kellyFraction').value) || 0.25));
+    const stakePct = kelly * kellyFractionalSetting; // fraction of bankroll
+    const stakeAmount = stakePct * bankroll;
+    candidates.push({key,label,blendProb,marketFair,odds,value,kelly,stakePct,stakeAmount});
+  }
+
+  pushCandidate('home','Home Win',blended.home,market.home,oh);
+  pushCandidate('draw','Draw',blended.draw,market.draw,od);
+  pushCandidate('away','Away Win',blended.away,market.away,oa);
+  pushCandidate('over','Over',blended.over,market.over,ov);
+  pushCandidate('under','Under',blended.under,market.under,un);
+  // HDP candidates (only if odds provided)
+  if(hh) pushCandidate('hdpHome','HDP Home',blended.hdpHome,market.hdpHome,hh);
+  if(ha) pushCandidate('hdpAway','HDP Away',blended.hdpAway,market.hdpAway,ha);
+  pushCandidate('bttsYes','BTTS Yes',blended.bttsYes,market.bttsYes,by);
+  pushCandidate('bttsNo','BTTS No',blended.bttsNo,market.bttsNo,bn);
+
+  // sort by value descending (value in probability points)
+  candidates.sort((a,b) => (b.value || 0) - (a.value || 0));
+
+  // render recommendations: top 3 highlighted, then full list
+  const topEl = document.getElementById('rekomTop');
+  const allEl = document.getElementById('rekomAll');
+  topEl.innerHTML = '';
+  if(candidates.length === 0){
+    topEl.innerHTML = '<div class="muted">Tidak ada kandidat (cek input odds & data).</div>';
+    allEl.innerHTML = '';
+    document.getElementById('rekomContainer').style.display = 'block';
+  } else {
+    candidates.slice(0,3).forEach((c,i) => {
+      const tag = (i===0) ? `<div class="reco-strong">✅ ${c.label} — Prob ${formatPct(c.blendProb)} — Odds ${formatNum(c.odds)} — Kelly ${(c.kelly*100).toFixed(1)}% — Stake ${(c.stakePct*100).toFixed(2)}% (${c.stakeAmount.toFixed(2)}) — Value ${(c.value*100).toFixed(1)} pp</div>` :
+                  `<div class="reco-good">👍 ${c.label} — Prob ${formatPct(c.blendProb)} — Odds ${formatNum(c.odds)} — Kelly ${(c.kelly*100).toFixed(1)}% — Stake ${(c.stakePct*100).toFixed(2)}% (${c.stakeAmount.toFixed(2)}) — Value ${(c.value*100).toFixed(1)} pp</div>`;
+      topEl.innerHTML += tag;
+    });
+
+    let allHtml = '<div><strong>All Candidates (sorted by Value):</strong></div>';
+    allHtml += '<div style="margin-top:8px;font-size:13px">';
+    candidates.forEach((c, idx) => {
+      allHtml += `<div>${idx+1}) ${c.label} — Prob ${formatPct(c.blendProb)} — Odds ${formatNum(c.odds)} — Kelly ${(c.kelly*100).toFixed(1)}% — Stake ${(c.stakePct*100).toFixed(2)}% (${c.stakeAmount.toFixed(2)}) — Value ${(c.value*100).toFixed(1)} pp</div>`;
+    });
+    allHtml += '</div>';
+    allEl.innerHTML = allHtml;
+    document.getElementById('rekomContainer').style.display = 'block';
+  }
+
+  // chart for 1X2: market/model/blended
+  const labels = ['Home','Draw','Away'];
+  const marketVals = [market.home||0, market.draw||0, market.away||0];
+  const modelVals = [model.home||0, model.draw||0, model.away||0];
+  const blendedVals = [blended.home||0, blended.draw||0, blended.away||0];
+  if(mainChart) mainChart.destroy();
+  mainChart = new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Market (fair)', data: marketVals, backgroundColor: '#FFC107' },
+        { label: 'Model (Poisson)', data: modelVals, backgroundColor: '#4CAF50' },
+        { label: 'Blended', data: blendedVals, backgroundColor: '#1976D2' }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: function(v){ return (v*100).toFixed(0) + '%'; } } }
+      }
+    }
+  });
+
+  // performa box
+  function perfRow(w,d,l){
+    const t = (w + d + l);
+    if(t === 0) return {win:'--', draw:'--', lose:'--'};
+    return { win: (w/t*100).toFixed(1)+'%', draw: (d/t*100).toFixed(1)+'%', lose: (l/t*100).toFixed(1)+'%'};
+  }
+  const ph = perfRow(perfHomeW, perfHomeD, perfHomeL);
+  const pa = perfRow(perfAwayW, perfAwayD, perfAwayL);
+  document.getElementById('performaBox').innerHTML = `<div style="margin-top:10px"><strong>Performa Tim</strong>
+    <table class="perf-table"><thead><tr><th></th><th>Win</th><th>Draw</th><th>Lose</th></tr></thead>
+    <tbody><tr><td>Home</td><td>${ph.win}</td><td>${ph.draw}</td><td>${ph.lose}</td></tr>
+    <tr><td>Away</td><td>${pa.win}</td><td>${pa.draw}</td><td>${pa.lose}</td></tr></tbody></table></div>`;
+
+  // summary
+  document.getElementById('hasil').textContent =
+    `Lambda Home: ${lambdaHome.toFixed(2)} | Lambda Away: ${lambdaAway.toFixed(2)}\nH2H Manual:\n${document.getElementById('h2hText').value || '-'}\n(Blended = ${Math.round(wm*100)}% Model + ${Math.round((1-wm)*100)}% Market)`;
+}
+
+/* ---------- UI binding ---------- */
+document.getElementById('btnAnalisis').addEventListener('click', analyzeAll);
+</script>
+</body>
+</html>
