@@ -1,0 +1,189 @@
+<!DOCTYPE html><html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP Advanced + Rekomendasi (Full Fix + Performa + HDP)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;padding:16px}
+.container{max-width:1000px;margin:auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h2{text-align:center;margin:6px 0 12px}
+label{display:block;margin-top:10px;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.row>div{flex:1 1 140px}
+input,button,textarea,select{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+button{margin-top:16px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer}
+.result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px;white-space:pre-wrap}
+.table{width:100%;border-collapse:collapse;margin-top:10px}
+.table td,.table th{border:1px solid #eee;padding:6px;text-align:center}
+.reco-box{background:#fff7e6;border-left:4px solid #ffb300;padding:10px;margin-top:10px;border-radius:6px}
+.reco-strong{background:#e8f5e9;color:#2e7d32;padding:8px;border-radius:6px;margin-top:8px}
+.reco-good{background:#e3f2fd;color:#0d47a1;padding:8px;border-radius:6px;margin-top:8px}
+.small{font-size:13px;color:#666;margin-top:6px}
+.note{font-size:13px;color:#555;margin-top:8px;background:#fff;padding:8px;border-radius:6px;border:1px solid #eee}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Kalkulator HDP Advanced + Rekomendasi (Full Fix + Performa + HDP)</h2><label>Odds 1X2 (Home / Draw / Away)</label>
+
+  <div class="row">
+    <div><input id="oddsHome" type="number" step="0.01" placeholder="Home"></div>
+    <div><input id="oddsDraw" type="number" step="0.01" placeholder="Draw"></div>
+    <div><input id="oddsAway" type="number" step="0.01" placeholder="Away"></div>
+  </div><label>Odds HDP (Home / Away)</label>
+
+  <div class="row">
+    <div><input id="hdpLine" type="number" step="0.25" placeholder="Line HDP (misal -0.5)"></div>
+    <div><input id="hdpHome" type="number" step="0.01" placeholder="Odds HDP Home"></div>
+    <div><input id="hdpAway" type="number" step="0.01" placeholder="Odds HDP Away"></div>
+  </div><label>Over/Under — Line & Odds</label>
+
+  <div class="row">
+    <div><input id="ouLine" type="number" step="0.1" placeholder="Line (contoh 2.5)"></div>
+    <div><input id="overOdd" type="number" step="0.01" placeholder="Odds Over (contoh 1.93)"></div>
+    <div><input id="underOdd" type="number" step="0.01" placeholder="Odds Under (contoh 1.99)"></div>
+  </div><label>Total Gol & Kebobolan (X laga terakhir)</label>
+
+  <div class="row">
+    <div><input id="golHome" type="number" placeholder="Total gol Home"></div>
+    <div><input id="kebHome" type="number" placeholder="Total kebobolan Home"></div>
+    <div><input id="golAway" type="number" placeholder="Total gol Away"></div>
+    <div><input id="kebAway" type="number" placeholder="Total kebobolan Away"></div>
+  </div>
+  <div class="row">
+    <div><input id="matchCount" type="number" value="5" min="1" placeholder="Jumlah laga"></div>
+    <div style="flex:2"><input id="bankroll" type="number" value="100" min="1" placeholder="Bankroll (untuk Kelly)"></div>
+  </div><label>Performa Tim (W–D–L)</label>
+
+  <div class="row">
+    <div><input id="perfHomeW" type="number" placeholder="Home Win"></div>
+    <div><input id="perfHomeD" type="number" placeholder="Home Draw"></div>
+    <div><input id="perfHomeL" type="number" placeholder="Home Lose"></div>
+    <div><input id="perfAwayW" type="number" placeholder="Away Win"></div>
+    <div><input id="perfAwayD" type="number" placeholder="Away Draw"></div>
+    <div><input id="perfAwayL" type="number" placeholder="Away Lose"></div>
+  </div><label>Head-to-Head (H2H)</label>
+
+  <textarea id="h2hText" rows="3" placeholder="Contoh: Home 2-1 Away, Away 1-1 Home"></textarea><label>Model Distribusi</label> <select id="modelType"> <option value="poisson">Poisson</option> <option value="negbin">Negative Binomial (Overdispersi)</option> </select>
+
+<button id="btnAnalisis">Analisis & Rekomendasi</button>
+
+  <div id="hasil" class="result">Hasil akan tampil di sini</div>  <table class="table" id="tbl" style="display:none">
+    <thead><tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th><th>HDP Home</th><th>HDP Away</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>  <div id="rekomContainer" class="reco-box" style="display:none">
+    <strong>Rekomendasi Terbaik</strong>
+    <div id="rekom1" class="reco-strong"></div>
+    <div id="rekom2" class="reco-good"></div>
+    <div id="rekom3"></div>
+    <div id="rekomAll" style="margin-top:8px;font-size:13px;color:#444"></div>
+  </div><canvas id="chart" height="160" style="margin-top:12px"></canvas>
+
+  <div id="performaBox" class="small"></div>
+  <div class="note">
+    <strong>Catatan perbaikan:</strong><br>
+    ✔ Tambah perhitungan rekomendasi HDP (Handicap)<br>
+    ✔ HDP Home/Away ditampilkan di tabel & rekomendasi<br>
+    ✔ Formula ATS sederhana berdasarkan distribusi skor<br>
+  </div>
+</div><script>
+function safeParseFloat(x){let v=parseFloat(x); return isNaN(v)?null:v;}
+function factorial(n){return n<=1?1:n*factorial(n-1);}
+function poisson(k,lambda){return Math.pow(lambda,k)*Math.exp(-lambda)/factorial(k);}
+function negbinPmf(k,mean,disp){let r = disp; let p = r/(r+mean); function comb(n,k){if(k>n) return 0; let res=1; for(let i=1;i<=k;i++){res=res*(n-k+i)/i;} return res;} return comb(k+r-1,k)*Math.pow(1-p,k)*Math.pow(p,r);}
+
+function computeMatchProbs(lambdaHome,lambdaAway,maxGoals,modelType){let dist=[]; let pHome=0,pDraw=0,pAway=0; let matrix={}; for(let i=0;i<=maxGoals;i++){for(let j=0;j<=maxGoals;j++){let p=0;if(modelType==='poisson'){p=poisson(i,lambdaHome)*poisson(j,lambdaAway);}else{p=negbinPmf(i,lambdaHome,2)*negbinPmf(j,lambdaAway,2);}if(i>j) pHome+=p; else if(i==j) pDraw+=p; else pAway+=p;if(!dist[i+j]) dist[i+j]=0;dist[i+j]+=p;matrix[`${i}-${j}`]=p;}} return {pHome,pDraw,pAway,totalDist:dist,matrix};}
+
+function computeHDP(matrix,line){let pHome=0,pAway=0,push=0; for(let key in matrix){let [gh,ga]=key.split('-').map(Number); let p=matrix[key]; let diff=gh-ga+line; if(diff>0) pHome+=p; else if(diff<0) pAway+=p; else push+=p;} return {pHome,pAway,push};}
+
+function fairifyTwo(o1,o2){if(o1==null||o2==null) return [null,null]; let p1=1/o1, p2=1/o2, sum=p1+p2; return [p1/sum,p2/sum];}
+function fairifyOddsArray(arr){let ps=arr.map(o=>o?1/o:0); let sum=ps.reduce((a,b)=>a+b,0); return ps.map(p=>p/sum);}
+
+function analyzeAll(){
+  const oh=safeParseFloat(document.getElementById('oddsHome').value);
+  const od=safeParseFloat(document.getElementById('oddsDraw').value);
+  const oa=safeParseFloat(document.getElementById('oddsAway').value);
+  const ouLine=safeParseFloat(document.getElementById('ouLine').value);
+  const overOdd=safeParseFloat(document.getElementById('overOdd').value);
+  const underOdd=safeParseFloat(document.getElementById('underOdd').value);
+  const hdpLine=safeParseFloat(document.getElementById('hdpLine').value);
+  const hdpHomeOdd=safeParseFloat(document.getElementById('hdpHome').value);
+  const hdpAwayOdd=safeParseFloat(document.getElementById('hdpAway').value);
+  const modelType=document.getElementById('modelType').value;
+
+  const golHome=parseFloat(document.getElementById('golHome').value)||0;
+  const kebHome=parseFloat(document.getElementById('kebHome').value)||0;
+  const golAway=parseFloat(document.getElementById('golAway').value)||0;
+  const kebAway=parseFloat(document.getElementById('kebAway').value)||0;
+  let matches=parseInt(document.getElementById('matchCount').value)||5;
+
+  const phw = parseInt(document.getElementById('perfHomeW').value)||0;
+  const phd = parseInt(document.getElementById('perfHomeD').value)||0;
+  const phl = parseInt(document.getElementById('perfHomeL').value)||0;
+  const paw = parseInt(document.getElementById('perfAwayW').value)||0;
+  const pad = parseInt(document.getElementById('perfAwayD').value)||0;
+  const pal = parseInt(document.getElementById('perfAwayL').value)||0;
+
+  const gamesHome = phw+phd+phl;
+  const gamesAway = paw+pad+pal;
+  const ppgHome = gamesHome? (3*phw + 1*phd)/gamesHome : null;
+  const ppgAway = gamesAway? (3*paw + 1*pad)/gamesAway : null;
+  const normHome = ppgHome? ppgHome/3 : null;
+  const normAway = ppgAway? ppgAway/3 : null;
+
+  const avgGoalsHome=golHome/matches;
+  const avgConcedeAway=kebAway/matches;
+  const avgGoalsAway=golAway/matches;
+  const avgConcedeHome=kebHome/matches;
+  let lambdaHome=(avgGoalsHome+avgConcedeAway)/2;
+  let lambdaAway=(avgGoalsAway+avgConcedeHome)/2;
+
+  const hadj = 0.15;
+  lambdaHome += hadj;
+  lambdaAway = Math.max(0.01, lambdaAway - hadj*0.1);
+
+  const match=computeMatchProbs(lambdaHome,lambdaAway,12,modelType);
+
+  let overProb=null, underProb=null;
+  if(ouLine!=null){
+    if(Number.isInteger(ouLine)){
+      overProb = match.totalDist.reduce((s,p,i)=> i>ouLine? s+p : s, 0) + 0.5*(match.totalDist[ouLine]||0);
+      underProb = match.totalDist.reduce((s,p,i)=> i<ouLine? s+p : s, 0) + 0.5*(match.totalDist[ouLine]||0);
+    } else {
+      overProb = match.totalDist.reduce((s,p,i)=> i>ouLine? s+p : s, 0);
+      underProb = match.totalDist.reduce((s,p,i)=> i<=ouLine? s+p : s, 0);
+    }
+  }
+
+  let hdpRes = {pHome:null,pAway:null};
+  if(hdpLine!=null){hdpRes=computeHDP(match.matrix,hdpLine);}
+
+  const model={home:match.pHome,draw:match.pDraw,away:match.pAway, overProb: overProb, underProb: underProb, hdpHome: hdpRes.pHome, hdpAway: hdpRes.pAway};
+
+  const fair123=fairifyOddsArray([oh,od,oa]);
+  const f_ou=fairifyTwo(overOdd,underOdd);
+  const f_hdp=fairifyTwo(hdpHomeOdd,hdpAwayOdd);
+  const market={home:fair123[0],draw:fair123[1],away:fair123[2],over:f_ou[0],under:f_ou[1], hdpHome:f_hdp[0], hdpAway:f_hdp[1]};
+
+  const wm=0.6,wk=0.4;
+  function blend(mkt,mdl){return (mkt==null)?mdl:(mdl==null)?mkt: wm*mdl+wk*mkt;}
+  const blended={home:blend(market.home,model.home),draw:blend(market.draw,model.draw),away:blend(market.away,model.away),over:blend(market.over,model.overProb),under:blend(market.under,model.underProb),hdpHome:blend(market.hdpHome,model.hdpHome),hdpAway:blend(market.hdpAway,model.hdpAway)};
+
+  const body=document.getElementById('tbody'); body.innerHTML='';
+  function pct(x){return x==null?'--':(x*100).toFixed(1)+'%';}
+  body.innerHTML += `<tr><td>Model</td><td>${pct(model.home)}</td><td>${pct(model.draw)}</td><td>${pct(model.away)}</td><td>${pct(model.overProb)}</td><td>${pct(model.underProb)}</td><td>${pct(model.hdpHome)}</td><td>${pct(model.hdpAway)}</td></tr>`;
+  body.innerHTML += `<tr><td>Market (fair)</td><td>${pct(market.home)}</td><td>${pct(market.draw)}</td><td>${pct(market.away)}</td><td>${pct(market.over)}</td><td>${pct(market.under)}</td><td>${pct(market.hdpHome)}</td><td>${pct(market.hdpAway)}</td></tr>`;
+  body.innerHTML += `<tr><td>Blended</td><td>${pct(blended.home)}</td><td>${pct(blended.draw)}</td><td>${pct(blended.away)}</td><td>${pct(blended.over)}</td><td>${pct(blended.under)}</td><td>${pct(blended.hdpHome)}</td><td>${pct(blended.hdpAway)}</td></tr>`;
+  document.getElementById('tbl').style.display='table';
+
+  let entries = [
+    {label:"🏠 Home Win", val:blended.home},
+    {label:"🤝 Draw", val:blended.draw},
+    {label:"🚩 Away Win", val:blended.away},
+    {label:"⬆️ Over", val:blended.over},
+    {label:"⬇️ Under", val:blended.under},
+    {label:"📊 HDP Home", val:blended.hdpHome},
+    {label:"📊 HDP Away", val:blended.hdpAway}
+  ];
+  entries = entries.filter
