@@ -331,13 +331,34 @@ function runAnalysis(){
   }
 
   // league normalization
-  const leagueAvg = safe(document.getElementById('leagueAvg').value, null);
-  if(leagueAvg){
-    const totalLambda = lambdaH + lambdaA;
-    if(totalLambda>0){
-      const scale = leagueAvg / totalLambda;
-      lambdaH *= scale; lambdaA *= scale;
+let leagueAvg = safe(document.getElementById('leagueAvg').value, null);
+
+// jika user belum isi, hitung otomatis rata-rata gol per match
+if (!leagueAvg) {
+  if (mode === 'manual') {
+    const mc = Math.max(1, parseInt(document.getElementById('matchCount').value || 5));
+    const totalGol = (avgGH + avgCH + avgGA + avgCA);
+    leagueAvg = totalGol; // total rata2 gol per pertandingan
+  } else {
+    const matchCount = Math.max(resH.cnt, resA.cnt);
+    if (matchCount > 0) {
+      const totalGolHome = (resH.for + resH.against) * resH.cnt;
+      const totalGolAway = (resA.for + resA.against) * resA.cnt;
+      leagueAvg = (totalGolHome + totalGolAway) / (resH.cnt + resA.cnt);
     }
+  }
+  if (leagueAvg) {
+    document.getElementById('leagueAvg').value = leagueAvg.toFixed(2);
+  }
+}
+
+if (leagueAvg) {
+  const totalLambda = lambdaH + lambdaA;
+  if (totalLambda > 0) {
+    const scale = leagueAvg / totalLambda;
+    lambdaH *= scale;
+    lambdaA *= scale;
+  }
   }
 
   lambdaH = Math.min(Math.max(0.03, lambdaH), 8);
