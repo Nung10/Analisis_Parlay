@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalkulator HDP Advanced + Rekomendasi (Full Fix)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f6f6f6;padding:16px}
+.container{max-width:1000px;margin:auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h2{text-align:center;margin:6px 0 12px}
+label{display:block;margin-top:10px;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.row>div{flex:1 1 140px}
+input,button,textarea,select{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+button{margin-top:16px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer}
+.result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px;white-space:pre-wrap}
+.table{width:100%;border-collapse:collapse;margin-top:10px}
+.table td,.table th{border:1px solid #eee;padding:6px;text-align:center}
+.reco-box{background:#fff7e6;border-left:4px solid #ffb300;padding:10px;margin-top:10px;border-radius:6px}
+.reco-strong{background:#e8f5e9;color:#2e7d32;padding:8px;border-radius:6px;margin-top:8px}
+.reco-good{background:#e3f2fd;color:#0d47a1;padding:8px;border-radius:6px;margin-top:8px}
+.small{font-size:13px;color:#666;margin-top:6px}
+.note{font-size:13px;color:#555;margin-top:8px;background:#fff;padding:8px;border-radius:6px;border:1px solid #eee}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Kalkulator HDP Advanced + Rekomendasi (Full Fix)</h2>
+
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <div class="row">
+    <div><input id="oddsHome" type="number" step="0.01" placeholder="Home"></div>
+    <div><input id="oddsDraw" type="number" step="0.01" placeholder="Draw"></div>
+    <div><input id="oddsAway" type="number" step="0.01" placeholder="Away"></div>
+  </div>
+
+  <label>Odds HDP (Home / Away)</label>
+  <div class="row">
+    <div><input id="hdpHome" type="number" step="0.01" placeholder="HDP Home"></div>
+    <div><input id="hdpAway" type="number" step="0.01" placeholder="HDP Away"></div>
+  </div>
+
+  <label>Over/Under — Line & Odds</label>
+  <div class="row">
+    <div><input id="ouLine" type="number" step="0.1" placeholder="Line (contoh 2.5)"></div>
+    <div><input id="overOdd" type="number" step="0.01" placeholder="Odds Over (contoh 1.93)"></div>
+    <div><input id="underOdd" type="number" step="0.01" placeholder="Odds Under (contoh 1.99)"></div>
+  </div>
+
+  <label>Total Gol & Kebobolan (X laga terakhir)</label>
+  <div class="row">
+    <div><input id="golHome" type="number" placeholder="Total gol Home"></div>
+    <div><input id="kebHome" type="number" placeholder="Total kebobolan Home"></div>
+    <div><input id="golAway" type="number" placeholder="Total gol Away"></div>
+    <div><input id="kebAway" type="number" placeholder="Total kebobolan Away"></div>
+  </div>
+  <div class="row">
+    <div><input id="matchCount" type="number" value="5" min="1" placeholder="Jumlah laga"></div>
+    <div style="flex:2"><input id="bankroll" type="number" value="100" min="1" placeholder="Bankroll (untuk Kelly)"></div>
+  </div>
+
+  <label>Performa Tim (W–D–L)</label>
+  <div class="row">
+    <div><input id="perfHomeW" type="number" placeholder="Home Win"></div>
+    <div><input id="perfHomeD" type="number" placeholder="Home Draw"></div>
+    <div><input id="perfHomeL" type="number" placeholder="Home Lose"></div>
+    <div><input id="perfAwayW" type="number" placeholder="Away Win"></div>
+    <div><input id="perfAwayD" type="number" placeholder="Away Draw"></div>
+    <div><input id="perfAwayL" type="number" placeholder="Away Lose"></div>
+  </div>
+
+  <label>Head-to-Head (H2H)</label>
+  <textarea id="h2hText" rows="3" placeholder="Contoh: Home 2-1 Away, Away 1-1 Home"></textarea>
+
+  <label>Model Distribusi</label>
+  <select id="modelType">
+    <option value="poisson">Poisson</option>
+    <option value="negbin">Negative Binomial (Overdispersi)</option>
+  </select>
+
+  <button id="btnAnalisis">Analisis & Rekomendasi</button>
+
+  <div id="hasil" class="result">Hasil akan tampil di sini</div>
+
+  <table class="table" id="tbl" style="display:none">
+    <thead><tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div id="rekomContainer" class="reco-box" style="display:none">
+    <strong>Rekomendasi Terbaik</strong>
+    <div id="rekom1" class="reco-strong"></div>
+    <div id="rekom2" class="reco-good"></div>
+    <div id="rekom3"></div>
+    <div id="rekomAll" style="margin-top:8px;font-size:13px;color:#444"></div>
+  </div>
+
+  <canvas id="chart" height="160" style="margin-top:12px"></canvas>
+  <div id="performaBox" class="small"></div>
+  <div class="note">
+    <strong>Catatan perbaikan:</strong><br>
+    ✔ Input <em>OU Line</em> dipisahkan dari odds<br>
+    ✔ Market fair odds dihitung dari odds Over/Under<br>
+    ✔ Tambah koreksi <em>home advantage</em><br>
+    ✔ Bobot H2H lebih besar (40%) bila tersedia<br>
+    ✔ Tangani <em>push</em> untuk OU line bulat<br>
+    ✔ Opsi distribusi: Poisson atau Negative Binomial (overdispersi)<br>
+    ✔ Rekomendasi selalu tampil (Top 3)
+  </div>
+</div>
+
+<script>
+function safeParseFloat(x){let v=parseFloat(x); return isNaN(v)?null:v;}
+function factorial(n){return n<=1?1:n*factorial(n-1);}
+function poisson(k,lambda){return Math.pow(lambda,k)*Math.exp(-lambda)/factorial(k);}
+
+// Negative Binomial pmf (r=variance parameter, p=success prob)
+function negbinPmf(k,mean,disp){
+  let r = disp; // overdispersion param
+  let p = r/(r+mean);
+  function comb(n,k){if(k>n) return 0; let res=1; for(let i=1;i<=k;i++){res=res*(n-k+i)/i;} return res;}
+  return comb(k+r-1,k)*Math.pow(1-p,k)*Math.pow(p,r);
+}
+
+function computeMatchProbs(lambdaHome,lambdaAway,maxGoals,modelType){
+  let dist=[]; let pHome=0,pDraw=0,pAway=0;
+  for(let i=0;i<=maxGoals;i++){
+    for(let j=0;j<=maxGoals;j++){
+      let p=0;
+      if(modelType==='poisson'){
+        p=poisson(i,lambdaHome)*poisson(j,lambdaAway);
+      }else{ // negbin
+        p=negbinPmf(i,lambdaHome,2)*negbinPmf(j,lambdaAway,2);
+      }
+      if(i>j) pHome+=p; else if(i==j) pDraw+=p; else pAway+=p;
+      if(!dist[i+j]) dist[i+j]=0;
+      dist[i+j]+=p;
+    }
+  }
+  return {pHome,pDraw,pAway,totalDist:dist};
+}
+
+function fairifyTwo(o1,o2){
+  if(o1==null||o2==null) return [null,null];
+  let p1=1/o1, p2=1/o2, sum=p1+p2; return [p1/sum,p2/sum];
+}
+function fairifyOddsArray(arr){
+  let ps=arr.map(o=>o?1/o:0);
+  let sum=ps.reduce((a,b)=>a+b,0);
+  return ps.map(p=>p/sum);
+}
+
+function parseH2H(text){
+  if(!text) return {homeAvg:null,awayAvg:null,count:0};
+  let tokens = text.split(/[,;]+/);
+  let homeGoals=0, awayGoals=0, cnt=0;
+  for(let t of tokens){
+    let m = t.match(/(Home|Away)?\s*(\d+)\s*-\s*(\d+)\s*(Home|Away)?/i);
+    if(!m) continue;
+    let p1 = parseInt(m[2],10), p2 = parseInt(m[3],10);
+    if(m[1] && /home/i.test(m[1])){ homeGoals += p1; awayGoals += p2; cnt++; }
+    else if(m[1] && /away/i.test(m[1])){ awayGoals += p1; homeGoals += p2; cnt++; }
+    else if(m[4] && /home/i.test(m[4])){ homeGoals += p2; awayGoals += p1; cnt++; }
+    else if(m[4] && /away/i.test(m[4])){ awayGoals += p2; homeGoals += p1; cnt++; }
+    else { homeGoals += p1; awayGoals += p2; cnt++; }
+  }
+  return {homeAvg: cnt?homeGoals/cnt:null, awayAvg:cnt?awayGoals/cnt:null, count:cnt};
+}
+
+function analyzeAll(){
+  const oh=safeParseFloat(document.getElementById('oddsHome').value);
+  const od=safeParseFloat(document.getElementById('oddsDraw').value);
+  const oa=safeParseFloat(document.getElementById('oddsAway').value);
+  const ouLine=safeParseFloat(document.getElementById('ouLine').value);
+  const overOdd=safeParseFloat(document.getElementById('overOdd').value);
+  const underOdd=safeParseFloat(document.getElementById('underOdd').value);
+  const modelType=document.getElementById('modelType').value;
+
+  const golHome=parseFloat(document.getElementById('golHome').value)||0;
+  const kebHome=parseFloat(document.getElementById('kebHome').value)||0;
+  const golAway=parseFloat(document.getElementById('golAway').value)||0;
+  const kebAway=parseFloat(document.getElementById('kebAway').value)||0;
+  let matches=parseInt(document.getElementById('matchCount').value)||5;
+
+  // baseline lambdas
+  const avgGoalsHome=golHome/matches;
+  const avgConcedeAway=kebAway/matches;
+  const avgGoalsAway=golAway/matches;
+  const avgConcedeHome=kebHome/matches;
+  let lambdaHome=(avgGoalsHome+avgConcedeAway)/2;
+  let lambdaAway=(avgGoalsAway+avgConcedeHome)/2;
+
+  // home advantage correction
+  const hadj = 0.15;
+  lambdaHome += hadj;
+  lambdaAway = Math.max(0.01, lambdaAway - hadj*0.1);
+
+  // H2H
+  const h2h = parseH2H(document.getElementById('h2hText').value);
+  if(h2h.count){
+    lambdaHome = 0.6*lambdaHome + 0.4*h2h.homeAvg;
+    lambdaAway = 0.6*lambdaAway + 0.4*h2h.awayAvg;
+  }
+
+  const match=computeMatchProbs(lambdaHome,lambdaAway,12,modelType);
+
+  // compute OU with push handling
+  let overProb=null, underProb=null;
+  if(ouLine!=null){
+    if(Number.isInteger(ouLine)){
+      overProb = match.totalDist.reduce((s,p,i)=> i>ouLine? s+p : s, 0) + 0.5*(match.totalDist[ouLine]||0);
+      underProb = match.totalDist.reduce((s,p,i)=> i<ouLine? s+p : s, 0) + 0.5*(match.totalDist[ouLine]||0);
+    } else {
+      overProb = match.totalDist.reduce((s,p,i)=> i>ouLine? s+p : s, 0);
+      underProb = match.totalDist.reduce((s,p,i)=> i<=ouLine? s+p : s, 0);
+    }
+  }
+
+  const model={home:match.pHome,draw:match.pDraw,away:match.pAway, overProb: overProb, underProb: underProb};
+
+  const fair123=fairifyOddsArray([oh,od,oa]);
+  const f_ou=fairifyTwo(overOdd,underOdd);
+  const market={home:fair123[0],draw:fair123[1],away:fair123[2],over:f_ou[0],under:f_ou[1]};
+
+  const wm=0.6,wk=0.4;
+  function blend(mkt,mdl){return (mkt==null)?mdl:(mdl==null)?mkt: wm*mdl+wk*mkt;}
+  const blended={
+    home:blend(market.home,model.home),
+    draw:blend(market.draw,model.draw),
+    away:blend(market.away,model.away),
+    over:blend(market.over,model.overProb),
+    under:blend(market.under,model.underProb)
+  };
+
+  const body=document.getElementById('tbody'); body.innerHTML='';
+  function pct(x){return x==null?'--':(x*100).toFixed(1)+'%';}
+  body.innerHTML += `<tr><td>Model</td><td>${pct(model.home)}</td><td>${pct(model.draw)}</td><td>${pct(model.away)}</td><td>${pct(model.overProb)}</td><td>${pct(model.underProb)}</td></tr>`;
+  body.innerHTML += `<tr><td>Market (fair)</td><td>${pct(market.home)}</td><td>${pct(market.draw)}</td><td>${pct(market.away)}</td><td>${pct(market.over)}</td><td>${pct(market.under)}</td></tr>`;
+  body.innerHTML += `<tr><td>Blended</td><td>${pct(blended.home)}</td><td>${pct(blended.draw)}</td><td>${pct(blended.away)}</td><td>${pct(blended.over)}</td><td>${pct(blended.under)}</td></tr>`;
+  document.getElementById('tbl').style.display='table';
+
+  let entries = [
+    {label:"🏠 Home Win", val:blended.home},
+    {label:"🤝 Draw", val:blended.draw},
+    {label:"🚩 Away Win", val:blended.away},
+    {label:"⬆️ Over", val:blended.over},
+    {label:"⬇️ Under", val:blended.under}
+  ];
+  entries = entries.filter(e=>e.val!=null).sort((a,b)=>b.val-a.val);
+  let rekomList = entries.slice(0,3).map(e=>`${e.label} (${(e.val*100).toFixed(1)}%)`);
+
+  const rekomBox=document.getElementById('rekomContainer');
+  rekomBox.style.display='block';
+  document.getElementById('rekom1').innerText=rekomList[0]||'';
+  document.getElementById('rekom2').innerText=rekomList[1]||'';
+  document.getElementById('rekom3').innerText=rekomList[2]||'';
+  document.getElementById('rekomAll').innerText = "Semua rekomendasi: " + entries.map(e=>`${e.label} ${(e.val*100).toFixed(1)}%`).join(", ");
+
+  document.getElementById('hasil').innerText = `Lambda Home: ${lambdaHome.toFixed(2)}, Lambda Away: ${lambdaAway.toFixed(2)}\nModel Over: ${model.overProb!==null? (model.overProb*100).toFixed(1)+'%':'--'} , Model Under: ${model.underProb!==null? (model.underProb*100).toFixed(1)+'%':'--'}\nDistribusi: ${modelType}`;
+}
+
+document.getElementById('btnAnalisis').addEventListener('click', analyzeAll);
+</script>
+</body>
+</html>
