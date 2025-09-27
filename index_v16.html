@@ -220,6 +220,7 @@ function runAnalysis(){
     avgGA = alpha*avgGA + (1-alpha)*h2hAvg.against;
     avgCA = alpha*avgCA + (1-alpha)*h2hAvg.for;
   }
+  
   let lambdaH = Math.max(0.03, (avgGH + avgCA)/2 + 0.12);
   let lambdaA = Math.max(0.03, (avgGA + avgCH)/2);
 
@@ -313,7 +314,7 @@ function runAnalysis(){
   document.getElementById('debugBox').style.display = 'block';
   document.getElementById('debugBox').innerHTML = debugInfo;
 }
-</script>
+      </script>
 
 </body>
-        </html>      
+  </html>
