@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Prediksi Pertandingan - v15</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:20px; }
+    .block { margin-bottom:15px; padding:10px; border:1px solid #ccc; border-radius:8px; }
+    .label { display:block; margin-top:6px; }
+    .result { margin-top:10px; padding:10px; border:1px dashed #666; border-radius:8px; background:#f9f9f9; }
+  </style>
+</head>
+<body>
+
+<h2>⚽ Prediksi Pertandingan (v15)</h2>
+
+<div class="block">
+  <label for="inputMode">Mode Input:</label>
+  <select id="inputMode">
+    <option value="manual">Manual</option>
+    <option value="scores">Masukkan Skor</option>
+  </select>
+</div>
+
+<div id="manualBlock" class="block">
+  <b>Input Manual (total gol & kebobolan)</b><br>
+  <label class="label">Gol Home: <input id="golHome" type="number"></label>
+  <label class="label">Kebobolan Home: <input id="kebHome" type="number"></label>
+  <label class="label">Gol Away: <input id="golAway" type="number"></label>
+  <label class="label">Kebobolan Away: <input id="kebAway" type="number"></label>
+  <label class="label">Jumlah Laga: <input id="matchCount" type="number" value="5"></label>
+</div>
+
+<div id="scoresBlock" class="block" style="display:none">
+  <b>Input Skor Langsung</b><br>
+  <label class="label">Skor Home (misal: 2-1,3-0,1-2): <input id="scoresHome" type="text" style="width:300px"></label>
+  <label class="label">Skor Away: <input id="scoresAway" type="text" style="width:300px"></label>
+</div>
+
+<div class="block">
+  <b>H2H (opsional)</b><br>
+  <label class="label">Skor H2H (misal: 2-1,1-3,3-2): <input id="h2h" type="text" style="width:300px"></label>
+  <label class="label">Bobot H2H terakhir: 
+    <input id="w1" type="number" step="0.1" value="0.5">,
+    <input id="w2" type="number" step="0.1" value="0.3">,
+    <input id="w3" type="number" step="0.1" value="0.2">
+  </label>
+</div>
+
+<div class="block">
+  <b>Odds Pasar</b><br>
+  <label class="label">1X2 - Home: <input id="oddsHome" type="number" step="0.01"> 
+    Draw: <input id="oddsDraw" type="number" step="0.01"> 
+    Away: <input id="oddsAway" type="number" step="0.01"></label>
+
+  <label class="label">Handicap (HDP) line: <input id="hdpLine" type="number" step="0.25"> 
+    Home: <input id="hdpHomeOdd" type="number" step="0.01"> 
+    Away: <input id="hdpAwayOdd" type="number" step="0.01"></label>
+
+  <label class="label">Over/Under line: <input id="ouLine" type="number" step="0.25"> 
+    Over: <input id="overOdd" type="number" step="0.01"> 
+    Under: <input id="underOdd" type="number" step="0.01"></label>
+</div>
+
+<div class="block">
+  <b>Model</b><br>
+  <label class="label">Tipe Model: 
+    <select id="modelType">
+      <option value="poisson">Poisson</option>
+      <option value="negbin">Negative Binomial</option>
+    </select>
+  </label>
+  <label class="label">League Avg (opsional, auto jika kosong): 
+    <input id="leagueAvg" type="number" step="0.01"></label>
+  <label class="label">Blend Model (% NegBin): 
+    <input id="blendModel" type="range" min="0" max="100" value="50"> 
+    <span id="blendVal">50</span>%</label>
+</div>
+
+<button id="btnFillExample">Isi Contoh</button>
+<button onclick="runAnalysis()">Analisis & Rekomendasi</button>
+
+<div id="diagnostics" class="result">
+  Hasil analisis akan muncul di sini.
+</div>
+<div id="debugBox" class="result" style="display:none"></div>
+
+<script>
+/* ---------------- Utilities ---------------- */
+function safe(v,d=null){const x=parseFloat(v);return isNaN(x)?d:x;}
+function factorial(n){return n<=1?1:n*factorial(n-1);}
+function poisson(k,lambda){return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k);}
+function negbinPmf(k, mean, r=0.9){
+  const p = r/(r+mean);
+  function comb(n,k){let res=1; for(let i=1;i<=k;i++){ res = res*(n-k+i)/i; } return res;}
+  return comb(k+r-1,k)*Math.pow(1-p,k)*Math.pow(p,r);
+}
+function impliedProb(odd){ return odd>0 ? 1/odd : null; }
+function fairOdds(prob){ return prob>0 ? (1/prob).toFixed(2) : "-"; }
+function formatOdds(o){ return o ? o.toFixed(2) : "-"; }
+function edgeColor(edge){
+  if(edge >= 0.05) return "color:green;font-weight:bold;";
+  if(edge >= 0.02) return "color:orange;";
+  return "color:gray;";
+}
+
+function computeMatrix(lambdaH,lambdaA,maxGoals,model){
+  const matrix={}, totalDist=[];
+  let pHome=0,pDraw=0,pAway=0;
+  for(let i=0;i<=maxGoals;i++){
+    for(let j=0;j<=maxGoals;j++){
+      const p = (model === 'poisson') ? poisson(i,lambdaH)*poisson(j,lambdaA)
+                                      : negbinPmf(i,lambdaH)*negbinPmf(j,lambdaA);
+      matrix[`${i}-${j}`] = p;
+      totalDist[i+j] = (totalDist[i+j] || 0) + p;
+      if(i>j) pHome += p; else if(i===j) pDraw += p; else pAway += p;
+    }
+  }
+  return {matrix, totalDist, pHome, pDraw, pAway};
+}
+function computeOUFromDist(totalDist, line){
+  let over=0, under=0;
+  const isInt = Number.isInteger(line);
+  for(let g=0; g<totalDist.length; g++){
+    const p = totalDist[g] || 0;
+    if(isInt){
+      if(g>line) over += p;
+      else if(g<line) under += p;
+      else { over += 0.5*p; under += 0.5*p;}
+    } else { if(g>line) over += p; else under += p; }
+  }
+  return {over, under};
+}
+function computeHDPFromMatrix(matrix, line){
+  let ph=0, pa=0, push=0;
+  for(const k in matrix){
+    const p = matrix[k];
+    const [i,j] = k.split('-').map(Number);
+    const diff = i - j + line;
+    if(diff>0) ph += p;
+    else if(diff<0) pa += p;
+    else push += p;
+  }
+  return {ph, pa, push};
+}
+function avgFromScores(raw){
+  const parts = raw.split(',').map(s=>s.trim()).filter(Boolean);
+  let totFor=0, totAgainst=0, cnt=0;
+  for(const p of parts){
+    const m = p.match(/^(\\d+)\\s*-\\s*(\\d+)$/);
+    if(!m) continue;
+    const f = parseInt(m[1]), a = parseInt(m[2]);
+    totFor += f; totAgainst += a; cnt++;
+  }
+  if(cnt === 0) return {for:0, against:0, cnt:0};
+  return {for: totFor/cnt, against: totAgainst/cnt, cnt};
+}
+
+/* ---------------- UI wiring ---------------- */
+const inputModeEl = document.getElementById('inputMode');
+inputModeEl.addEventListener('change', ()=> {
+  const mode = inputModeEl.value;
+  document.getElementById('manualBlock').style.display = mode === 'manual' ? 'block' : 'none';
+  document.getElementById('scoresBlock').style.display = mode === 'scores' ? 'block' : 'none';
+});
+const blendEl = document.getElementById('blendModel'), blendVal = document.getElementById('blendVal');
+blendEl.addEventListener('input', ()=> blendVal.innerText = blendEl.value);
+
+/* Fill example */
+document.getElementById('btnFillExample').addEventListener('click', ()=>{
+  document.getElementById('inputMode').value = 'scores';
+  inputModeEl.dispatchEvent(new Event('change'));
+  document.getElementById('scoresHome').value = "2-1,3-2,1-2";
+  document.getElementById('scoresAway').value = "1-2,0-3,2-3";
+  document.getElementById('h2h').value = "2-1,1-3,3-2";
+  document.getElementById('leagueAvg').value = "";
+  document.getElementById('oddsHome').value = "2.05"; document.getElementById('oddsDraw').value = "3.40"; document.getElementById('oddsAway').value = "3.60";
+  document.getElementById('hdpLine').value = "-0.5"; document.getElementById('hdpHomeOdd').value = "1.92"; document.getElementById('hdpAwayOdd').value = "1.96";
+  document.getElementById('ouLine').value = "2.5"; document.getElementById('overOdd').value = "1.85"; document.getElementById('underOdd').value = "2.05";
+  document.getElementById('modelType').value = 'negbin';
+  document.getElementById('w1').value = "0.5"; document.getElementById('w2').value = "0.3"; document.getElementById('w3').value = "0.2";
+  blendEl.value = 60; blendVal.innerText = 60;
+});
+
+/* ---------------- Analysis ---------------- */
+function runAnalysis(){
+  const mode = document.getElementById('inputMode').value;
+  let avgGH=0, avgCH=0, avgGA=0, avgCA=0;
+
+  if(mode === 'manual'){
+    const gH = safe(document.getElementById('golHome').value, 0);
+    const kH = safe(document.getElementById('kebHome').value, 0);
+    const gA = safe(document.getElementById('golAway').value, 0);
+    const kA = safe(document.getElementById('kebAway').value, 0);
+    const mc = Math.max(1, parseInt(document.getElementById('matchCount').value || 5));
+    avgGH = gH / mc; avgCH = kH / mc; avgGA = gA / mc; avgCA = kA / mc;
+  } else {
+    const resH = avgFromScores(document.getElementById('scoresHome').value.trim());
+    const resA = avgFromScores(document.getElementById('scoresAway').value.trim());
+    avgGH = resH.for; avgCH = resH.against; avgGA = resA.for; avgCA = resA.against;
+  }
+
+  let lambdaH = Math.max(0.03, (avgGH + avgCA)/2 + 0.12);
+  let lambdaA = Math.max(0.03, (avgGA + avgCH)/2);
+
+  // --- leagueAvg auto ---
+  let leagueAvg = safe(document.getElementById('leagueAvg').value, null);
+  if (!leagueAvg) {
+    if (mode === 'manual') {
+      const totalGoalsHomeMatch = (avgGH + avgCH);
+      const totalGoalsAwayMatch = (avgGA + avgCA);
+      leagueAvg = (totalGoalsHomeMatch + totalGoalsAwayMatch) / 2;
+    } else {
+      const resH = avgFromScores(document.getElementById('scoresHome').value.trim());
+      const resA = avgFromScores(document.getElementById('scoresAway').value.trim());
+      const matchCount = Math.max(resH.cnt, resA.cnt);
+      if (matchCount > 0) {
+        const totalGolHome = (resH.for + resH.against) * resH.cnt;
+        const totalGolAway = (resA.for + resA.against) * resA.cnt;
+        leagueAvg = (totalGolHome + totalGolAway) / (resH.cnt + resA.cnt);
+      }
+    }
+    if (leagueAvg) document.getElementById('leagueAvg').value = leagueAvg.toFixed(2);
+  }
+  if (leagueAvg) {
+    const totalLambda = lambdaH + lambdaA;
+    if (totalLambda > 0) {
+      let scale = leagueAvg / totalLambda;
+      const MIN_SCALE = 0.7, MAX_SCALE = 1.3;
+      scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+      scale = 0.7*scale + 0.3*1.0;
+      lambdaH *= scale; lambdaA *= scale;
+    }
+  }
+
+  lambdaH = Math.min(Math.max(0.03, lambdaH), 8);
+  lambdaA = Math.min(Math.max(0.03, lambdaA), 8);
+
+  // compute model
+  const modelType = document.getElementById('modelType').value;
+  const maxGoals = Math.max(12, Math.ceil((lambdaH + lambdaA) * 4 + 6));
+  const M = computeMatrix(lambdaH, lambdaA, maxGoals, modelType);
+
+  const ouLine = safe(document.getElementById('ouLine').value, 2.5);
+  const ouProb = computeOUFromDist(M.totalDist, ouLine);
+  const hdpLine = safe(document.getElementById('hdpLine').value, 0);
+  const hdpProb = computeHDPFromMatrix(M.matrix, hdpLine);
+
+  // --- Debug Panel & Value Bet ---
+  let debugInfo = `--- DEBUG INFO ---<br>`;
+  let valueBets = [];
+
+  debugInfo += `Lambda Home: ${lambdaH.toFixed(2)} | Lambda Away: ${lambdaA.toFixed(2)}<br>`;
+  debugInfo += `Expected Goals Total: ${(lambdaH+lambdaA).toFixed(2)}<br>`;
+
+  // Value check 1X2
+  const oddHome = safe(document.getElementById('oddsHome').value, null);
+  const oddDraw = safe(document.getElementById('oddsDraw').value, null);
+  const oddAway = safe(document.getElementById('oddsAway').value, null);
+  if (oddHome && M.pHome > 1/oddHome) valueBets.push({pick:`Home`, prob:M.pHome, fair:fairOdds(M.pHome), market:formatOdds(oddHome), edge:M.pHome-(1/oddHome)});
+  if (oddDraw && M.pDraw > 1/oddDraw) valueBets.push({pick:`Draw`, prob:M.pDraw, fair:fairOdds(M.pDraw), market:formatOdds(oddDraw), edge:M.pDraw-(1/oddDraw)});
+  if (oddAway && M.pAway > 1/oddAway) valueBets.push({pick:`Away`, prob:M.pAway, fair:fairOdds(M.pAway), market:formatOdds(oddAway), edge:M.pAway-(1/oddAway)});
+
+  // Value check O/U
+  const oddOver = safe(document.getElementById('overOdd').value, null);
+  const oddUnder = safe(document.getElementById('underOdd').value, null);
+  if (oddOver && ouProb.over > 1/oddOver) valueBets.push({pick:`Over ${ouLine}`, prob:ouProb.over, fair:fairOdds(ouProb.over), market:formatOdds(oddOver), edge:ouProb.over-(1/oddOver)});
+  if (oddUnder && ouProb.under > 1/oddUnder) valueBets.push({pick:`Under ${ouLine}`, prob:ouProb.under, fair:fairOdds(ouProb.under), market:formatOdds(oddUnder), edge:ouProb.under-(1/oddUnder)});
+
+  // Value check HDP
+  const oddHdpHome = safe(document.getElementById('hdpHomeOdd').value, null);
+  const oddHdpAway = safe(document.getElementById('hdpAwayOdd').value, null);
+  if (oddHdpHome && hdpProb.ph > 1/oddHdpHome) valueBets.push({pick:`HDP Home ${hdpLine}`, prob:hdpProb.ph, fair:fairOdds(hdpProb.ph), market:formatOdds(oddHdpHome), edge:hdpProb.ph-(1/oddHdpHome)});
+  if (oddHdpAway && hdpProb.pa > 1/oddHdpAway) valueBets.push({pick:`HDP Away ${hdpLine}`, prob:hdpProb.pa, fair:fairOdds(hdpProb.pa), market:formatOdds(oddHdpAway), edge:hdpProb.pa-(1/oddHdpAway)});
+
+  // Urutkan berdasarkan edge
+  valueBets.sort((a,b)=> b.edge - a.edge);
+
+  // Tampilkan Top 3
+  if(valueBets.length>0){
+    const top = valueBets.slice(0,3);
+    debugInfo = "🔥 <b>TOP VALUE BETS:</b><br>" + 
+                top.map((v,i)=> `<span style='${edgeColor(v.edge)}'>${i+1}. ${v.pick} (model ${(v.prob*100).toFixed(1)}% | fair ${v.fair} vs market ${v.market} | edge ${(v.edge*100).toFixed(1)}%)</span>`).join("<br>") +
+                "<br><br>" + debugInfo;
+  }
+
+  // Tampilkan semua value bets
+  if(valueBets.length>0){
+    debugInfo += "<br>--- ALL VALUE BETS ---<br>" +
+                 valueBets.map((v,i)=> `<span style='${edgeColor(v.edge)}'>${i+1}. ${v.pick} (model ${(v.prob*100).toFixed(1)}% | fair ${v.fair} vs market ${v.market} | edge ${(v.edge*100).toFixed(1)}%)</span>`).join("<br>");
+  }
+
+  document.getElementById('debugBox').style.display = 'block';
+  document.getElementById('debugBox').innerHTML = debugInfo;
+}
+      </script>
+
+</body>
+  </html>
