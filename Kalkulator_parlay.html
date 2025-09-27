@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kalkulator HDP Full (1X2 + O/U + HDP + Market + Blended)</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#f3f6f8;padding:16px}
+  .container{max-width:980px;margin:18px auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+  h2{text-align:center;margin:6px 0 14px}
+  label{display:block;margin-top:10px;font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .row>div{flex:1 1 150px}
+  input,select,textarea,button{width:100%;padding:8px;border-radius:6px;border:1px solid #d0d7de;box-sizing:border-box}
+  button{background:#1565c0;color:#fff;border:none;cursor:pointer;font-weight:700}
+  .result{margin-top:12px;padding:12px;background:#f1f8e9;border-radius:6px;white-space:pre-wrap}
+  table.table{width:100%;border-collapse:collapse;margin-top:12px}
+  table.table th, table.table td{border:1px solid #e7eef6;padding:8px;text-align:center}
+  .reco{margin-top:12px;padding:10px;border-radius:8px;background:#fff8e1;border-left:6px solid #ffb300}
+  .good{background:#e8f5e9;padding:8px;border-radius:6px;margin-top:8px}
+  .value{color:#1b5e20;font-weight:800}
+  .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e3f2fd;color:#0d47a1;font-weight:700;margin-left:6px}
+  .small{font-size:13px;color:#556}
+  textarea{height:60px}
+  .muted{color:#666;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Kalkulator HDP Advanced + Market & Blended (Full)</h2>
+
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <div class="row">
+    <div><input id="oddsHome" type="number" step="0.01" placeholder="Home e.g. 1.90"></div>
+    <div><input id="oddsDraw" type="number" step="0.01" placeholder="Draw e.g. 3.40"></div>
+    <div><input id="oddsAway" type="number" step="0.01" placeholder="Away e.g. 4.00"></div>
+  </div>
+
+  <label>Odds HDP (Line / Odds Home / Odds Away)</label>
+  <div class="row">
+    <div><input id="hdpLine" type="number" step="0.25" placeholder="HDP line (eg -0.5, +0.5)"></div>
+    <div><input id="hdpHomeOdd" type="number" step="0.01" placeholder="Odds HDP Home"></div>
+    <div><input id="hdpAwayOdd" type="number" step="0.01" placeholder="Odds HDP Away"></div>
+  </div>
+
+  <label>Over/Under — Line & Odds</label>
+  <div class="row">
+    <div><input id="ouLine" type="number" step="0.1" placeholder="Line O/U e.g. 2.5"></div>
+    <div><input id="overOdd" type="number" step="0.01" placeholder="Odds Over"></div>
+    <div><input id="underOdd" type="number" step="0.01" placeholder="Odds Under"></div>
+  </div>
+
+  <label>Total Gol & Kebobolan (X laga terakhir per tim)</label>
+  <div class="row">
+    <div><input id="golHome" type="number" placeholder="Total gol Home (mis. 10)"></div>
+    <div><input id="kebHome" type="number" placeholder="Total kebobolan Home"></div>
+    <div><input id="golAway" type="number" placeholder="Total gol Away"></div>
+    <div><input id="kebAway" type="number" placeholder="Total kebobolan Away"></div>
+  </div>
+
+  <div class="row">
+    <div><input id="matchCount" type="number" value="5" min="1" placeholder="Jumlah laga (mis. 5)"></div>
+    <div><input id="bankroll" type="number" value="100" min="1" placeholder="Bankroll (untuk Kelly)"></div>
+    <div>
+      <select id="modelType">
+        <option value="poisson">Poisson</option>
+        <option value="negbin">Negative Binomial (simple)</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Performa Tim Home (W-D-L) & Away (W-D-L)</label>
+  <div class="row">
+    <div><input id="hW" type="number" placeholder="Home W"></div>
+    <div><input id="hD" type="number" placeholder="Home D"></div>
+    <div><input id="hL" type="number" placeholder="Home L"></div>
+    <div><input id="aW" type="number" placeholder="Away W"></div>
+    <div><input id="aD" type="number" placeholder="Away D"></div>
+    <div><input id="aL" type="number" placeholder="Away L"></div>
+  </div>
+
+  <label>Head-to-Head (opsional, contoh: Home 2-1 Away, Away 1-1 Home)</label>
+  <textarea id="h2hText" placeholder="H2H data (opsional)"></textarea>
+
+  <div style="margin-top:12px">
+    <button id="btn">Analisis & Rekomendasi</button>
+  </div>
+
+  <div id="output" class="result">Hasil akan tampil di sini</div>
+
+  <table class="table" id="tbl" style="display:none">
+    <thead>
+      <tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th><th>HDP Home</th><th>HDP Away</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div id="recom" class="reco" style="display:none"></div>
+
+  <div class="muted">Tip: Isi jumlah laga & total gol untuk akurasi lambda. Threshold value bet default = +5% (model > market + 5%).</div>
+</div>
+
+<script>
+/* ----------------- Utility ----------------- */
+function safe(v, d=null){ const x=parseFloat(v); return isNaN(x)?d:x; }
+function factorial(n){ return n<=1?1:n*factorial(n-1); }
+function poisson(k,lambda){ return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k); }
+
+/* quick negbin: using r (dispersion) = 1.5 as simple fallback */
+function negbinPmf(k, mean, r=1.5){
+  const p = r/(r+mean);
+  function comb(n,k){ let res=1; for(let i=1;i<=k;i++){ res = res*(n-k+i)/i; } return res; }
+  return comb(k + r -1, k) * Math.pow(1-p,k) * Math.pow(p,r);
+}
+
+/* compute full joint distribution matrix up to maxGoals */
+function computeMatrix(lambdaH, lambdaA, maxGoals, modelType){
+  const matrix = {}; const totalDist = [];
+  for(let i=0;i<=maxGoals;i++){
+    for(let j=0;j<=maxGoals;j++){
+      const p = (modelType==='poisson') ? poisson(i,lambdaH)*poisson(j,lambdaA)
+                                      : negbinPmf(i,lambdaH)*negbinPmf(j,lambdaA);
+      matrix[`${i}-${j}`] = p;
+      totalDist[i+j] = (totalDist[i+j] || 0) + p;
+    }
+  }
+  // compute 1X2
+  let pHome=0,pDraw=0,pAway=0;
+  for(let i=0;i<=maxGoals;i++){
+    for(let j=0;j<=maxGoals;j++){
+      const p = matrix[`${i}-${j}`];
+      if(i>j) pHome += p; else if(i===j) pDraw += p; else pAway += p;
+    }
+  }
+  return {matrix, totalDist, pHome, pDraw, pAway};
+}
+
+/* compute OU given totalDist */
+function computeOUFromDist(totalDist, line){
+  let over=0, under=0;
+  const isInt = Number.isInteger(line);
+  for(let g=0; g<totalDist.length; g++){
+    const p = totalDist[g] || 0;
+    if(isInt){
+      if(g>line) over += p;
+      else if(g<line) under += p;
+      else { over += 0.5*p; under += 0.5*p; } // push split
+    } else {
+      if(g>line) over += p; else under += p;
+    }
+  }
+  return {over, under};
+}
+
+/* compute HDP (ATS) using matrix: line positive means give to home? 
+   We'll interpret 'line' as added to home goals (i - j + line) > 0 => Home ATS win */
+function computeHDPFromMatrix(matrix, line){
+  let ph=0, pa=0, push=0;
+  for(const key in matrix){
+    const p = matrix[key];
+    const [i,j] = key.split('-').map(Number);
+    const diff = i - j + line;
+    if(diff>0) ph += p;
+    else if(diff<0) pa += p;
+    else push += p;
+  }
+  // when push exists, we split as push neutral; but for probability we can keep push separate
+  return {ph, pa, push};
+}
+
+/* convert raw odds to fair probabilities (remove overround) */
+function fairifyOdds(arr){
+  // arr: array of positive odds (or null)
+  const inv = arr.map(o => o ? 1/Number(o) : 0);
+  const sum = inv.reduce((s,a)=>s+a,0);
+  if(sum === 0) return arr.map(()=>null);
+  return inv.map(x => x/sum);
+}
+
+/* Kelly fraction (simplified): f* = (bp - q)/b where b = decimalOdd - 1, p=model prob, q=1-p
+   Here p should be model probability, marketProb = fair market
+*/
+function kellyFraction(p, marketProb, decimalOdd){
+  const b = decimalOdd - 1;
+  if(!decimalOdd || b<=0) return 0;
+  const q = 1 - p;
+  const f = (b * p - q) / b;
+  return Math.max(0, f); // no negative stake
+}
+
+/* ----------------- Main analyze ----------------- */
+document.getElementById('btn').addEventListener('click', analyzeAll);
+
+function analyzeAll(){
+  // Read inputs
+  const oddsHome = safe(document.getElementById('oddsHome').value, null);
+  const oddsDraw = safe(document.getElementById('oddsDraw').value, null);
+  const oddsAway = safe(document.getElementById('oddsAway').value, null);
+
+  const hdpLine = safe(document.getElementById('hdpLine').value, 0);
+  const hdpHomeOdd = safe(document.getElementById('hdpHomeOdd').value, null);
+  const hdpAwayOdd = safe(document.getElementById('hdpAwayOdd').value, null);
+
+  const ouLine = safe(document.getElementById('ouLine').value, 2.5);
+  const overOdd = safe(document.getElementById('overOdd').value, null);
+  const underOdd = safe(document.getElementById('underOdd').value, null);
+
+  const golHome = safe(document.getElementById('golHome').value, 0);
+  const kebHome = safe(document.getElementById('kebHome').value, 0);
+  const golAway = safe(document.getElementById('golAway').value, 0);
+  const kebAway = safe(document.getElementById('kebAway').value, 0);
+  const matchCount = Math.max(1, parseInt(document.getElementById('matchCount').value || 5));
+  const bankroll = safe(document.getElementById('bankroll').value, 100);
+  const modelType = document.getElementById('modelType').value;
+  const hW = safe(document.getElementById('hW').value,0), hD = safe(document.getElementById('hD').value,0), hL = safe(document.getElementById('hL').value,0);
+  const aW = safe(document.getElementById('aW').value,0), aD = safe(document.getElementById('aD').value,0), aL = safe(document.getElementById('aL').value,0);
+
+  // Derive lambda (mean goals) simple approach using totals and performance
+  let avgGoalsHome = (golHome || 0) / matchCount;
+  let avgConcedeHome = (kebHome || 0) / matchCount;
+  let avgGoalsAway = (golAway || 0) / matchCount;
+  let avgConcedeAway = (kebAway || 0) / matchCount;
+
+  // baseline lambdas (home scores expected = avg goals + opponent concede)/2
+  let lambdaHome = Math.max(0.05, (avgGoalsHome + avgConcedeAway)/2);
+  let lambdaAway = Math.max(0.05, (avgGoalsAway + avgConcedeHome)/2);
+
+  // adjust with simple form factor (normalized)
+  const formHome = ((3*hW + 1*hD) / Math.max(1, (hW+hD+hL))) / 3; // 0..1
+  const formAway = ((3*aW + 1*aD) / Math.max(1, (aW+aD+aL))) / 3;
+  const formDiff = (formHome - formAway) || 0;
+  // scale factor small
+  lambdaHome *= (1 + 0.25 * formDiff);
+  lambdaAway *= (1 - 0.25 * formDiff);
+
+  // small home advantage boost
+  lambdaHome += 0.12;
+
+  // compute distribution
+  const M = computeMatrix(lambdaHome, lambdaAway, 12, modelType);
+
+  // model probs
+  const modelHome = M.pHome, modelDraw = M.pDraw, modelAway = M.pAway;
+  const ouProb = computeOUFromDist(M.totalDist, ouLine);
+  const hdpProb = computeHDPFromMatrix(M.matrix, hdpLine);
+
+  // convert market odds to fair probabilities
+  const fair123 = fairifyOdds([oddsHome, oddsDraw, oddsAway]); // [home,draw,away]
+  const fairOU = fairifyOdds([overOdd, underOdd]); // [over, under]
+  const fairHDP = fairifyOdds([hdpHomeOdd, hdpAwayOdd]);
+
+  // blended = 0.6 model + 0.4 market (if market available)
+  const wm = 0.6, wk = 0.4;
+  function blend(mkt, mdl){ if(mkt==null) return mdl; if(mdl==null) return mkt; return wm*mdl + wk*mkt; }
+
+  const blended = {
+    home: blend(fair123[0], modelHome),
+    draw: blend(fair123[1], modelDraw),
+    away: blend(fair123[2], modelAway),
+    over: blend(fairOU[0], ouProb.over),
+    under: blend(fairOU[1], ouProb.under),
+    hdpHome: blend(fairHDP[0], hdpProb.ph),
+    hdpAway: blend(fairHDP[1], hdpProb.pa)
+  };
+
+  // build table
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  function pct(x){ return x==null ? '--' : (x*100).toFixed(1)+'%'; }
+
+  const modelRow = `<tr><td>Model</td>
+    <td>${pct(modelHome)}</td><td>${pct(modelDraw)}</td><td>${pct(modelAway)}</td>
+    <td>${pct(ouProb.over)}</td><td>${pct(ouProb.under)}</td><td>${pct(hdpProb.ph)}</td><td>${pct(hdpProb.pa)}</td></tr>`;
+  const marketRow = `<tr><td>Market (fair)</td>
+    <td>${pct(fair123[0])}</td><td>${pct(fair123[1])}</td><td>${pct(fair123[2])}</td>
+    <td>${pct(fairOU[0])}</td><td>${pct(fairOU[1])}</td><td>${pct(fairHDP[0])}</td><td>${pct(fairHDP[1])}</td></tr>`;
+  const blendRow = `<tr><td>Blended (60% model + 40% market)</td>
+    <td>${pct(blended.home)}</td><td>${pct(blended.draw)}</td><td>${pct(blended.away)}</td>
+    <td>${pct(blended.over)}</td><td>${pct(blended.under)}</td><td>${pct(blended.hdpHome)}</td><td>${pct(blended.hdpAway)}</td></tr>`;
+
+  tbody.innerHTML = modelRow + marketRow + blendRow;
+  document.getElementById('tbl').style.display = 'table';
+
+  // recommendations: gather all entries & sort by blended prob
+  const entries = [
+    {key:'Home', label:'🏠 Home Win', model:modelHome, market:fair123[0], blended:blended.home, odd:oddsHome},
+    {key:'Draw', label:'🤝 Draw', model:modelDraw, market:fair123[1], blended:blended.draw, odd:oddsDraw},
+    {key:'Away', label:'🚩 Away Win', model:modelAway, market:fair123[2], blended:blended.away, odd:oddsAway},
+    {key:'Over', label:`⬆️ Over ${ouLine}`, model:ouProb.over, market:fairOU[0], blended:blended.over, odd:overOdd},
+    {key:'Under', label:`⬇️ Under ${ouLine}`, model:ouProb.under, market:fairOU[1], blended:blended.under, odd:underOdd},
+    {key:'HDP_H', label:`📊 HDP Home ${hdpLine}`, model:hdpProb.ph, market:fairHDP[0], blended:blended.hdpHome, odd:hdpHomeOdd},
+    {key:'HDP_A', label:`📊 HDP Away ${hdpLine}`, model:hdpProb.pa, market:fairHDP[1], blended:blended.hdpAway, odd:hdpAwayOdd}
+  ];
+
+  // filter out null blended or null odds? keep for display but avoid NaNs
+  const filtered = entries.filter(e => e.blended != null && !isNaN(e.blended));
+
+  filtered.sort((a,b) => b.blended - a.blended);
+  const top3 = filtered.slice(0,3);
+
+  // value bet detection: model > market + thresh
+  const valueThresh = 0.05; // 5% absolute
+  const valueBets = filtered.filter(e => (e.model != null && e.market != null && (e.model - e.market) > valueThresh));
+
+  // Kelly suggestions (using model prob and market fair implied probability -> use market odds if available)
+  const kellys = filtered.map(e => {
+    const marketProb = e.market;
+    const p = e.model;
+    const odd = e.odd;
+    const k = (p!=null && odd!=null) ? kellyFraction(p, marketProb, odd) : 0;
+    return {label:e.label,kelly:k, stake:(k * bankroll).toFixed(2)};
+  });
+
+  // build recommendation box
+  let recomHTML = `<strong>Top rekomendasi (berdasarkan Blended %)</strong><div class="small">Lambda H:${lambdaHome.toFixed(2)} • Lambda A:${lambdaAway.toFixed(2)}</div><hr>`;
+  top3.forEach((t,i)=>{
+    const vb = (t.model - (t.market||0) > valueThresh) ? `<span class="badge">VALUE</span>` : '';
+    recomHTML += `<div class="good">${i+1}. ${t.label} — Blended: ${(t.blended*100).toFixed(1)}% ${vb}<div class="small">Model ${(t.model*100).toFixed(1)}% • Market ${( (t.market||0)*100).toFixed(1)}% • Odd ${t.odd||'--'}</div></div>`;
+  });
+
+  // list all value bets
+  if(valueBets.length){
+    recomHTML += `<hr><strong>Value bets (Model > Market + ${(valueThresh*100).toFixed(0)}%)</strong>`;
+    valueBets.forEach(v=>{
+      const kobj = kellys.find(x=>x.label===v.label);
+      const stake = kobj ? `${kobj.kelly>0? (kobj.kelly*100).toFixed(1)+'% (Rp '+kobj.stake+')' : 'Kelly 0'}` : '';
+      recomHTML += `<div style="margin-top:6px">${v.label} — Model ${(v.model*100).toFixed(1)}% • Market ${( (v.market||0)*100).toFixed(1)}% • Odd ${v.odd||'--'} • ${stake}</div>`;
+    });
+  }
+
+  // show full list (small)
+  recomHTML += `<hr><div class="small"><strong>Semua kandidat:</strong> ${filtered.map(e=>`${e.label} ${(e.blended*100).toFixed(1)}%`).join(' • ')}</div>`;
+
+  const recomDiv = document.getElementById('recom');
+  recomDiv.style.display = 'block';
+  recomDiv.innerHTML = recomHTML;
+
+  // Output diagnostics text
+  const outBox = document.getElementById('output');
+  let out = `Lambda Home: ${lambdaHome.toFixed(2)}, Lambda Away: ${lambdaAway.toFixed(2)}\nModel 1X2 => Home ${(modelHome*100).toFixed(1)}% | Draw ${(modelDraw*100).toFixed(1)}% | Away ${(modelAway*100).toFixed(1)}%\nO/U ${ouLine} => Over ${(ouProb.over*100).toFixed(1)}% | Under ${(ouProb.under*100).toFixed(1)}%\nHDP ${hdpLine} => HDP Home ${(hdpProb.ph*100).toFixed(1)}% | HDP Away ${(hdpProb.pa*100).toFixed(1)}%\n\n(Perhitungan menggunakan distribusi ${modelType})\n\nTabel di bawah menunjukkan Model, Market (fair), dan Blended (60/40). Value bet ditandai bila Model > Market + ${(valueThresh*100).toFixed(0)}%.`;
+  outBox.innerText = out;
+}
+/* end analyze */
+</script>
+</body>
+</html>
