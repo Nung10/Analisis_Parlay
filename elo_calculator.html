@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kalkulator ELO Rating Sepak Bola</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h2 { color: #222; }
+    .box { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.15); max-width: 600px; }
+    label { display: block; margin-top: 10px; }
+    input, select, button { margin: 5px 0; padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 5px; }
+    button { background: #007BFF; color: #fff; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .result { margin-top: 15px; padding: 10px; background: #eef9ff; border-left: 4px solid #007BFF; }
+    .small { font-size: 0.9em; color: #555; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h2>Kalkulator ELO Rating ⚽</h2>
+    <p class="small">Masukkan ELO awal, pilih hasil pertandingan, dan klik Hitung.</p>
+
+    <label>ELO Home:</label>
+    <input type="number" id="eloHome" value="1500">
+
+    <label>ELO Away:</label>
+    <input type="number" id="eloAway" value="1470">
+
+    <label>Faktor K (20–40 umum):</label>
+    <input type="number" id="kFactor" value="20">
+
+    <label>Hasil Pertandingan:</label>
+    <select id="result">
+      <option value="1">Home Menang</option>
+      <option value="0.5">Seri</option>
+      <option value="0">Away Menang</option>
+    </select>
+
+    <button onclick="hitungElo()">Hitung ELO Baru</button>
+
+    <div class="result" id="output">Hasil ELO akan muncul di sini...</div>
+  </div>
+
+  <script>
+    function hitungElo(){
+      let R_home = parseFloat(document.getElementById("eloHome").value);
+      let R_away = parseFloat(document.getElementById("eloAway").value);
+      let K = parseFloat(document.getElementById("kFactor").value);
+      let S_home = parseFloat(document.getElementById("result").value);
+      let S_away = 1 - S_home;
+
+      // Ekspektasi kemenangan (E)
+      let E_home = 1 / (1 + Math.pow(10, (R_away - R_home) / 400));
+      let E_away = 1 - E_home;
+
+      // Update rating
+      let R_home_new = R_home + K * (S_home - E_home);
+      let R_away_new = R_away + K * (S_away - E_away);
+
+      document.getElementById("output").innerHTML =
+        `<b>Hasil:</b><br>
+         ELO Home Baru = ${R_home_new.toFixed(1)}<br>
+         ELO Away Baru = ${R_away_new.toFixed(1)}<br><br>
+         <b>Ekspektasi sebelum laga:</b><br>
+         Home ${(E_home*100).toFixed(1)}% | Away ${(E_away*100).toFixed(1)}%`;
+    }
+  </script>
+
+</body>
+</html>
