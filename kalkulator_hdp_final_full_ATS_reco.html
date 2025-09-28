@@ -58,18 +58,58 @@ canvas{width:100%;height:240px;background:#fff;border-radius:8px;border:1px soli
 <script>
 // --- League averages ---
 const leagueAvgGoals = {
-  "Premier League": 3.28,
-  "Bundesliga": 3.20,
-  "LaLiga": 2.51,
-  "Italy Serie A": 2.70,
-  "France Ligue 1": 2.65,
+  // Liga utama
+  "Premier League": 2.65,
+  "EFL Championship": 2.45,
+  "La Liga": 2.62,
+  "Serie A": 2.56,
+  "Bundesliga": 3.14,
+  "Ligue 1": 2.96,
+  "Eredivisie": 2.98,
+  "Swiss Super League": 3.33,
+  "Denmark Superliga": 3.27,
   "Turkey Süper Lig": 2.94,
-  "Denmark Superliga": 3.14,
-  "Russia Premier League": 2.76,
-  "Portugal Primeira": 2.75,
-  "Sweden Allsvenskan": 2.70,
-  "Netherlands Eredivisie": 3.00,
-  "Custom": null
+  "Portugal Primeira Liga": 2.87,
+  "Poland Ekstraklasa": 2.85,
+  "Norway Eliteserien": 2.83,
+  "Sweden Allsvenskan": 2.83,
+  "Iceland Úrvalsdeild": 3.62,
+  "Ireland Premier Division": 2.26,
+  "Russia Premier League": 2.70,
+  "Japan J.League": 2.67,
+  "Saudi Pro League": 2.97,
+
+  // UEFA
+  "UEFA Champions League": 3.10,
+  "UEFA Europa League": 2.90,
+  "UEFA Conference League": 2.71,
+
+  // Piala Domestik
+  "FA Cup": 3.2,
+  "EFL Cup (Carabao Cup)": 3.1,
+  "Copa del Rey": 2.9,
+  "Coppa Italia": 3.0,
+  "DFB Pokal": 4.19,
+  "Coupe de France": 3.1,
+  "KNVB Cup": 3.8,
+  "Taça de Portugal": 2.9,
+  "Swiss Cup": 3.5,
+  "DBU Pokalen": 4.0,
+  "Svenska Cupen": 3.2,
+  "Norwegian Cup": 3.7,
+  "Suomen Cup": 4.0,
+  "Icelandic Cup": 5.5,
+  "Greek Cup": 2.3,
+  "Turkish Cup": 3.0,
+  "Russian Cup": 2.7,
+  "Cupa României": 3.5,
+  "Polish Cup": 2.9,
+  "Croatian Cup": 3.1,
+  "Latvian Cup": 4.9,
+  "Estonian Cup": 4.5,
+  "Emperor's Cup": 3.4,
+  "J.League Cup": 2.8,
+  "King's Cup (Saudi)": 3.0
 };
 for(const k in leagueAvgGoals){
   const opt=document.createElement("option");
