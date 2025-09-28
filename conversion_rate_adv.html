@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kalkulator Conversion Rate (Advanced)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    h2 { color: #222; }
+    .box { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.15); max-width: 650px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 8px; text-align: center; border: 1px solid #ccc; }
+    th { background: #007BFF; color: white; }
+    input { width: 90%; padding: 5px; border: 1px solid #ccc; border-radius: 5px; text-align: center; }
+    button { margin-top: 10px; padding: 10px 15px; border: none; border-radius: 5px; background: #007BFF; color: white; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .result { margin-top: 15px; padding: 10px; background: #eef9ff; border-left: 4px solid #007BFF; }
+    .small { font-size: 0.9em; color: #555; }
+    .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h2>Kalkulator Conversion Rate ⚽ (Per Laga)</h2>
+    <p class="small">Masukkan <b>Gol</b> & <b>Shots on Target</b> dari beberapa laga terakhir. Bisa tambah baris sesuai kebutuhan.</p>
+
+    <table id="dataTable">
+      <thead>
+        <tr><th>Laga</th><th>Gol</th><th>SOT</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><input type="number" class="gol"></td><td><input type="number" class="sot"></td></tr>
+        <tr><td>2</td><td><input type="number" class="gol"></td><td><input type="number" class="sot"></td></tr>
+        <tr><td>3</td><td><input type="number" class="gol"></td><td><input type="number" class="sot"></td></tr>
+        <tr><td>4</td><td><input type="number" class="gol"></td><td><input type="number" class="sot"></td></tr>
+        <tr><td>5</td><td><input type="number" class="gol"></td><td><input type="number" class="sot"></td></tr>
+      </tbody>
+    </table>
+
+    <div class="btn-group">
+      <button onclick="tambahLaga()">+ Tambah Laga</button>
+      <button onclick="hitungCR()">Hitung Conversion Rate</button>
+    </div>
+
+    <div class="result" id="output">Hasil akan tampil di sini...</div>
+  </div>
+
+  <script>
+    function tambahLaga(){
+      const tbody = document.querySelector("#dataTable tbody");
+      const rows = tbody.querySelectorAll("tr").length;
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `<td>${rows+1}</td>
+        <td><input type="number" class="gol"></td>
+        <td><input type="number" class="sot"></td>`;
+      tbody.appendChild(newRow);
+    }
+
+    function hitungCR(){
+      const golInputs = document.querySelectorAll(".gol");
+      const sotInputs = document.querySelectorAll(".sot");
+
+      let totalGol = 0, totalSOT = 0, laga = 0;
+      let detail = "";
+
+      for(let i=0;i<golInputs.length;i++){
+        const g = parseFloat(golInputs[i].value);
+        const s = parseFloat(sotInputs[i].value);
+        if(!isNaN(g) && !isNaN(s) && s>0){
+          totalGol += g;
+          totalSOT += s;
+          laga++;
+          const crLaga = g/s;
+          detail += `Laga ${i+1}: ${g} gol / ${s} SOT = CR ${(crLaga*100).toFixed(1)}%<br>`;
+        }
+      }
+
+      if(totalSOT===0){
+        document.getElementById("output").innerHTML = "⚠️ Masukkan minimal 1 laga dengan SOT > 0.";
+        return;
+      }
+
+      const crTotal = totalGol/totalSOT;
+      const persen = (crTotal*100).toFixed(1);
+
+      let cat;
+      if(crTotal < 0.10) cat = "⚪ Rendah (kurang produktif)";
+      else if(crTotal < 0.20) cat = "🟡 Normal (standar liga)";
+      else cat = "🟢 Tinggi (efisien / overperform)";
+
+      document.getElementById("output").innerHTML =
+        `<b>Total</b>: ${totalGol} gol dari ${totalSOT} SOT<br>` +
+        `Conversion Rate: <b>${crTotal.toFixed(3)}</b> (${persen}%)<br>` +
+        `Kategori: ${cat}<br><br><b>Rincian Per Laga:</b><br>${detail}`;
+    }
+  </script>
+
+</body>
+</html>
