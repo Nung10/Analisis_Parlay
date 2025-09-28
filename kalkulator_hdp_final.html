@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kalkulator HDP — Dengan Data Liga Real</title>
+<style>
+:root { --blue: #1976d2; --muted: #666; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f3f6f8; margin: 0; padding: 18px; color: #111; }
+.wrap { max-width: 1200px; margin: 12px auto; background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,0.06); }
+h1 { margin: 0 0 12px; font-size: 22px; }
+.grid { display: grid; grid-template-columns: 1fr 420px; gap: 16px; }
+label { display: block; font-weight: 700; margin-top: 8px; }
+.row { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.row > div { flex: 1 1 120px; }
+input,select,textarea,button { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #d6dde6; box-sizing: border-box; }
+textarea { min-height: 72px; resize: vertical; }
+button { background: var(--blue); color: #fff; border: none; cursor: pointer; font-weight: 700; }
+.controls { background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #eef2f6; margin-top: 10px; }
+.small { font-size: 13px; color: #445; }
+.muted { color: #666; font-size: 13px; margin-top: 6px; }
+.result { margin-top: 10px; padding: 10px; background: #eef7ff; border-radius: 8px; white-space: pre-wrap; }
+.table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.table th, .table td { padding: 8px; border: 1px solid #ecf3fb; text-align: center; }
+canvas { width: 100%; height: 220px; background: #fff; border-radius: 8px; border: 1px solid #eef3f8; margin-top: 8px; }
+footer { margin-top: 12px; color: #666; font-size: 13px; }
+@media(max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kalkulator HDP — Dengan Data Liga Real</h1>
+  <div class="grid">
+    <div>
+      <label>Pilih Liga</label>
+      <select id="leagueSelect">
+        <option value="">— Pilih liga atau Custom —</option>
+        <option value="Premier League">England Premier League</option>
+        <option value="Bundesliga">Germany Bundesliga</option>
+        <option value="LaLiga">Spain La Liga</option>
+        <option value="Italy Serie A">Italy Serie A</option>
+        <option value="France Ligue 1">France Ligue 1</option>
+        <option value="Turkey Süper Lig">Turkey Süper Lig</option>
+        <option value="Portugal Primeira">Portugal Primeira Liga</option>
+        <option value="Denmark Superliga">Denmark Superliga</option>
+        <option value="Greece Super League">Greece Super League</option>
+        <option value="Poland Ekstraklasa">Poland Ekstraklasa</option>
+        <option value="Croatia 1.HNL">Croatia 1. HNL</option>
+        <option value="Custom">Custom</option>
+      </select>
+
+      <label>League Avg (jika Custom masukkan nilai)</label>
+      <input id="leagueAvg" type="number" step="0.01" value="3.28" placeholder="Rata‑rata gol liga">
+
+      <label>Mode Input</label>
+      <select id="inputMode">
+        <option value="manual">Manual (total gol & kebobolan)</option>
+        <option value="scores">Auto dari daftar skor</option>
+      </select>
+
+      <div id="manualBlock">
+        <label>Total gol & kebobolan (X laga terakhir per tim)</label>
+        <div class="row">
+          <div><input id="golHome" type="number" placeholder="Gol Home"></div>
+          <div><input id="kebHome" type="number" placeholder="Kebobolan Home"></div>
+          <div><input id="golAway" type="number" placeholder="Gol Away"></div>
+          <div><input id="kebAway" type="number" placeholder="Kebobolan Away"></div>
+        </div>
+        <div class="row">
+          <div><input id="matchCount" type="number" value="5" min="1" placeholder="Jumlah laga"></div>
+        </div>
+      </div>
+
+      <div id="scoresBlock" style="display:none">
+        <label>Daftar skor HOME (format: gol-law, pisahkan koma)</label>
+        <textarea id="scoresHome" placeholder="2-1,1-0,3-2"></textarea>
+        <label>Daftar skor AWAY (format: gol-law, pisahkan koma)</label>
+        <textarea id="scoresAway" placeholder="0-2,1-1,2-2"></textarea>
+      </div>
+
+      <label>Head-to-Head (H2H) — format: Home-Away, pisahkan koma</label>
+      <textarea id="h2h" placeholder="2-1,0-3,1-1"></textarea>
+
+      <label>Sharpen (1.0 = normal)</label>
+      <input id="sharpen" type="number" step="0.1" value="1.0" min="0.5" max="3">
+
+      <label>Rolling weights (5 laga terakhir)</label>
+      <div class="row">
+        <div><input id="r1" type="number" step="0.01" value="0.4"></div>
+        <div><input id="r2" type="number" step="0.01" value="0.25"></div>
+        <div><input id="r3" type="number" step="0.01" value="0.15"></div>
+        <div><input id="r4" type="number" step="0.01" value="0.10"></div>
+        <div><input id="r5" type="number" step="0.01" value="0.10"></div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid #eef3f8">
+
+      <label>Odds 1X2 (Home / Draw / Away)</label>
+      <div class="row">
+        <div><input id="oddsHome" type="number" step="0.01" placeholder="Home"></div>
+        <div><input id="oddsDraw" type="number" step="0.01" placeholder="Draw"></div>
+        <div><input id="oddsAway" type="number" step="0.01" placeholder="Away"></div>
+      </div>
+
+      <label>Odds HDP (Line / Odds Home / Odds Away)</label>
+      <div class="row">
+        <div><input id="hdpLine" type="number" step="0.25" placeholder="Line"></div>
+        <div><input id="hdpHomeOdd" type="number" step="0.01" placeholder="HDP Home"></div>
+        <div><input id="hdpAwayOdd" type="number" step="0.01" placeholder="HDP Away"></div>
+      </div>
+
+      <label>Over/Under — Line & Odds</label>
+      <div class="row">
+        <div><input id="ouLine" type="number" step="0.1" placeholder="Line"></div>
+        <div><input id="overOdd" type="number" step="0.01" placeholder="Odds Over"></div>
+        <div><input id="underOdd" type="number" step="0.01" placeholder="Odds Under"></div>
+      </div>
+
+      <label>Model distribusi</label>
+      <select id="modelType">
+        <option value="negbin">Negative Binomial</option>
+        <option value="poisson">Poisson</option>
+      </select>
+
+      <div class="row" style="margin-top:10px">
+        <div><input id="bankroll" type="number" value="100" placeholder="Bankroll"></div>
+        <div><button id="btnAnalyze">Analisis & Rekomendasi</button></div>
+      </div>
+
+      <div class="controls">
+        <div class="small">Threshold mode: <input type="radio" name="th" value="auto" checked> Auto &nbsp; <input type="radio" name="th" value="manual"> Manual</div>
+        <div class="row" style="margin-top:6px">
+          <div><input id="manualThreshold" type="number" step="0.01" min="0" max="1" value="0.07"></div>
+          <div class="muted small">(Jika manual dipilih, gunakan nilai ini)</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div>
+      <div class="controls">
+        <label>Blending Model vs Market</label>
+        <div class="row">
+          <div style="flex:1"><input id="blendModel" type="range" min="0" max="100" value="60"></div>
+          <div style="width:56px;text-align:center"><span id="blendVal">60</span>%</div>
+        </div>
+        <div class="muted small">Blended = model*(slider%) + market*(100‑slider%).</div>
+
+        <hr style="margin:10px 0;border:none;border-top:1px solid #eef3f8">
+
+        <div class="small">Preferensi</div>
+        <div class="row">
+          <div><button id="btnSavePrefs" class="secondary">Simpan Prefs</button></div>
+          <div><button id="btnLoadPrefs" class="secondary">Muat Prefs</button></div>
+          <div><button id="btnResetPrefs" class="secondary">Reset Prefs</button></div>
+        </div>
+
+        <div style="margin-top:8px" class="row">
+          <div><button id="btnCopy" class="secondary">Copy hasil</button></div>
+          <div><button id="btnExportCSV" class="secondary">Export CSV</button></div>
+          <div><button id="btnExportJSON" class="secondary">Export JSON</button></div>
+        </div>
+      </div>
+
+      <div id="diagnostics" class="result" style="margin-top:12px">Hasil analisis akan muncul di sini.</div>
+
+      <table id="resultTable" class="table" style="display:none;margin-top:10px">
+        <thead><tr><th>Metode</th><th>Home</th><th>Draw</th><th>Away</th><th>Over</th><th>Under</th><th>HDP Home</th><th>HDP Away</th></tr></thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+
+      <div id="recoBox" class="reco" style="display:none;margin-top:10px"></div>
+
+      <canvas id="distChart"></canvas>
+    </div>
+  </div>
+
+  <footer class="muted">Simpan sebagai <b>index.html</b>. Anda bisa ubah mapping rata‑rata liga di bagian script.</footer>
+</div>
+
+<script>
+const leagueAvgGoals = {
+  "Premier League": 3.28,
+  "Bundesliga": 3.20,
+  "LaLiga": 2.51,
+  "Italy Serie A": 2.70,
+  "France Ligue 1": 2.65,
+  "Turkey Süper Lig": 2.94,
+  "Portugal Primeira": 2.75,
+  "Denmark Superliga": 3.14,
+  "Greece Super League": 2.45,
+  "Poland Ekstraklasa": 2.75,
+  "Croatia 1.HNL": 2.36,
+  "Custom": null
+};
+
+// Placeholder analisis & rendering (lanjutkan logika dari versi sebelumnya)
+</script>
+</body>
+</html>
