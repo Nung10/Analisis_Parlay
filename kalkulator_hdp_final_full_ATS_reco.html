@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kalkulator HDP — Final Full ATS + Rekomendasi</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;background:#f4f6f9;color:#111}
+.wrap{max-width:1200px;margin:12px auto;padding:16px;background:#fff;border-radius:10px;box-shadow:0 8px 28px rgba(10,20,30,0.06)}
+h1{margin:0 0 8px;font-size:20px}
+label{display:block;font-weight:700;margin-top:8px}
+input,select,button{width:100%;padding:8px;border-radius:6px;border:1px solid #d6dde6;box-sizing:border-box}
+button{background:#1976d2;color:#fff;border:none;cursor:pointer;font-weight:700}
+.result{margin-top:12px;padding:12px;background:#eef7ff;border-radius:8px;white-space:pre-wrap}
+.reco{margin-top:12px;padding:12px;background:#e8fbe8;border-radius:8px;white-space:pre-wrap;font-weight:700}
+canvas{width:100%;height:240px;background:#fff;border-radius:8px;border:1px solid #eef3f8;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kalkulator HDP — Final Full (ATS + Asian O/U + Rekomendasi)</h1>
+
+  <label>Pilih Liga</label>
+  <select id="leagueSelect"></select>
+
+  <label>League Avg</label>
+  <input id="leagueAvg" type="number" step="0.01" value="2.90">
+
+  <label>Lambda manual (opsional)</label>
+  <input id="lambdaHome" type="number" step="0.01" placeholder="Lambda Home">
+  <input id="lambdaAway" type="number" step="0.01" placeholder="Lambda Away">
+
+  <label>Odds 1X2 (Home / Draw / Away)</label>
+  <input id="oddsHome" type="number" step="0.01" placeholder="Home">
+  <input id="oddsDraw" type="number" step="0.01" placeholder="Draw">
+  <input id="oddsAway" type="number" step="0.01" placeholder="Away">
+
+  <label>HDP (Line / Odds Home / Odds Away)</label>
+  <input id="hdpLine" type="number" step="0.25" placeholder="Line (mis. -0.75)">
+  <input id="hdpHomeOdd" type="number" step="0.01" placeholder="HDP Home Odd">
+  <input id="hdpAwayOdd" type="number" step="0.01" placeholder="HDP Away Odd">
+
+  <label>Over/Under (Line / Odds Over / Odds Under)</label>
+  <input id="ouLine" type="number" step="0.25" placeholder="Line (mis. 2.75)">
+  <input id="overOdd" type="number" step="0.01" placeholder="Over Odd">
+  <input id="underOdd" type="number" step="0.01" placeholder="Under Odd">
+
+  <label>Threshold Value Bet (%)</label>
+  <input id="threshold" type="number" step="0.01" value="0.07">
+
+  <button onclick="analyze()">Analisis & Rekomendasi</button>
+
+  <div id="output" class="result"></div>
+  <div id="recommendation" class="reco"></div>
+  <canvas id="distChart"></canvas>
+</div>
+
+<script>
+// --- League averages ---
+const leagueAvgGoals = {
+  "Premier League": 3.28,
+  "Bundesliga": 3.20,
+  "LaLiga": 2.51,
+  "Italy Serie A": 2.70,
+  "France Ligue 1": 2.65,
+  "Turkey Süper Lig": 2.94,
+  "Denmark Superliga": 3.14,
+  "Russia Premier League": 2.76,
+  "Portugal Primeira": 2.75,
+  "Sweden Allsvenskan": 2.70,
+  "Netherlands Eredivisie": 3.00,
+  "Custom": null
+};
+for(const k in leagueAvgGoals){
+  const opt=document.createElement("option");
+  opt.value=k; opt.textContent=k;
+  document.getElementById("leagueSelect").appendChild(opt);
+}
+document.getElementById("leagueSelect").addEventListener("change",()=>{
+  const v=leagueAvgGoals[document.getElementById("leagueSelect").value];
+  if(v) document.getElementById("leagueAvg").value=v;
+});
+
+// --- Math helpers ---
+function factorial(n){return n<=1?1:n*factorial(n-1);}
+function poisson(k,lambda){return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k);}
+function impliedProb(odd){return odd?1/odd:0;}
+function pct(x){return (x*100).toFixed(1)+"%";}
+
+// --- Compute full distribution ---
+function computeMatrix(lambdaH,lambdaA,maxGoals=10){
+  const matrix={}; const totalDist=[];
+  for(let i=0;i<=maxGoals;i++){
+    for(let j=0;j<=maxGoals;j++){
+      const p=poisson(i,lambdaH)*poisson(j,lambdaA);
+      matrix[`${i}-${j}`]=p;
+      totalDist[i+j]=(totalDist[i+j]||0)+p;
+    }
+  }
+  return {matrix,totalDist};
+}
+
+// --- Asian Handicap evaluation ---
+function evalHDP(matrix,line){
+  if(Math.abs(line*4)%2!==0){
+    const l1=Math.floor(line*2)/2;
+    const l2=l1+0.5;
+    const r1=evalHDP(matrix,l1);
+    const r2=evalHDP(matrix,l2);
+    let comb={};
+    for(const k in r1) comb[k]=(r1[k]+r2[k])/2;
+    return comb;
+  }
+  let fullWin=0,halfWin=0,push=0,halfLoss=0,fullLoss=0;
+  for(const key in matrix){
+    const p=matrix[key]; const [h,a]=key.split("-").map(Number);
+    const diff=h-a+line;
+    if(diff>0.5) fullWin+=p;
+    else if(diff===0.5) halfWin+=p;
+    else if(diff===0) push+=p;
+    else if(diff===-0.5) halfLoss+=p;
+    else if(diff<-0.5) fullLoss+=p;
+  }
+  return {fullWin,halfWin,push,halfLoss,fullLoss};
+}
+
+// --- Asian Over/Under evaluation ---
+function evalOU(totalDist,line){
+  if(Math.abs(line*4)%2!==0){
+    const l1=Math.floor(line*2)/2;
+    const l2=l1+0.5;
+    const r1=evalOU(totalDist,l1);
+    const r2=evalOU(totalDist,l2);
+    let comb={};
+    for(const k in r1) comb[k]=(r1[k]+r2[k])/2;
+    return comb;
+  }
+  let over=0,under=0,push=0,halfOver=0,halfUnder=0;
+  for(let g=0;g<totalDist.length;g++){
+    const p=totalDist[g]||0;
+    const diff=g-line;
+    if(diff>0.5) over+=p;
+    else if(diff===0.5) halfOver+=p;
+    else if(diff===0) push+=p;
+    else if(diff===-0.5) halfUnder+=p;
+    else if(diff<-0.5) under+=p;
+  }
+  return {over,under,push,halfOver,halfUnder};
+}
+
+// --- Main ---
+function analyze(){
+  const leagueAvg=parseFloat(document.getElementById("leagueAvg").value)||2.7;
+  let lambdaH=parseFloat(document.getElementById("lambdaHome").value)||leagueAvg*0.55;
+  let lambdaA=parseFloat(document.getElementById("lambdaAway").value)||leagueAvg*0.45;
+  const M=computeMatrix(lambdaH,lambdaA,10);
+
+  const hdpLine=parseFloat(document.getElementById("hdpLine").value)||0;
+  const hdp=evalHDP(M.matrix,hdpLine);
+
+  const ouLine=parseFloat(document.getElementById("ouLine").value)||2.5;
+  const ou=evalOU(M.totalDist,ouLine);
+
+  const overOdd=parseFloat(document.getElementById("overOdd").value)||2.0;
+  const underOdd=parseFloat(document.getElementById("underOdd").value)||2.0;
+  const hdpHO=parseFloat(document.getElementById("hdpHomeOdd").value)||2.0;
+  const hdpAO=parseFloat(document.getElementById("hdpAwayOdd").value)||2.0;
+
+  const th=parseFloat(document.getElementById("threshold").value)||0.07;
+
+  function EV(prob,odd){return prob*odd-1;}
+  const evOver=EV(ou.over+0.5*ou.halfOver,overOdd);
+  const evUnder=EV(ou.under+0.5*ou.halfUnder,underOdd);
+  const evHdpHome=EV(hdp.fullWin+0.5*hdp.halfWin+0.5*hdp.push,hdpHO);
+  const evHdpAway=EV(hdp.fullLoss+0.5*hdp.halfLoss+0.5*hdp.push,hdpAO);
+
+  let out=`Lambda Home ${lambdaH.toFixed(2)}, Away ${lambdaA.toFixed(2)}\n\n`;
+  out+=`O/U ${ouLine}\n`;
+  out+=` Over: ${pct(ou.over)} | HalfWin ${pct(ou.halfOver)} | Push ${pct(ou.push)}\n`;
+  out+=` Under: ${pct(ou.under)} | HalfWin ${pct(ou.halfUnder)}\n`;
+  out+=` EV Over: ${(evOver*100).toFixed(1)}% | EV Under: ${(evUnder*100).toFixed(1)}%\n\n`;
+
+  out+=`HDP Home ${hdpLine}\n`;
+  out+=` FullWin ${pct(hdp.fullWin)} | HalfWin ${pct(hdp.halfWin)} | Push ${pct(hdp.push)}\n`;
+  out+=` HalfLoss ${pct(hdp.halfLoss)} | FullLoss ${pct(hdp.fullLoss)}\n`;
+  out+=` EV Home: ${(evHdpHome*100).toFixed(1)}% | EV Away: ${(evHdpAway*100).toFixed(1)}%\n`;
+
+  document.getElementById("output").innerText=out;
+
+  // --- Rekomendasi otomatis ---
+  let candidates=[
+    {label:`Over ${ouLine}`,ev:evOver},
+    {label:`Under ${ouLine}`,ev:evUnder},
+    {label:`HDP Home ${hdpLine}`,ev:evHdpHome},
+    {label:`HDP Away ${hdpLine}`,ev:evHdpAway}
+  ];
+  candidates.sort((a,b)=>b.ev-a.ev);
+  let best=candidates[0];
+  let reco="";
+  if(best.ev>0){
+    reco=`✅ Rekomendasi Utama: ${best.label} (EV ${(best.ev*100).toFixed(1)}%)\n\nAlternatif:\n`;
+    for(let i=1;i<candidates.length;i++){
+      reco+=`- ${candidates[i].label} (EV ${(candidates[i].ev*100).toFixed(1)}%)\n`;
+    }
+  } else {
+    reco="⚪ Tidak ada value bet signifikan (semua EV negatif)";
+  }
+  document.getElementById("recommendation").innerText=reco;
+
+  drawDist(M.totalDist);
+}
+
+function drawDist(dist){
+  const canvas=document.getElementById("distChart");
+  const ctx=canvas.getContext("2d");
+  const w=canvas.width=canvas.clientWidth;
+  const h=canvas.height=canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  const max=Math.max(...dist);
+  const barW=w/dist.length;
+  for(let i=0;i<dist.length;i++){
+    const p=dist[i]||0;
+    const barH=(p/max)*(h-20);
+    ctx.fillStyle="#7fb3ff";
+    ctx.fillRect(i*barW,h-barH,barW-2,barH);
+    ctx.fillStyle="#033";
+    ctx.font="10px Arial";
+    ctx.fillText(i,i*barW+barW/2,h-5);
+  }
+}
+</script>
+</body>
+</html>
