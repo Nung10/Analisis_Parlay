@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Kalkulator HDP — Final Full ATS + Rekomendasi</title>
+<title>Kalkulator HDP — Auto Lambda (Performa + H2H)</title>
 <style>
 body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:18px;background:#f4f6f9;color:#111}
 .wrap{max-width:1200px;margin:12px auto;padding:16px;background:#fff;border-radius:10px;box-shadow:0 8px 28px rgba(10,20,30,0.06)}
@@ -18,23 +18,25 @@ canvas{width:100%;height:240px;background:#fff;border-radius:8px;border:1px soli
 </head>
 <body>
 <div class="wrap">
-  <h1>Kalkulator HDP — Final Full (ATS + Asian O/U + Rekomendasi)</h1>
+  <h1>Kalkulator HDP — Auto Lambda (ATS + O/U + Value Bet)</h1>
 
-  <label>Pilih Liga</label>
+  <label>Pilih Liga / Kompetisi</label>
   <select id="leagueSelect"></select>
 
   <label>League Avg</label>
   <input id="leagueAvg" type="number" step="0.01" value="2.90">
 
-  <label>Lambda manual (opsional)</label>
-  <input id="lambdaHome" type="number" step="0.01" placeholder="Lambda Home">
-  <input id="lambdaAway" type="number" step="0.01" placeholder="Lambda Away">
+  <h3>📊 Performa Tim (GF/GA per match)</h3>
+  <label>Home GF</label><input id="perfGFH" type="number" step="0.01" value="1.5">
+  <label>Home GA</label><input id="perfGAH" type="number" step="0.01" value="1.2">
+  <label>Away GF</label><input id="perfGFA" type="number" step="0.01" value="1.3">
+  <label>Away GA</label><input id="perfGAA" type="number" step="0.01" value="1.4">
 
-  <label>Odds 1X2 (Home / Draw / Away)</label>
-  <input id="oddsHome" type="number" step="0.01" placeholder="Home">
-  <input id="oddsDraw" type="number" step="0.01" placeholder="Draw">
-  <input id="oddsAway" type="number" step="0.01" placeholder="Away">
+  <h3>🤝 H2H (rata2 gol di pertemuan terakhir)</h3>
+  <label>H2H GF Home</label><input id="h2hGFH" type="number" step="0.01" value="1.2">
+  <label>H2H GF Away</label><input id="h2hGFA" type="number" step="0.01" value="1.0">
 
+  <h3>🎲 Odds Pasar</h3>
   <label>HDP (Line / Odds Home / Odds Away)</label>
   <input id="hdpLine" type="number" step="0.25" placeholder="Line (mis. -0.75)">
   <input id="hdpHomeOdd" type="number" step="0.01" placeholder="HDP Home Odd">
@@ -54,6 +56,7 @@ canvas{width:100%;height:240px;background:#fff;border-radius:8px;border:1px soli
   <div id="recommendation" class="reco"></div>
   <canvas id="distChart"></canvas>
 </div>
+
 
 <script>
 // --- League averages ---
@@ -112,8 +115,7 @@ const leagueAvgGoals = {
   "King's Cup (Saudi)": 3.0
 };
 for(const k in leagueAvgGoals){
-  const opt=document.createElement("option");
-  opt.value=k; opt.textContent=k;
+  const opt=document.createElement("option"); opt.value=k; opt.textContent=k;
   document.getElementById("leagueSelect").appendChild(opt);
 }
 document.getElementById("leagueSelect").addEventListener("change",()=>{
@@ -121,13 +123,12 @@ document.getElementById("leagueSelect").addEventListener("change",()=>{
   if(v) document.getElementById("leagueAvg").value=v;
 });
 
-// --- Math helpers ---
+// --- Helper ---
 function factorial(n){return n<=1?1:n*factorial(n-1);}
 function poisson(k,lambda){return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k);}
-function impliedProb(odd){return odd?1/odd:0;}
 function pct(x){return (x*100).toFixed(1)+"%";}
 
-// --- Compute full distribution ---
+// --- Distribusi Poisson ---
 function computeMatrix(lambdaH,lambdaA,maxGoals=10){
   const matrix={}; const totalDist=[];
   for(let i=0;i<=maxGoals;i++){
@@ -140,49 +141,36 @@ function computeMatrix(lambdaH,lambdaA,maxGoals=10){
   return {matrix,totalDist};
 }
 
-// --- Asian Handicap evaluation ---
+// --- Asian Handicap ---
 function evalHDP(matrix,line){
   if(Math.abs(line*4)%2!==0){
-    const l1=Math.floor(line*2)/2;
-    const l2=l1+0.5;
-    const r1=evalHDP(matrix,l1);
-    const r2=evalHDP(matrix,l2);
-    let comb={};
-    for(const k in r1) comb[k]=(r1[k]+r2[k])/2;
-    return comb;
+    const l1=Math.floor(line*2)/2, l2=l1+0.5;
+    const r1=evalHDP(matrix,l1), r2=evalHDP(matrix,l2);
+    let comb={}; for(const k in r1) comb[k]=(r1[k]+r2[k])/2; return comb;
   }
   let fullWin=0,halfWin=0,push=0,halfLoss=0,fullLoss=0;
   for(const key in matrix){
     const p=matrix[key]; const [h,a]=key.split("-").map(Number);
     const diff=h-a+line;
-    if(diff>0.5) fullWin+=p;
-    else if(diff===0.5) halfWin+=p;
-    else if(diff===0) push+=p;
-    else if(diff===-0.5) halfLoss+=p;
+    if(diff>0.5) fullWin+=p; else if(diff===0.5) halfWin+=p;
+    else if(diff===0) push+=p; else if(diff===-0.5) halfLoss+=p;
     else if(diff<-0.5) fullLoss+=p;
   }
   return {fullWin,halfWin,push,halfLoss,fullLoss};
 }
 
-// --- Asian Over/Under evaluation ---
+// --- Asian O/U ---
 function evalOU(totalDist,line){
   if(Math.abs(line*4)%2!==0){
-    const l1=Math.floor(line*2)/2;
-    const l2=l1+0.5;
-    const r1=evalOU(totalDist,l1);
-    const r2=evalOU(totalDist,l2);
-    let comb={};
-    for(const k in r1) comb[k]=(r1[k]+r2[k])/2;
-    return comb;
+    const l1=Math.floor(line*2)/2, l2=l1+0.5;
+    const r1=evalOU(totalDist,l1), r2=evalOU(totalDist,l2);
+    let comb={}; for(const k in r1) comb[k]=(r1[k]+r2[k])/2; return comb;
   }
   let over=0,under=0,push=0,halfOver=0,halfUnder=0;
   for(let g=0;g<totalDist.length;g++){
-    const p=totalDist[g]||0;
-    const diff=g-line;
-    if(diff>0.5) over+=p;
-    else if(diff===0.5) halfOver+=p;
-    else if(diff===0) push+=p;
-    else if(diff===-0.5) halfUnder+=p;
+    const p=totalDist[g]||0, diff=g-line;
+    if(diff>0.5) over+=p; else if(diff===0.5) halfOver+=p;
+    else if(diff===0) push+=p; else if(diff===-0.5) halfUnder+=p;
     else if(diff<-0.5) under+=p;
   }
   return {over,under,push,halfOver,halfUnder};
@@ -191,8 +179,19 @@ function evalOU(totalDist,line){
 // --- Main ---
 function analyze(){
   const leagueAvg=parseFloat(document.getElementById("leagueAvg").value)||2.7;
-  let lambdaH=parseFloat(document.getElementById("lambdaHome").value)||leagueAvg*0.55;
-  let lambdaA=parseFloat(document.getElementById("lambdaAway").value)||leagueAvg*0.45;
+
+  // Performa & H2H
+  const perfGFH=parseFloat(document.getElementById("perfGFH").value)||1.5;
+  const perfGAH=parseFloat(document.getElementById("perfGAH").value)||1.2;
+  const perfGFA=parseFloat(document.getElementById("perfGFA").value)||1.3;
+  const perfGAA=parseFloat(document.getElementById("perfGAA").value)||1.4;
+  const h2hGFH=parseFloat(document.getElementById("h2hGFH").value)||1.2;
+  const h2hGFA=parseFloat(document.getElementById("h2hGFA").value)||1.0;
+
+  // Lambda otomatis
+  let lambdaH=leagueAvg*(perfGFH/leagueAvg)*(perfGAA/leagueAvg)*(Math.pow(h2hGFH/leagueAvg,0.7));
+  let lambdaA=leagueAvg*(perfGFA/leagueAvg)*(perfGAH/leagueAvg)*(Math.pow(h2hGFA/leagueAvg,0.7));
+
   const M=computeMatrix(lambdaH,lambdaA,10);
 
   const hdpLine=parseFloat(document.getElementById("hdpLine").value)||0;
@@ -206,8 +205,6 @@ function analyze(){
   const hdpHO=parseFloat(document.getElementById("hdpHomeOdd").value)||2.0;
   const hdpAO=parseFloat(document.getElementById("hdpAwayOdd").value)||2.0;
 
-  const th=parseFloat(document.getElementById("threshold").value)||0.07;
-
   function EV(prob,odd){return prob*odd-1;}
   const evOver=EV(ou.over+0.5*ou.halfOver,overOdd);
   const evUnder=EV(ou.under+0.5*ou.halfUnder,underOdd);
@@ -215,19 +212,15 @@ function analyze(){
   const evHdpAway=EV(hdp.fullLoss+0.5*hdp.halfLoss+0.5*hdp.push,hdpAO);
 
   let out=`Lambda Home ${lambdaH.toFixed(2)}, Away ${lambdaA.toFixed(2)}\n\n`;
-  out+=`O/U ${ouLine}\n`;
-  out+=` Over: ${pct(ou.over)} | HalfWin ${pct(ou.halfOver)} | Push ${pct(ou.push)}\n`;
+  out+=`O/U ${ouLine}\n Over: ${pct(ou.over)} | HalfWin ${pct(ou.halfOver)} | Push ${pct(ou.push)}\n`;
   out+=` Under: ${pct(ou.under)} | HalfWin ${pct(ou.halfUnder)}\n`;
   out+=` EV Over: ${(evOver*100).toFixed(1)}% | EV Under: ${(evUnder*100).toFixed(1)}%\n\n`;
-
-  out+=`HDP Home ${hdpLine}\n`;
-  out+=` FullWin ${pct(hdp.fullWin)} | HalfWin ${pct(hdp.halfWin)} | Push ${pct(hdp.push)}\n`;
+  out+=`HDP Home ${hdpLine}\n FullWin ${pct(hdp.fullWin)} | HalfWin ${pct(hdp.halfWin)} | Push ${pct(hdp.push)}\n`;
   out+=` HalfLoss ${pct(hdp.halfLoss)} | FullLoss ${pct(hdp.fullLoss)}\n`;
   out+=` EV Home: ${(evHdpHome*100).toFixed(1)}% | EV Away: ${(evHdpAway*100).toFixed(1)}%\n`;
 
   document.getElementById("output").innerText=out;
 
-  // --- Rekomendasi otomatis ---
   let candidates=[
     {label:`Over ${ouLine}`,ev:evOver},
     {label:`Under ${ouLine}`,ev:evUnder},
@@ -242,9 +235,7 @@ function analyze(){
     for(let i=1;i<candidates.length;i++){
       reco+=`- ${candidates[i].label} (EV ${(candidates[i].ev*100).toFixed(1)}%)\n`;
     }
-  } else {
-    reco="⚪ Tidak ada value bet signifikan (semua EV negatif)";
-  }
+  } else { reco="⚪ Tidak ada value bet signifikan"; }
   document.getElementById("recommendation").innerText=reco;
 
   drawDist(M.totalDist);
@@ -253,19 +244,13 @@ function analyze(){
 function drawDist(dist){
   const canvas=document.getElementById("distChart");
   const ctx=canvas.getContext("2d");
-  const w=canvas.width=canvas.clientWidth;
-  const h=canvas.height=canvas.clientHeight;
+  const w=canvas.width=canvas.clientWidth, h=canvas.height=canvas.clientHeight;
   ctx.clearRect(0,0,w,h);
-  const max=Math.max(...dist);
-  const barW=w/dist.length;
+  const max=Math.max(...dist), barW=w/dist.length;
   for(let i=0;i<dist.length;i++){
-    const p=dist[i]||0;
-    const barH=(p/max)*(h-20);
-    ctx.fillStyle="#7fb3ff";
-    ctx.fillRect(i*barW,h-barH,barW-2,barH);
-    ctx.fillStyle="#033";
-    ctx.font="10px Arial";
-    ctx.fillText(i,i*barW+barW/2,h-5);
+    const p=dist[i]||0, barH=(p/max)*(h-20);
+    ctx.fillStyle="#7fb3ff"; ctx.fillRect(i*barW,h-barH,barW-2,barH);
+    ctx.fillStyle="#033"; ctx.font="10px Arial"; ctx.fillText(i,i*barW+barW/2,h-5);
   }
 }
 </script>
