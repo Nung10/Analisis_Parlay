@@ -135,147 +135,132 @@
 </div>
 
 <script>
-/* ------------------- League meta (extended) ------------------- */
+// ---------------- League meta (extended) ----------------
+const leagueMeta = {
+  // 🇬🇧 Inggris
+  "Premier League": {avg:2.65, baseK:1.8, homeBias:0.12, reliability:0.70},
+  "Championship": {avg:2.45, baseK:1.7, homeBias:0.10, reliability:0.65},
+  "FA Cup": {avg:3.20, baseK:2.0, homeBias:0.05, reliability:0.55},
+  "EFL Cup (Carabao Cup)": {avg:3.10, baseK:1.8, homeBias:0.05, reliability:0.50},
 
-/* populate dropdown */
+  // 🇪🇸 Spanyol
+  "La Liga": {avg:2.62, baseK:1.6, homeBias:0.10, reliability:0.70},
+  "Segunda División": {avg:2.55, baseK:1.5, homeBias:0.08, reliability:0.65},
+  "Copa del Rey": {avg:2.95, baseK:1.9, homeBias:0.05, reliability:0.55},
+
+  // 🇮🇹 Italia
+  "Serie A": {avg:2.56, baseK:1.6, homeBias:0.08, reliability:0.65},
+  "Serie B": {avg:2.47, baseK:1.5, homeBias:0.08, reliability:0.60},
+  "Coppa Italia": {avg:3.00, baseK:1.9, homeBias:0.05, reliability:0.55},
+
+  // 🇩🇪 Jerman
+  "Bundesliga": {avg:3.14, baseK:2.0, homeBias:0.12, reliability:0.75},
+  "2. Bundesliga": {avg:3.02, baseK:1.8, homeBias:0.10, reliability:0.70},
+  "DFB-Pokal": {avg:4.19, baseK:2.5, homeBias:0.05, reliability:0.50},
+
+  // 🇫🇷 Prancis
+  "Ligue 1": {avg:2.96, baseK:1.7, homeBias:0.10, reliability:0.70},
+  "Ligue 2": {avg:2.41, baseK:1.4, homeBias:0.08, reliability:0.65},
+  "Coupe de France": {avg:3.20, baseK:2.0, homeBias:0.05, reliability:0.55},
+
+  // 🇳🇱 Belanda
+  "Eredivisie": {avg:2.98, baseK:1.9, homeBias:0.11, reliability:0.70},
+  "Eerste Divisie": {avg:3.10, baseK:1.9, homeBias:0.10, reliability:0.65},
+  "KNVB Cup": {avg:3.80, baseK:2.2, homeBias:0.05, reliability:0.50},
+
+  // 🇵🇹 Portugal
+  "Primeira Liga": {avg:2.87, baseK:1.7, homeBias:0.09, reliability:0.65},
+  "Taça de Portugal": {avg:2.90, baseK:1.8, homeBias:0.05, reliability:0.55},
+
+  // 🇨🇭 Swiss
+  "Swiss Super League": {avg:3.33, baseK:2.0, homeBias:0.10, reliability:0.65},
+  "Swiss Cup": {avg:3.50, baseK:2.1, homeBias:0.05, reliability:0.50},
+
+  // 🇹🇷 Turki
+  "Süper Lig": {avg:2.94, baseK:1.8, homeBias:0.09, reliability:0.65},
+  "Turkish Cup": {avg:2.90, baseK:1.8, homeBias:0.05, reliability:0.55},
+
+  // 🇬🇷 Yunani
+  "Super League Greece": {avg:2.97, baseK:1.8, homeBias:0.10, reliability:0.65},
+  "Greek Cup": {avg:2.30, baseK:1.5, homeBias:0.05, reliability:0.50},
+
+  // 🇷🇺 Rusia
+  "Russian Premier League": {avg:2.70, baseK:1.6, homeBias:0.09, reliability:0.65},
+  "Russian Cup": {avg:2.80, baseK:1.7, homeBias:0.05, reliability:0.55},
+
+  // 🇷🇴 Rumania
+  "Liga I": {avg:2.67, baseK:1.6, homeBias:0.08, reliability:0.60},
+  "Cupa României": {avg:3.20, baseK:2.0, homeBias:0.05, reliability:0.50},
+
+  // 🇵🇱 Polandia
+  "Ekstraklasa": {avg:2.85, baseK:1.6, homeBias:0.08, reliability:0.65},
+  "Polish Cup": {avg:2.90, baseK:1.7, homeBias:0.05, reliability:0.55},
+
+  // 🇭🇷 Kroasia
+  "HNL": {avg:2.36, baseK:1.4, homeBias:0.07, reliability:0.60},
+  "Croatian Cup": {avg:3.10, baseK:1.9, homeBias:0.05, reliability:0.50},
+
+  // 🇱🇻 Latvia
+  "Latvia Higher League": {avg:2.89, baseK:1.7, homeBias:0.08, reliability:0.60},
+  "Latvian Cup": {avg:4.90, baseK:2.5, homeBias:0.05, reliability:0.45},
+
+  // 🇪🇪 Estonia
+  "Meistriliiga": {avg:3.22, baseK:1.9, homeBias:0.08, reliability:0.60},
+  "Estonian Cup": {avg:4.50, baseK:2.5, homeBias:0.05, reliability:0.45},
+
+  // 🇸🇪 Swedia
+  "Allsvenskan": {avg:2.83, baseK:1.6, homeBias:0.09, reliability:0.60},
+  "Svenska Cupen": {avg:3.10, baseK:1.9, homeBias:0.05, reliability:0.50},
+
+  // 🇳🇴 Norwegia
+  "Eliteserien": {avg:2.83, baseK:1.6, homeBias:0.09, reliability:0.65},
+  "Norwegian Cup": {avg:3.60, baseK:2.0, homeBias:0.05, reliability:0.50},
+
+  // 🇩🇰 Denmark
+  "Superliga": {avg:3.27, baseK:1.8, homeBias:0.10, reliability:0.65},
+  "1st Division": {avg:2.81, baseK:1.6, homeBias:0.09, reliability:0.60},
+  "Danish Cup": {avg:4.00, baseK:2.2, homeBias:0.05, reliability:0.45},
+
+  // 🇫🇮 Finlandia
+  "Veikkausliiga": {avg:2.93, baseK:1.6, homeBias:0.08, reliability:0.60},
+  "Ykkösliiga": {avg:3.02, baseK:1.7, homeBias:0.08, reliability:0.55},
+  "Ykkönen": {avg:3.51, baseK:1.9, homeBias:0.08, reliability:0.50},
+  "Suomen Cup": {avg:4.00, baseK:2.2, homeBias:0.05, reliability:0.45},
+
+  // 🇮🇸 Islandia
+  "Úrvalsdeild": {avg:3.62, baseK:2.1, homeBias:0.10, reliability:0.55},
+  "Icelandic Cup": {avg:5.00, baseK:2.8, homeBias:0.05, reliability:0.40},
+
+  // 🇮🇪 Irlandia
+  "Premier Division": {avg:2.26, baseK:1.4, homeBias:0.07, reliability:0.55},
+  "FAI Cup": {avg:3.00, baseK:1.8, homeBias:0.05, reliability:0.50},
+
+  // 🌍 UEFA Competitions
+  "UEFA Champions League": {avg:3.10, baseK:2.0, homeBias:0.05, reliability:0.75},
+  "UEFA Europa League": {avg:2.85, baseK:1.8, homeBias:0.05, reliability:0.70},
+  "UEFA Conference League": {avg:2.71, baseK:1.7, homeBias:0.05, reliability:0.65},
+
+  // 🌍 World Cup
+  "World Cup": {avg:2.70, baseK:1.6, homeBias:0.00, reliability:0.80}
+};
+
+// -------- populate dropdown --------
 const sel = document.getElementById('leagueSelect');
-for(const k in leagueMeta){ let o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); }
-sel.addEventListener('change', ()=> {
+for (const k in leagueMeta) {
+  let o = document.createElement('option');
+  o.value = k;
+  o.textContent = k;
+  sel.appendChild(o);
+}
+
+sel.addEventListener('change', () => {
   const meta = leagueMeta[sel.value] || {avg:2.5, baseK:1.2, homeBias:0.08, reliability:0.5};
   document.getElementById('leagueAvg').value = meta.avg;
 });
-sel.value = "Premier League";
+
+sel.value = "Premier League"; 
 document.getElementById('leagueAvg').value = leagueMeta[sel.value].avg;
 
-/* ------------------- Math helpers ------------------- */
-function safeNum(v,d=0){ const x=parseFloat(v); return isNaN(x)?d:x; }
-function pct(x){ return (x*100).toFixed(1) + '%'; }
-function logFactorial(n){ if(n<=1) return 0; let s=0; for(let i=2;i<=n;i++) s+=Math.log(i); return s; }
-function logGamma(z){
-  const cof=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.001208650973866179,-5.395239384953e-6];
-  let x=z; let y=x; let tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp); let ser=1.000000000190015;
-  for(let j=0;j<cof.length;j++){ y+=1; ser += cof[j]/y; }
-  return -tmp + Math.log(2.5066282746310005*ser/x);
-}
-function poissonPMF(k, mu){ return Math.exp(-mu)*Math.pow(mu,k)/Math.max(1,Math.exp(logFactorial(k))); }
-
-/* Negative Binomial PMF (r as goals) using log form: */
-function nbinomPMF(r, mu, k){
-  if(k <= 0.000001) return poissonPMF(r, mu);
-  // logC = logGamma(r+k) - logGamma(k) - log(r!)
-  const logC = logGamma(r + k) - logGamma(k) - logFactorial(r);
-  const logP = logC + k*Math.log(k/(k+mu)) + r*Math.log(mu/(k+mu));
-  return Math.exp(logP);
-}
-
-/* Dixon-Coles simplified correction factor for low scores */
-function dixonColesCorr(i,j,lambda_i, laconst leagueMeta = {
-  // 🇬🇧 Inggris
-  "Premier League":        {avg: 2.65, baseK: 1.8, homeBias: 0.12, reliability: 0.70},
-  "Championship":          {avg: 2.45, baseK: 1.7, homeBias: 0.10, reliability: 0.65},
-  "FA Cup":                {avg: 3.20, baseK: 2.0, homeBias: 0.05, reliability: 0.50},
-  "EFL Cup (Carabao Cup)": {avg: 3.10, baseK: 2.0, homeBias: 0.05, reliability: 0.50},
-
-  // 🇪🇸 Spanyol
-  "La Liga":               {avg: 2.62, baseK: 1.6, homeBias: 0.10, reliability: 0.70},
-  "Segunda División":      {avg: 2.55, baseK: 1.5, homeBias: 0.08, reliability: 0.65},
-  "Copa del Rey":          {avg: 2.95, baseK: 1.9, homeBias: 0.05, reliability: 0.55},
-
-  // 🇮🇹 Italia
-  "Serie A":               {avg: 2.56, baseK: 1.6, homeBias: 0.08, reliability: 0.70},
-  "Serie B":               {avg: 2.47, baseK: 1.5, homeBias: 0.07, reliability: 0.65},
-  "Coppa Italia":          {avg: 3.00, baseK: 1.9, homeBias: 0.05, reliability: 0.55},
-
-  // 🇩🇪 Jerman
-  "Bundesliga":            {avg: 3.14, baseK: 2.0, homeBias: 0.12, reliability: 0.75},
-  "2. Bundesliga":         {avg: 3.02, baseK: 1.8, homeBias: 0.10, reliability: 0.70},
-  "DFB-Pokal":             {avg: 4.19, baseK: 2.5, homeBias: 0.05, reliability: 0.50},
-
-  // 🇫🇷 Prancis
-  "Ligue 1":               {avg: 2.96, baseK: 1.7, homeBias: 0.10, reliability: 0.70},
-  "Ligue 2":               {avg: 2.41, baseK: 1.4, homeBias: 0.08, reliability: 0.65},
-  "Coupe de France":       {avg: 3.20, baseK: 2.0, homeBias: 0.05, reliability: 0.55},
-
-  // 🇳🇱 Belanda
-  "Eredivisie":            {avg: 2.98, baseK: 1.9, homeBias: 0.11, reliability: 0.70},
-  "Eerste Divisie":        {avg: 3.10, baseK: 2.0, homeBias: 0.11, reliability: 0.65},
-  "KNVB Cup":              {avg: 3.80, baseK: 2.2, homeBias: 0.05, reliability: 0.50},
-
-  // 🇵🇹 Portugal
-  "Primeira Liga":         {avg: 2.87, baseK: 1.6, homeBias: 0.09, reliability: 0.70},
-  "Taça de Portugal":      {avg: 2.90, baseK: 1.8, homeBias: 0.05, reliability: 0.55},
-
-  // 🇨🇭 Swiss
-  "Swiss Super League":    {avg: 3.33, baseK: 2.0, homeBias: 0.10, reliability: 0.65},
-  "Swiss Cup":             {avg: 3.50, baseK: 2.2, homeBias: 0.05, reliability: 0.50},
-
-  // 🇹🇷 Turki
-  "Süper Lig":             {avg: 2.94, baseK: 1.7, homeBias: 0.10, reliability: 0.65},
-  "Turkish Cup":           {avg: 2.90, baseK: 1.9, homeBias: 0.05, reliability: 0.55},
-
-  // 🇬🇷 Yunani
-  "Super League Greece":   {avg: 2.97, baseK: 1.5, homeBias: 0.10, reliability: 0.60},
-  "Greek Cup":             {avg: 2.30, baseK: 1.3, homeBias: 0.05, reliability: 0.50},
-
-  // 🇷🇺 Rusia
-  "Russian Premier League":{avg: 2.70, baseK: 1.6, homeBias: 0.09, reliability: 0.65},
-  "Russian Cup":           {avg: 2.80, baseK: 1.7, homeBias: 0.05, reliability: 0.55},
-
-  // 🇷🇴 Rumania
-  "Liga I":                {avg: 2.67, baseK: 1.5, homeBias: 0.08, reliability: 0.60},
-  "Cupa României":         {avg: 3.20, baseK: 2.0, homeBias: 0.05, reliability: 0.50},
-
-  // 🇵🇱 Polandia
-  "Ekstraklasa":           {avg: 2.85, baseK: 1.6, homeBias: 0.08, reliability: 0.65},
-  "Polish Cup":            {avg: 2.90, baseK: 1.7, homeBias: 0.05, reliability: 0.55},
-
-  // 🇭🇷 Kroasia
-  "HNL":                   {avg: 2.36, baseK: 1.4, homeBias: 0.07, reliability: 0.60},
-  "Croatian Cup":          {avg: 3.10, baseK: 1.9, homeBias: 0.05, reliability: 0.50},
-
-  // 🇱🇻 Latvia
-  "Latvia Higher League":  {avg: 2.89, baseK: 1.7, homeBias: 0.08, reliability: 0.60},
-  "Latvian Cup":           {avg: 4.90, baseK: 2.5, homeBias: 0.05, reliability: 0.45},
-
-  // 🇪🇪 Estonia
-  "Meistriliiga":          {avg: 3.22, baseK: 1.9, homeBias: 0.08, reliability: 0.60},
-  "Estonian Cup":          {avg: 4.50, baseK: 2.4, homeBias: 0.05, reliability: 0.45},
-
-  // 🇸🇪 Swedia
-  "Allsvenskan":           {avg: 2.83, baseK: 1.6, homeBias: 0.09, reliability: 0.65},
-  "Svenska Cupen":         {avg: 3.10, baseK: 1.9, homeBias: 0.05, reliability: 0.50},
-
-  // 🇳🇴 Norwegia
-  "Eliteserien":           {avg: 2.83, baseK: 1.6, homeBias: 0.09, reliability: 0.65},
-  "Norwegian Cup":         {avg: 3.60, baseK: 2.0, homeBias: 0.05, reliability: 0.50},
-
-  // 🇩🇰 Denmark
-  "Superliga":             {avg: 3.27, baseK: 1.8, homeBias: 0.10, reliability: 0.65},
-  "1st Division":          {avg: 2.81, baseK: 1.6, homeBias: 0.09, reliability: 0.60},
-  "Danish Cup":            {avg: 4.00, baseK: 2.2, homeBias: 0.05, reliability: 0.45},
-
-  // 🇫🇮 Finlandia
-  "Veikkausliiga":         {avg: 2.93, baseK: 1.6, homeBias: 0.08, reliability: 0.60},
-  "Ykkösliiga":            {avg: 3.02, baseK: 1.7, homeBias: 0.08, reliability: 0.55},
-  "Ykkönen":               {avg: 3.51, baseK: 1.9, homeBias: 0.08, reliability: 0.50},
-  "Suomen Cup":            {avg: 4.00, baseK: 2.2, homeBias: 0.05, reliability: 0.45},
-
-  // 🇮🇸 Islandia
-  "Úrvalsdeild":           {avg: 3.62, baseK: 2.1, homeBias: 0.10, reliability: 0.55},
-  "Icelandic Cup":         {avg: 5.00, baseK: 2.8, homeBias: 0.05, reliability: 0.40},
-
-  // 🇮🇪 Irlandia
-  "Premier Division":      {avg: 2.26, baseK: 1.4, homeBias: 0.07, reliability: 0.60},
-  "FAI Cup":               {avg: 3.00, baseK: 1.8, homeBias: 0.05, reliability: 0.50},
-
-  // 🌍 UEFA
-  "UEFA Champions League": {avg: 3.10, baseK: 2.0, homeBias: 0.05, reliability: 0.75},
-  "UEFA Europa League":    {avg: 2.85, baseK: 1.8, homeBias: 0.05, reliability: 0.70},
-  "UEFA Conference League":{avg: 2.71, baseK: 1.7, homeBias: 0.05, reliability: 0.65},
-
-  // 🌍 World Cup
-  "World Cup": {avg: 2.70, baseK: 1.6, homeBias: 0.00, reliability: 0.80}
-};
   mbda_j, rho=0.0){
   // simplified: if (i,j) in {(0,0),(0,1),(1,0),(1,1)} apply small adjustment
   if((i===0 && j===0) || (i===0 && j===1) || (i===1 && j===0) || (i===1 && j===1)){
