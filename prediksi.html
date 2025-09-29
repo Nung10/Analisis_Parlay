@@ -1,0 +1,430 @@
+<!doctype html>
+
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HDP & Over/Under — Pro Prediction Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--bg:#f8fafc;--card:#fff;--muted:#6b7280;--accent:#0ea5a4}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:var(--bg);color:#0f172a;margin:18px}
+    .wrap{max-width:1100px;margin:0 auto}
+    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,0.06);margin-bottom:16px}
+    h1{margin:0 0 10px;font-size:20px}
+    label{display:block;font-weight:600;margin-top:8px;color:#334155}
+    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef8;font-size:14px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1;min-width:200px}
+    button{background:var(--accent);color:#fff;padding:10px 12px;border-radius:10px;border:0;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .result{padding:12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0}
+    .small{font-size:12px;color:var(--muted)}
+    canvas{max-width:100%;margin-top:14px}
+    .flex{display:flex;gap:12px}
+    .heatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:8px}
+    .cell{padding:8px;border-radius:6px;text-align:center;font-weight:600}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .slider{display:flex;align-items:center;gap:8px}
+    .badge{display:inline-block;padding:6px 8px;border-radius:8px;background:#eef2ff;color:#1e3a8a;font-weight:600}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:6px;border-bottom:1px solid #eef2f6;text-align:left}
+    .green{color:green;font-weight:700}
+    .red{color:#b91c1c;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>HDP & Over/Under — Pro Prediction Dashboard</h1>
+      <p class="muted">Model advanced: DW-Form, H2H weighting, xG+ hybrid, Poisson/Bivariate (shared component), Monte Carlo, odds market/value bet detection, injury & weather adjustments.</p>
+    </div><div class="card">
+  <div class="row">
+    <div class="col">
+      <label>Tim A</label>
+      <input id="teamA" value="Tim A" />
+    </div>
+    <div class="col">
+      <label>Tim B</label>
+      <input id="teamB" value="Tim B" />
+    </div>
+  </div>
+
+  <div style="margin-top:10px" class="row">
+    <div class="col">
+      <label>Rata-rata gol per match — Tim A (GF)</label>
+      <input id="avgGF_A" type="number" step="0.1" value="1.4" />
+    </div>
+    <div class="col">
+      <label>Rata-rata gol per match — Tim B (GF)</label>
+      <input id="avgGF_B" type="number" step="0.1" value="1.1" />
+    </div>
+  </div>
+
+  <div style="margin-top:8px" class="row">
+    <div class="col">
+      <label>Rata-rata kebobolan per match — Tim A (GA)</label>
+      <input id="avgGA_A" type="number" step="0.1" value="1.0" />
+    </div>
+    <div class="col">
+      <label>Rata-rata kebobolan per match — Tim B (GA)</label>
+      <input id="avgGA_B" type="number" step="0.1" value="1.3" />
+    </div>
+  </div>
+
+  <div style="margin-top:8px" class="row">
+    <div class="col">
+      <label>Form terakhir (hingga 10 laga) — Tim A (format: 2-1,3-0,1-1 ... gol TimA-golTimB)</label>
+      <textarea id="formListA" rows="2">2-1,1-0,0-0,3-1,1-1</textarea>
+    </div>
+    <div class="col">
+      <label>Form terakhir — Tim B</label>
+      <textarea id="formListB" rows="2">1-1,0-2,2-0,1-2,0-1</textarea>
+    </div>
+  </div>
+
+  <div style="margin-top:8px" class="row">
+    <div class="col">
+      <label>H2H (format: date optional | score A-B, e.g. 2025-09-01|2-1)</label>
+      <textarea id="h2hList" rows="2">2025-05-02|2-1,2024-09-10|1-1,2023-11-14|0-2</textarea>
+    </div>
+    <div class="col">
+      <label>Context</label>
+      <select id="homeAdv"><option value="0">Netral</option><option value="0.25">Tim A Home (+0.25)</option><option value="-0.25">Tim B Home (+0.25)</option></select>
+      <label style="margin-top:6px">Pemain Kunci Absen (%)</label>
+      <div class="row"><input id="injuryA" type="number" step="1" value="0" /><input id="injuryB" type="number" step="1" value="0" /></div>
+      <label style="margin-top:6px">Weather</label>
+      <select id="weather"><option value="normal">Normal</option><option value="rain">Hujan</option><option value="hot">Panas</option></select>
+    </div>
+  </div>
+
+  <div style="margin-top:10px" class="row">
+    <div class="col">
+      <label>Odds Bookmaker (Handicap) — Awal (decimal)</label>
+      <input id="oddsH_start" type="number" step="0.01" value="1.90" />
+    </div>
+    <div class="col">
+      <label>Odds Bookmaker (Handicap) — Live/Now (decimal)</label>
+      <input id="oddsH_live" type="number" step="0.01" value="1.75" />
+    </div>
+    <div class="col">
+      <label>Odds Bookmaker (O/U 2.5) — Awal</label>
+      <input id="oddsOU_start" type="number" step="0.01" value="1.95" />
+      <label style="margin-top:6px">Odds Bookmaker (O/U 2.5) — Live</label>
+      <input id="oddsOU_live" type="number" step="0.01" value="1.85" />
+    </div>
+  </div>
+
+  <div style="margin-top:10px" class="card">
+    <h3>Model Weights (atur kalau perlu)</h3>
+    <div class="controls">
+      <div class="slider">Form weight: <input id="wForm" type="range" min="0" max="1" step="0.05" value="0.2" /></div>
+      <div class="slider">H2H weight: <input id="wH2H" type="range" min="0" max="1" step="0.05" value="0.15" /></div>
+      <div class="slider">Attack/Def weight: <input id="wAD" type="range" min="0" max="1" step="0.05" value="0.25" /></div>
+      <div class="slider">Home weight: <input id="wHome" type="range" min="0" max="1" step="0.05" value="0.1" /></div>
+      <div class="slider">Odds weight: <input id="wOdds" type="range" min="0" max="1" step="0.05" value="0.3" /></div>
+    </div>
+    <p class="small muted">Total weight akan dinormalisasi otomatis.</p>
+  </div>
+
+  <div style="margin-top:10px" class="row">
+    <div class="col"><button id="run">Run Prediction (Poisson + Monte Carlo)</button></div>
+    <div class="col"><button id="download">Download HTML</button></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Hasil Prediksi</h3>
+  <div id="outputSummary" class="result">Tekan <strong>Run Prediction</strong> untuk menjalankan simulasi.</div>
+
+  <div style="margin-top:10px" class="row">
+    <div class="col card">
+      <h4>Probability & Score Distribution</h4>
+      <div id="probTable"></div>
+      <div id="heatmap" class="heatmap"></div>
+    </div>
+    <div class="col card">
+      <h4>Charts</h4>
+      <canvas id="chartRadar"></canvas>
+      <canvas id="chartDist"></canvas>
+    </div>
+  </div>
+
+  <div style="margin-top:10px" class="card">
+    <h4>Value Bet & Confidence Breakdown</h4>
+    <div id="valueResult"></div>
+    <table>
+      <thead><tr><th>Factor</th><th>Weight</th><th>Score (0-100)</th></tr></thead>
+      <tbody id="breakdown"></tbody>
+    </table>
+  </div>
+</div>
+
+  </div><script>
+  // Helper functions
+  function sum(arr){return arr.reduce((a,b)=>a+b,0)}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+  // Parse form list: returns array of matches [{gf,ga}]
+  function parseFormList(txt){
+    const parts = txt.split(',').map(s=>s.trim()).filter(Boolean).slice(-10);
+    const matches = [];
+    parts.forEach(p=>{
+      const m = p.match(/(\d+)\s*-\s*(\d+)/);
+      if(m) matches.push({gf:parseInt(m[1],10), ga:parseInt(m[2],10)});
+    });
+    return matches;
+  }
+
+  // Dynamic weighted form score
+  function DWFormScore(matches, isHome){
+    if(matches.length===0) return 50;
+    // weights decay: latest has highest
+    const decay = [1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1];
+    let totalW=0, score=0;
+    for(let i=0;i<matches.length;i++){
+      const idx = matches.length-1-i; // latest last in array -> highest weight
+      const w = decay[i];
+      totalW += w;
+      const m = matches[idx];
+      // result value: win large->100, draw->50, loss->0, plus goal diff bonus
+      let base=50;
+      if(m.gf>m.ga) base=80 + Math.min(20, (m.gf - m.ga)*5);
+      else if(m.gf===m.ga) base=50;
+      else base=20 - Math.min(15, (m.ga - m.gf)*5);
+      // home/away tweak
+      if(isHome) base += 2;
+      score += base * w;
+    }
+    return Math.round(score/totalW);
+  }
+
+  // H2H weighted score
+  function parseH2H(txt){
+    const parts = txt.split(',').map(s=>s.trim()).filter(Boolean);
+    let totalA=0,totalB=0,totalW=0,count=0;
+    parts.forEach(p=>{
+      const m = p.match(/(\d{4}-\d{2}-\d{2})\|?(\d+)\s*-\s*(\d+)/);
+      if(m){
+        const date = new Date(m[1]);
+        const years = (new Date()-date)/ (365*24*3600*1000);
+        let weight = years<1?1.0: (years<3?0.5:0.2);
+        const a = parseInt(m[2],10), b = parseInt(m[3],10);
+        totalA += a*weight; totalB += b*weight; totalW += weight; count++;
+      } else {
+        // try simple score no date
+        const n = p.match(/(\d+)\s*-\s*(\d+)/);
+        if(n){ totalA += parseInt(n[1],10); totalB += parseInt(n[2],10); totalW += 0.6; count++; }
+      }
+    });
+    return {avgA: totalW? totalA/totalW:0, avgB: totalW? totalB/totalW:0, count};
+  }
+
+  // Attack/Defense index
+  function attackDefenseIndex(avgGF, avgGA, formScore, injuryPct){
+    // attack = GF * (1 + formFactor) * injuryAdj
+    const formFactor = (formScore - 50)/100; // -0.5 .. +0.5
+    const injuryAdj = 1 - (injuryPct/100) * 0.6; // missing key players reduce up to 60%
+    const attack = avgGF * (1 + formFactor*0.6) * injuryAdj;
+    const defense = (1 / (avgGA + 0.3)) * (1 + (50 - Math.abs(formScore-50))/200);
+    return {attack, defense};
+  }
+
+  // xG+ hybrid
+  function computeXGplus(Aatk,Bdef,AtkB,DefA,h2hA,h2hB,dwA,dwB,homeAdv,weather){
+    // basic combining
+    let baseA = Aatk*0.6 + h2hA*0.15 + dwA*0.25;
+    let baseB = AtkB*0.6 + h2hB*0.15 + dwB*0.25;
+    // defense impact
+    const adjA = baseA * (1 / (1 + Bdef));
+    const adjB = baseB * (1 / (1 + DefA));
+    // home & weather adjustments
+    let weatherAdj = 1;
+    if(weather==='rain') weatherAdj = 0.92;
+    else if(weather==='hot') weatherAdj = 0.97;
+    const xgA = Math.max(0.1, (adjA + homeAdv) * weatherAdj);
+    const xgB = Math.max(0.1, (adjB - homeAdv) * weatherAdj);
+    return {xgA, xgB};
+  }
+
+  // Poisson sampler
+  function poissonSample(lambda){
+    const L = Math.exp(-lambda);
+    let k=0, p=1;
+    do{ k++; p *= Math.random(); } while(p > L);
+    return k-1;
+  }
+
+  // Monte Carlo with shared component (bivariate via shared poisson)
+  function monteCarlo(xgA, xgB, sims, lambdaSharedFraction){
+    const shared = Math.min(xgA, xgB) * lambdaSharedFraction; // shared mean
+    const lamA_extra = Math.max(0, xgA - shared);
+    const lamB_extra = Math.max(0, xgB - shared);
+    const freq = {};
+    let winsA=0,winsB=0,draws=0,overCount=0;
+    for(let i=0;i<sims;i++){
+      const s = poissonSample(shared);
+      const a = poissonSample(lamA_extra) + s;
+      const b = poissonSample(lamB_extra) + s;
+      const key = a+"-"+b;
+      freq[key] = (freq[key]||0) + 1;
+      if(a>b) winsA++; else if(a<b) winsB++; else draws++;
+      if(a+b>2.5) overCount++;
+    }
+    return {freq,winsA,winsB,draws,overCount};
+  }
+
+  // generate heatmap cells for 0..5 goals
+  function renderHeatmap(freq, sims){
+    const container = document.getElementById('heatmap');
+    container.innerHTML='';
+    const probs = []; let maxp=0;
+    for(let i=0;i<=5;i++){
+      for(let j=0;j<=5;j++){
+        const key = i+"-"+j; const p = (freq[key]||0)/sims; probs.push({i,j,p}); if(p>maxp) maxp=p;
+      }
+    }
+    probs.forEach(cell=>{
+      const el = document.createElement('div'); el.className='cell';
+      const intensity = maxp? Math.round((cell.p/maxp)*220):0;
+      const bg = cell.p? `rgba(30,136,229,${0.15 + (cell.p/maxp)*0.7})` : '#f1f5f9';
+      el.style.background = bg; el.textContent = `${cell.i}-${cell.j}\n${(cell.p*100).toFixed(1)}%`;
+      container.appendChild(el);
+    });
+  }
+
+  // value bet detection
+  function impliedProb(dec){ return 1/dec; }
+
+  // main
+  document.getElementById('run').addEventListener('click', ()=>{
+    const A = document.getElementById('teamA').value || 'Tim A';
+    const B = document.getElementById('teamB').value || 'Tim B';
+    const avgGF_A = parseFloat(document.getElementById('avgGF_A').value) || 0.8;
+    const avgGF_B = parseFloat(document.getElementById('avgGF_B').value) || 0.8;
+    const avgGA_A = parseFloat(document.getElementById('avgGA_A').value) || 1.0;
+    const avgGA_B = parseFloat(document.getElementById('avgGA_B').value) || 1.0;
+    const wForm = parseFloat(document.getElementById('wForm').value);
+    const wH2H = parseFloat(document.getElementById('wH2H').value);
+    const wAD = parseFloat(document.getElementById('wAD').value);
+    const wHome = parseFloat(document.getElementById('wHome').value);
+    const wOdds = parseFloat(document.getElementById('wOdds').value);
+    const homeAdvSel = parseFloat(document.getElementById('homeAdv').value) || 0;
+    const injuryA = parseFloat(document.getElementById('injuryA').value)||0;
+    const injuryB = parseFloat(document.getElementById('injuryB').value)||0;
+    const weather = document.getElementById('weather').value;
+    const formListA = parseFormList(document.getElementById('formListA').value);
+    const formListB = parseFormList(document.getElementById('formListB').value);
+    const h2h = parseH2H(document.getElementById('h2hList').value);
+
+    // normalize weights
+    let totalW = wForm + wH2H + wAD + wHome + wOdds; if(totalW===0) totalW=1;
+    const norm = {wForm:wForm/totalW, wH2H:wH2H/totalW, wAD:wAD/totalW, wHome:wHome/totalW, wOdds:wOdds/totalW};
+
+    // compute DW form scores (0..100)
+    const formScoreA = DWFormScore(formListA, true);
+    const formScoreB = DWFormScore(formListB, false);
+
+    // H2H averages
+    const h2hA = h2h.avgA; const h2hB = h2h.avgB;
+
+    // attack/def indices
+    const idxA = attackDefenseIndex(avgGF_A, avgGA_A, formScoreA, injuryA);
+    const idxB = attackDefenseIndex(avgGF_B, avgGA_B, formScoreB, injuryB);
+
+    // compute xG+ hybrid
+    const xg = computeXGplus(idxA.attack, idxB.defense, idxB.attack, idxA.defense, h2hA, h2hB, formScoreA/100, formScoreB/100, homeAdvSel, weather);
+
+    // Poisson shared lambda fraction based on correlation assumption
+    const lambdaSharedFraction = 0.25; // tunable
+
+    // run Monte Carlo
+    const sims = 4000;
+    const sim = monteCarlo(xg.xgA, xg.xgB, sims, lambdaSharedFraction);
+
+    // probabilities
+    const pA = sim.winsA / sims; const pB = sim.winsB / sims; const pd = sim.draws / sims; const pOver = sim.overCount / sims;
+
+    // implied probabilities from bookmaker
+    const oddsH_start = parseFloat(document.getElementById('oddsH_start').value) || 1.9;
+    const oddsH_live = parseFloat(document.getElementById('oddsH_live').value) || oddsH_start;
+    const oddsOU_start = parseFloat(document.getElementById('oddsOU_start').value) || 1.95;
+    const oddsOU_live = parseFloat(document.getElementById('oddsOU_live').value) || oddsOU_start;
+
+    const impliedH_start = impliedProb(oddsH_start); const impliedH_live = impliedProb(oddsH_live);
+    const impliedOU_start = impliedProb(oddsOU_start); const impliedOU_live = impliedProb(oddsOU_live);
+
+    // confidence breakdown (0..100) based on factors
+    const scoreForm = Math.round((formScoreA*norm.wForm + (100-formScoreB)*norm.wForm) * 50/100);
+    const scoreH2H = Math.round((Math.min(100, (h2hA - h2hB + 3)*12)) * norm.wH2H);
+    const scoreAD = Math.round(( (idxA.attack/(idxB.defense+0.01))*50 + ( (1/(idxB.defense+0.01))/(1/(idxA.defense+0.01)+0.0001) )*50 ) * norm.wAD);
+    const scoreHome = Math.round((homeAdvSel*100) * norm.wHome + 50*norm.wHome);
+    const oddsMomentum = Math.sign(impliedH_start - impliedH_live) * Math.abs(impliedH_start - impliedH_live);
+    const scoreOdds = Math.round((0.5 + oddsMomentum) * 100 * norm.wOdds);
+
+    const confidence = clamp(Math.round((scoreForm + scoreH2H + scoreAD + scoreHome + scoreOdds)/ ( (norm.wForm+norm.wH2H+norm.wAD+norm.wHome+norm.wOdds) ) ), 10, 95);
+
+    // value bet detection: compare model pOver vs impliedOU_live
+    const valueOver = pOver > impliedOU_live ? true : false;
+    const valueH = pA > impliedH_live ? true : false;
+
+    // prepare distribution table top 10
+    const freqEntries = Object.entries(sim.freq).map(([k,v])=>({k,v, p:v/sims})).sort((a,b)=>b.v-a.v).slice(0,15);
+
+    // render summary
+    const out = document.getElementById('outputSummary');
+    out.innerHTML = `
+      <strong>${A} vs ${B}</strong><br>
+      xG+ (A): ${xg.xgA.toFixed(2)} — xG+ (B): ${xg.xgB.toFixed(2)}<br>
+      Probabilitas: <span class="green">${(pA*100).toFixed(1)}%</span> ${A} menang — <span>${(pd*100).toFixed(1)}%</span> Seri — <span class="red">${(pB*100).toFixed(1)}%</span> ${B} menang<br>
+      Over 2.5: ${(pOver*100).toFixed(1)}% — Confidence model: ${confidence}%
+    `;
+
+    // render freq table
+    const probTable = document.getElementById('probTable');
+    probTable.innerHTML = '<strong>Top probable scorelines</strong><ol>' + freqEntries.map(e=>`<li>${e.k} — ${(e.p*100).toFixed(2)}%</li>`).join('') + '</ol>';
+
+    // heatmap render
+    renderHeatmap(sim.freq, sims);
+
+    // charts
+    // radar: Attack/Defense/Form/H2H/Odds influence
+    const radarCtx = document.getElementById('chartRadar').getContext('2d');
+    if(window.radarChart) window.radarChart.destroy();
+    window.radarChart = new Chart(radarCtx, {
+      type:'radar',
+      data:{labels:['Attack','Defense','Form','H2H','OddsInfluence'], datasets:[{label:A, data:[idxA.attack*10, idxA.defense*10, formScoreA/10, h2hA||0, (impliedH_start-impliedH_live)*100],fill:true},{label:B,data:[idxB.attack*10, idxB.defense*10, formScoreB/10, h2hB||0, (impliedH_live-impliedH_start)*100]}]},
+      options:{responsive:true,scales:{r:{beginAtZero:true}}}
+    });
+
+    // distribution bar for top scorelines
+    const distCtx = document.getElementById('chartDist').getContext('2d');
+    if(window.distChart) window.distChart.destroy();
+    window.distChart = new Chart(distCtx, {type:'bar',data:{labels:freqEntries.map(e=>e.k), datasets:[{label:'Probability',data:freqEntries.map(e=>+(e.p*100).toFixed(2))}]}, options:{responsive:true,plugins:{legend:{display:false}}}});
+
+    // breakdown table
+    const bd = document.getElementById('breakdown'); bd.innerHTML='';
+    const rows = [
+      {name:'Form', w:Math.round(norm.wForm*100), score:Math.round(scoreForm)},
+      {name:'H2H', w:Math.round(norm.wH2H*100), score:Math.round(scoreH2H)},
+      {name:'Attack/Defense', w:Math.round(norm.wAD*100), score:Math.round(scoreAD)},
+      {name:'Home', w:Math.round(norm.wHome*100), score:Math.round(scoreHome)},
+      {name:'Odds Momentum', w:Math.round(norm.wOdds*100), score:Math.round(scoreOdds)}
+    ];
+    rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.name}</td><td>${r.w}%</td><td>${r.score}</td>`; bd.appendChild(tr); });
+
+    // value result
+    const vr = document.getElementById('valueResult');
+    vr.innerHTML = `<div>Handicap implied prob (live): ${ (impliedH_live*100).toFixed(1)}% — Model ${ (pA*100).toFixed(1)}% → <strong class='${valueH?"green":"red"}'>${valueH?"Value on Handicap":"No Value"}</strong></div>
+      <div>Over2.5 implied prob (live): ${(impliedOU_live*100).toFixed(1)}% — Model ${(pOver*100).toFixed(1)}% → <strong class='${valueOver?"green":"red"}'>${valueOver?"Value on Over":"No Value"}</strong></div>`;
+
+  });
+
+  document.getElementById('download').addEventListener('click', ()=>{
+    const html = document.documentElement.outerHTML;
+    const blob = new Blob([html], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='hdp-pro-dashboard.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+</script></body>
+</html>
