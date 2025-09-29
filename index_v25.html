@@ -56,10 +56,21 @@
           <input id="convAway" type="number" step="0.01" value="0.10">
         </label>
 
-        <label>ELO rating:
-          <input id="eloHome" type="number" value="1500">
-          <input id="eloAway" type="number" value="1480">
-        </label>
+        <label>ELO rating (Home):
+  <select id="eloHome">
+    <option value="1600">Papan Atas</option>
+    <option value="1500" selected>Papan Tengah</option>
+    <option value="1400">Papan Bawah</option>
+  </select>
+</label>
+
+<label>ELO rating (Away):
+  <select id="eloAway">
+    <option value="1600">Papan Atas</option>
+    <option value="1500" selected>Papan Tengah</option>
+    <option value="1400">Papan Bawah</option>
+  </select>
+  </label>
 
         <label>H2H (baru → lama): <input id="h2h" type="text" placeholder="2:1,1:2"></label>
         <label>Decay k (exponential): <input id="decayK" type="number" step="0.01" value="0.25"></label>
