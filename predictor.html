@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Sharp v9 Real-Time Predictor</title>
+<style>
+body { font-family: Arial, sans-serif; margin:20px; background:#f4f4f9; color:#0f172a; }
+h1 { font-size:22px; margin-bottom:10px; }
+.card { background:#fff; border-radius:12px; padding:16px; margin-bottom:14px; box-shadow:0 10px 30px rgba(2,6,23,0.06); }
+label { font-weight:700; display:block; margin-top:8px; }
+input, textarea { width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid #ccc; }
+.result { background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px; }
+.badge { display:inline-block; padding:4px 8px; border-radius:6px; font-weight:700; color:#fff; }
+.badge.best { background:#4ade80; }
+.badge.safe { background:#60a5fa; }
+.badge.risk { background:#f87171; }
+</style>
+</head>
+<body>
+
+<div class="card">
+<h1>Super Sharp v9 Real-Time Predictor</h1>
+<p>Prediksi otomatis 1–3 jam sebelum pertandingan, H2H & Form adaptif, Over/Under sensitif, output langsung muncul.</p>
+
+<label>Tim A</label>
+<input id="teamA" value="Barcelona">
+<label>Tim B</label>
+<input id="teamB" value="Real Sociedad">
+
+<label>Form Tim A (gf-ga, koma)</label>
+<textarea id="formA" rows="2">2-1,1-0,0-0,3-1</textarea>
+<label>Form Tim B</label>
+<textarea id="formB" rows="2">1-1,2-1,1-2,0-1</textarea>
+
+<label>H2H (yyyy-mm-dd|a-b atau a-b, maksimal 10)</label>
+<textarea id="h2h" rows="2">2025-05-02|2-1,2024-09-10|1-1,2023-11-14|0-2</textarea>
+
+<label>Odds HDP Live</label>
+<input id="oddsH_live" type="number" step="0.01" value="1.95">
+<label>Odds O/U 2.5 Live</label>
+<input id="oddsOU_live" type="number" step="0.01" value="1.90">
+
+<div style="margin-top:12px;" class="result" id="output">Prediksi muncul otomatis di sini.</div>
+<div id="details" style="margin-top:8px; font-size:13px; color:#64748b;"></div>
+</div>
+
+<script>
+// Utility functions
+function parseScores(txt){ return txt.split(',').map(s=>s.trim()).filter(Boolean).slice(-10).map(p=>{ const m=p.match(/(\d+)-(\d+)/); return m?{gf:+m[1],ga:+m[2]}:null}).filter(Boolean); }
+function parseH2H(txt){ const parts=txt.split(',').map(s=>s.trim()).filter(Boolean).slice(-10); let a=[],b=[]; parts.forEach(p=>{ const m=p.match(/(\d{4}-\d{2}-\d{2})\|?(\d+)-(\d+)/); if(m){ a.push(+m[2]); b.push(+m[3]); } else { const n=p.match(/(\d+)-(\d+)/); if(n){ a.push(+n[1]); b.push(+n[2]); } } }); return {A:a,B:b,count:a.length}; }
+function mean(arr){ return arr.length? arr.reduce((s,x)=>s+x,0)/arr.length:0; }
+function poissonSample(lambda){ const L=Math.exp(-lambda); let k=0,p=1; do{ k++; p*=Math.random(); } while(p>L); return k-1; }
+function computeEWMAFromForm(matches, alpha=0.35){ if(matches.length===0) return {gf:0.9, ga:1.1}; let gf=matches[0].gf, ga=matches[0].ga; for(let i=1;i<matches.length;i++){ gf=alpha*matches[i].gf+(1-alpha)*gf; ga=alpha*matches[i].ga+(1-alpha)*ga; } return {gf, ga}; }
+function explosivenessIndex(lastMatches){ if(!lastMatches||lastMatches.length===0) return 0; const recent=lastMatches.slice(-3); let countHigh=0,bothHigh=0; recent.forEach(m=>{ if(m.gf>=3) countHigh++; if(m.ga>=3) bothHigh++; if(m.gf+m.ga>=5) bothHigh++; }); let boost=0; if(countHigh>=2) boost+=0.4; else if(countHigh===1) boost+=0.18; if(bothHigh>=1) boost+=0.15; return Math.min(0.85,boost); }
+function monteCarloConditional(xgA,xgB,sims,sharedFrac,fhSens){ const shared=Math.min(xgA,xgB)*sharedFrac; const extraA=Math.max(0,xgA-shared); const extraB=Math.max(0,xgB-shared); let wA=0,wB=0,draw=0,over=0; for(let i=0;i<sims;i++){ const sFH=Math.floor(Math.random()*(shared*0.5+0.0001)); const aFH=poissonSample(extraA*0.45)+sFH; const bFH=poissonSample(extraB*0.45)+sFH; let tempoAdj=1+fhSens*((aFH+bFH)>0?(aFH+bFH)/2:0); const sSH=poissonSample(shared*0.55*tempoAdj); const aSH=poissonSample(extraA*0.55*tempoAdj)+sSH; const bSH=poissonSample(extraB*0.55*tempoAdj)+sSH; const A=aFH+aSH,B=bFH+bSH; wA+=(A>B?1:0); wB+=(A<B?1:0); draw+=(A===B?1:0); over+=(A+B>2.5?1:0); } return {wA,wB,draw,over}; }
+function pearson(x,y){ if(x.length!==y.length||x.length===0) return 0; const mx=mean(x), my=mean(y); let num=0,denx=0,deny=0; for(let i=0;i<x.length;i++){ num+=(x[i]-mx)*(y[i]-my); denx+=(x[i]-mx)*(x[i]-mx); deny+=(y[i]-my)*(y[i]-my); } if(denx===0||deny===0) return 0; return num/Math.sqrt(denx*deny); }
+
+function runPrediction(){
+  const A=document.getElementById('teamA').value||'Team A';
+  const B=document.getElementById('teamB').value||'Team B';
+  const formA=parseScores(document.getElementById('formA').value||'');
+  const formB=parseScores(document.getElementById('formB').value||'');
+  const h2h=parseH2H(document.getElementById('h2h').value||'');
+  const oddsH_live=+document.getElementById('oddsH_live').value||null;
+  const oddsOU_live=+document.getElementById('oddsOU_live').value||null;
+  const shortMode=true; let sims=30000, fhSens=0.45;
+
+  const ewA=computeEWMAFromForm(formA,0.35), ewB=computeEWMAFromForm(formB,0.35);
+  let corr=pearson(h2h.A,h2h.B), sharedFrac=Math.min(0.65, Math.max(0.1, Math.abs(corr)*0.65+0.1));
+
+  const explBoost=(explosivenessIndex(formA)+explosivenessIndex(formB))/2;
+
+  const wForm=0.35, wH2H=0.25, wAD=0.15, wOdds=0.25;
+  const fA=ewA.gf,fB=ewB.gf,atkA=ewA.gf,atkB=ewB.gf;
+  const hAddA=h2h.count? (mean(h2h.A)-mean(h2h.B))*0.2:0;
+  const hAddB=h2h.count? (mean(h2h.B)-mean(h2h.A))*0.2:0;
+  let oddsAdj=0; if(oddsH_live){ const implied=1/oddsH_live; oddsAdj=Math.max(-0.40,Math.min(0.40,0.5-implied)); }
+
+  let xgA=Math.max(0.05,(fA*wForm+atkA*wAD+hAddA*wH2H)+(-oddsAdj*wOdds));
+  let xgB=Math.max(0.05,(fB*wForm+atkB*wAD+hAddB*wH2H)+(oddsAdj*wOdds));
+
+  const explosivenessFactor=1+explBoost*0.8; xgA*=explosivenessFactor; xgB*=explosivenessFactor;
+
+  const sim=monteCarloConditional(xgA,xgB,sims,sharedFrac,fhSens);
+  const pA=sim.wA/sims,pB=sim.wB/sims,pd=sim.draw/sims,pOver=sim.over/sims;
+  const rA=Math.round(pA*100),rB=Math.round(pB*100),rd=Math.round(pd*100),rOver=Math.round(pOver*100);
+
+  const bestPick=pA>pB? A+' win':(pB>pA? B+' win':'Draw');
+  const safePick=pA>0.46?pA>pB?A+' DNB':B+' DNB':'Under 2.5';
+
+  document.getElementById('output').innerHTML=`
+    <strong>${A} vs ${B}</strong><br>
+    xG (A/B): ${xgA.toFixed(2)} / ${xgB.toFixed(2)} (explBoost ${(explBoost*100).toFixed(0)}%)<br>
+    Win/Draw/Lose: ${A} ${rA}% — Draw ${rd}% — ${B} ${rB}%<br>
+    Over 2.5: ${rOver}%<br>
+    Best Pick: <span class="badge best">${bestPick}</span> &nbsp;
+    Safe Pick: <span class="badge safe">${safePick}</span>
+  `;
+  document.getElementById('details').innerHTML=`H2H corr=${corr.toFixed(2)}, sharedFrac=${sharedFrac.toFixed(2)}, oddsAdj=${oddsAdj.toFixed(3)}, sims=${sims}`;
+}
+
+runPrediction();
+</script>
+
+</body>
+</html>
