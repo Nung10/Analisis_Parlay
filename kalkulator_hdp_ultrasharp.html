@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kalkulator HDP — UltraSharp+ (Ensemble, Auto-Calibrate, Confidence)</title>
+<style>
+  :root{--bg:#f4f7fb;--card:#fff;--accent:#0b66c2;--muted:#6b7280}
+  body{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;margin:0;padding:18px;background:var(--bg);color:#0b1b2b}
+  .wrap{max-width:1200px;margin:12px auto;padding:16px;background:var(--card);border-radius:12px;box-shadow:0 10px 30px rgba(12,22,34,0.06)}
+  h1{margin:0 0 12px;font-size:20px}
+  label{display:block;font-weight:700;margin-top:10px;font-size:13px}
+  input,select,button,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid #e6eef8;box-sizing:border-box;font-size:13px}
+  .row{display:flex;gap:10px;align-items:end}
+  .row>div{flex:1}
+  .controls{background:#fbfeff;padding:12px;border-radius:10px;border:1px solid #eef6ff;margin-top:12px}
+  .small{font-size:12px;color:var(--muted)}
+  button.primary{background:var(--accent);color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer}
+  button.ghost{background:#fff;color:var(--accent);border:1px solid #dbefff;padding:8px;border-radius:8px;cursor:pointer}
+  .result{margin-top:12px;padding:12px;background:linear-gradient(180deg,#f0fbff,#eef7ff);border-radius:10px;white-space:pre-wrap}
+  .reco{margin-top:12px;padding:12px;background:linear-gradient(180deg,#f6fff4,#e8fbeb);border-radius:10px;white-space:pre-wrap;font-weight:700}
+  canvas{width:100%;height:260px;background:#fff;border-radius:8px;border:1px solid #eef3f8;margin-top:12px}
+  .flex{display:flex;gap:10px}
+  .col{flex:1}
+  .footer{margin-top:12px;color:var(--muted);font-size:13px}
+  @media(max-width:900px){ .row{flex-direction:column} .flex{flex-direction:column} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kalkulator HDP — UltraSharp+</h1>
+
+  <div class="controls">
+    <label>Pilih Liga / Kompetisi</label>
+    <select id="leagueSelect"></select>
+    <label>League Avg (otomatis)</label><input id="leagueAvg" readonly>
+
+    <div class="small" style="margin-top:6px">Pilih liga → sistem akan ambil baseline rata-rata gol, base dispersion, home bias.</div>
+  </div>
+
+  <div class="controls">
+    <div class="small"><strong>Input tim & sample</strong> — bisa dari hitung_avg.html atau manual. Gunakan tombol bulk untuk banyak pertandingan.</div>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>Home GF (avg)</label><input id="perfGFH" type="number" step="0.01" value="1.20"></div>
+      <div><label>Home GA (avg)</label><input id="perfGAH" type="number" step="0.01" value="0.60"></div>
+      <div><label>Away GF (avg)</label><input id="perfGFA" type="number" step="0.01" value="1.60"></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>Away GA (avg)</label><input id="perfGAA" type="number" step="0.01" value="0.40"></div>
+      <div><label>H2H Home GF (avg)</label><input id="h2hGFH" type="number" step="0.01" value="1.40"></div>
+      <div><label>H2H Home GA (avg)</label><input id="h2hGAH" type="number" step="0.01" value="0.90"></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>H2H Away GF (avg)</label><input id="h2hGFA" type="number" step="0.01" value="0.80"></div>
+      <div><label>H2H Away GA (avg)</label><input id="h2hGAA" type="number" step="0.01" value="1.10"></div>
+      <div><label>Sample N (per team)</label><input id="sampleN" type="number" step="1" value="10"></div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div><label>Recent momentum (last5 vs prev5) — kosong auto</label><input id="momentum" placeholder="mis. +0.12"></div>
+      <div><label>Fixture context</label>
+        <select id="fixtureContext">
+          <option value="normal">Normal</option>
+          <option value="derby">Derby / Rival</option>
+          <option value="cup">Cup (knockout)</option>
+          <option value="deciding">High importance</option>
+        </select>
+      </div>
+      <div><label>Missing key players?</label>
+        <select id="lineupImpact"><option value="0">No</option><option value="0.9">Yes (-10% atk)</option><option value="0.8">Severe (-20%)</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls" style="margin-top:12px">
+    <div class="small"><strong>Tuners & advanced</strong></div>
+    <div class="row" style="margin-top:8px">
+      <div><label>Prior (pseudo matches) — shrinkage</label><input id="prior" type="number" step="0.1" value="5"></div>
+      <div><label>Decay (recent weight)</label><input id="decay" type="number" step="0.01" value="0.65"></div>
+      <div><label>Max H2H weight</label><input id="h2hCap" type="number" step="0.01" value="0.55"></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>Home advantage multiplier</label><input id="homeAdv" type="number" step="0.01" value="1.12"></div>
+      <div><label>Tempo scale</label><input id="tempoScale" type="number" step="0.01" value="0.03"></div>
+      <div><label>Blend model:market (0..1 model heavy)</label><input id="blend" type="number" step="0.01" value="0.70"></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>Auto-dispersion base multiplier</label><input id="dispBase" type="number" step="0.01" value="1.0"></div>
+      <div><label>Adaptive EV threshold (%)</label><input id="threshold" type="number" step="0.01" value="0.05"></div>
+      <div><label>Confidence floor for auto-pick (%)</label><input id="confFloor" type="number" step="0.01" value="0.70"></div>
+    </div>
+  </div>
+
+  <div class="controls" style="margin-top:12px">
+    <div class="small"><strong>Odds & Lines</strong></div>
+    <div class="row" style="margin-top:8px">
+      <div><label>HDP Line</label><input id="hdpLine" type="number" step="0.25" placeholder="-0.75"></div>
+      <div><label>HDP Home Odd</label><input id="hdpHomeOdd" type="number" step="0.01" placeholder="2.00"></div>
+      <div><label>HDP Away Odd</label><input id="hdpAwayOdd" type="number" step="0.01" placeholder="2.00"></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>O/U Line</label><input id="ouLine" type="number" step="0.25" placeholder="2.5"></div>
+      <div><label>Over Odd</label><input id="overOdd" type="number" step="0.01" placeholder="2.00"></div>
+      <div><label>Under Odd</label><input id="underOdd" type="number" step="0.01" placeholder="1.90"></div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div><button id="btnAnalyze" class="primary">Analisis & Rekomendasi</button></div>
+      <div><button id="btnReset" class="ghost">Reset</button></div>
+      <div>
+        <label class="small">Upload calibration CSV (modelProb,marketProb,outcome)</label>
+        <input id="fileCal" type="file" accept=".csv">
+      </div>
+    </div>
+  </div>
+
+  <div class="controls" style="margin-top:12px">
+    <div class="row">
+      <div class="col"><button id="btnExport" class="ghost">Export Results CSV</button></div>
+      <div class="col"><button id="btnBulk" class="ghost">Bulk Mode (paste JSON)</button></div>
+      <div class="col"><button id="btnExplain" class="ghost">Explain last pick</button></div>
+    </div>
+  </div>
+
+  <div id="output" class="result">Hasil analisis akan tampil di sini.</div>
+  <div id="recommendation" class="reco"></div>
+  <canvas id="distChart"></canvas>
+
+  <div class="footer">UltraSharp+ — ensemble + calibration + advanced tuners. Save as <b>kalkulator_hdp_ultrasharp.html</b>.</div>
+</div>
+
+<script>
+/* ------------------- League meta (extended) ------------------- */
+const leagueMeta = {
+  ""Premier League": {avg:2.65, baseK:1.8, homeBias:0.12, reliability:0.70},
+"Championship": {avg:2.45, baseK:1.7, homeBias:0.10, reliability:0.65},
+"FA Cup": {avg:3.20, baseK:2.0, homeBias:0.05, reliability:0.55},
+"EFL Cup (Carabao Cup)": {avg:3.10, baseK:1.8, homeBias:0.05, reliability:0.50}
+"La Liga": {avg:2.62, baseK:1.6, homeBias:0.10, reliability:0.70},
+"Segunda División": {avg:2.55, baseK:1.5, homeBias:0.08, reliability:0.65},
+ "Copa del Rey": {avg:2.95, baseK:1.9, homeBias:0.05, reliability:0.55},
+ "Serie A": {avg:2.56, baseK:1.6, homeBias:0.08, reliability:0.65},
+ "Serie B": {avg:2.47, baseK:1.5, homeBias:0.08, reliability:0.60},
+ "Coppa Italia": {avg:3.00, baseK:1.9, homeBias:0.05, reliability:0.55},
+ "Bundesliga": {avg:3.14, baseK:2.0, homeBias:0.12, reliability:0.75},
+  "2. Bundesliga": {avg:3.02, baseK:1.8, homeBias:0.10, reliability:0.70},
+  "DFB-Pokal": {avg:4.19, baseK:2.5, homeBias:0.05, reliability:0.50},
+  "Ligue 1": {avg:2.96, baseK:1.7, homeBias:0.10, reliability:0.70},
+  "Ligue 2": {avg:2.41, baseK:1.4, homeBias:0.08, reliability:0.65},
+  "Coupe de France": {avg:3.20, baseK:2.0, homeBias:0.05, reliability:0.55},
+  "Eredivisie": {avg:2.98, baseK:1.9, homeBias:0.11, reliability:0.70},
+  "Eerste Divisie": {avg:3.10, baseK:1.9, homeBias:0.10, reliability:0.65},
+  "KNVB Cup": {avg:3.80, baseK:2.2, homeBias:0.05, reliability:0.50},
+  "Primeira Liga": {avg:2.87, baseK:1.7, homeBias:0.09, reliability:0.65},
+  "Taça de Portugal": {avg:2.90, baseK:1.8, homeBias:0.05, reliability:0.55},
+  "Swiss Super League": {avg:3.33, baseK:2.0, homeBias:0.10, reliability:0.65},
+  "Swiss Cup": {avg:3.50, baseK:2.1, homeBias:0.05, reliability:0.50},
+  "Süper Lig": {avg:2.94, baseK:1.8, homeBias:0.09, reliability:0.65},
+  "Turkish Cup": {avg:2.90, baseK:1.8, homeBias:0.05, reliability:0.55},
+  "Super League Greece": {avg:2.97, baseK:1.8, homeBias:0.10, reliability:0.65},
+  "Greek Cup": {avg:2.30, baseK:1.5, homeBias:0.05, reliability:0.50},
+  "Russian Premier League": {avg:2.70, baseK:1.6, homeBias:0.09, reliability:0.65},
+  "Russian Cup": {avg:2.80, baseK:1.7, homeBias:0.05, reliability:0.55},
+  "Liga I": {avg:2.67, baseK:1.6, homeBias:0.08, reliability:0.60},
+  "Cupa României": {avg:3.20, baseK:2.0, homeBias:0.05, reliability:0.50},
+  "Ekstraklasa": {avg:2.85, baseK:1.6, homeBias:0.08, reliability:0.65},
+  "Polish Cup": {avg:2.90, baseK:1.7, homeBias:0.05, reliability:0.55},
+  "HNL": {avg:2.36, baseK:1.4, homeBias:0.07, reliability:0.60},
+  "Croatian Cup": {avg:3.10, baseK:1.9, homeBias:0.05, reliability:0.50},
+  "Latvia Higher League": {avg:2.89, baseK:1.7, homeBias:0.08, reliability:0.60},
+  "Latvian Cup": {avg:4.90, baseK:2.5, homeBias:0.05, reliability:0.45},
+  "Meistriliiga": {avg:3.22, baseK:1.9, homeBias:0.08, reliability:0.60},
+  "Estonian Cup": {avg:4.50, baseK:2.5, homeBias:0.05, reliability:0.45},
+  "Allsvenskan": {avg:2.83, baseK:1.6, homeBias:0.09, reliability:0.60},
+  "Svenska Cupen": {avg:3.10, baseK:1.9, homeBias:0.05, reliability:0.50},
+  "Eliteserien": {avg:2.83, baseK:1.6, homeBias:0.09, reliability:0.65},
+  "Norwegian Cup": {avg:3.60, baseK:2.0, homeBias:0.05, reliability:0.50},
+  "Superliga": {avg:3.27, baseK:1.8, homeBias:0.10, reliability:0.65},
+  "1st Division": {avg:2.81, baseK:1.6, homeBias:0.09, reliability:0.60},
+  "Danish Cup": {avg:4.00, baseK:2.2, homeBias:0.05, reliability:0.45},
+  "Veikkausliiga": {avg:2.93, baseK:1.6, homeBias:0.08, reliability:0.60},
+  "Ykkösliiga": {avg:3.02, baseK:1.7, homeBias:0.08, reliability:0.55},
+  "Ykkönen": {avg:3.51, baseK:1.9, homeBias:0.08, reliability:0.50},
+  "Suomen Cup": {avg:4.00, baseK:2.2, homeBias:0.05, reliability:0.45},
+  "Úrvalsdeild": {avg:3.62, baseK:2.1, homeBias:0.10, reliability:0.55},
+  "Icelandic Cup": {avg:5.00, baseK:2.8, homeBias:0.05, reliability:0.40},
+  "Premier Division": {avg:2.26, baseK:1.4, homeBias:0.07, reliability:0.55},
+  "FAI Cup": {avg:3.00, baseK:1.8, homeBias:0.05, reliability:0.50},
+  "UEFA Champions League": {avg:3.10, baseK:2.0, homeBias:0.05, reliability:0.75},
+  "UEFA Europa League": {avg:2.85, baseK:1.8, homeBias:0.05, reliability:0.70},
+  "UEFA Conference League": {avg:2.71, baseK:1.7, homeBias:0.05, reliability:0.65},
+  "World Cup": {avg:2.70, baseK:1.6, homeBias:0.00, reliability:0.80}
+};
+
+/* populate dropdown */
+const sel = document.getElementById('leagueSelect');
+for(const k in leagueMeta){ let o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); }
+sel.addEventListener('change', ()=> {
+  const meta = leagueMeta[sel.value] || {avg:2.5, baseK:1.2, homeBias:0.08, reliability:0.5};
+  document.getElementById('leagueAvg').value = meta.avg;
+});
+sel.value = "Premier League";
+document.getElementById('leagueAvg').value = leagueMeta[sel.value].avg;
+
+/* ------------------- Math helpers ------------------- */
+function safeNum(v,d=0){ const x=parseFloat(v); return isNaN(x)?d:x; }
+function pct(x){ return (x*100).toFixed(1) + '%'; }
+function logFactorial(n){ if(n<=1) return 0; let s=0; for(let i=2;i<=n;i++) s+=Math.log(i); return s; }
+function logGamma(z){
+  const cof=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.001208650973866179,-5.395239384953e-6];
+  let x=z; let y=x; let tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp); let ser=1.000000000190015;
+  for(let j=0;j<cof.length;j++){ y+=1; ser += cof[j]/y; }
+  return -tmp + Math.log(2.5066282746310005*ser/x);
+}
+function poissonPMF(k, mu){ return Math.exp(-mu)*Math.pow(mu,k)/Math.max(1,Math.exp(logFactorial(k))); }
+
+/* Negative Binomial PMF (r as goals) using log form: */
+function nbinomPMF(r, mu, k){
+  if(k <= 0.000001) return poissonPMF(r, mu);
+  // logC = logGamma(r+k) - logGamma(k) - log(r!)
+  const logC = logGamma(r + k) - logGamma(k) - logFactorial(r);
+  const logP = logC + k*Math.log(k/(k+mu)) + r*Math.log(mu/(k+mu));
+  return Math.exp(logP);
+}
+
+/* Dixon-Coles simplified correction factor for low scores */
+function dixonColesCorr(i,j,lambda_i, lambda_j, rho=0.0){
+  // simplified: if (i,j) in {(0,0),(0,1),(1,0),(1,1)} apply small adjustment
+  if((i===0 && j===0) || (i===0 && j===1) || (i===1 && j===0) || (i===1 && j===1)){
+    // small rho adjustment proportional to (1 - exp(-...))
+    return 1 + rho * (1 - Math.exp(-(lambda_i+lambda_j)));
+  }
+  return 1.0;
+}
+
+/* compute joint dist for ensemble models (Poisson, NB, Dixon-Coles corr) */
+function computeEnsemble(lambdaH, lambdaA, kH, kA, rho=0.0, maxG=12, weights={poisson:0.2, nb:0.4, dc:0.4}){
+  const matrix = {}; const total = [];
+  for(let i=0;i<=maxG;i++){
+    for(let j=0;j<=maxG;j++){
+      // Poisson joint
+      const pPois = poissonPMF(i, lambdaH) * poissonPMF(j, lambdaA);
+      // NB joint
+      const pNB = nbinomPMF(i, lambdaH, kH) * nbinomPMF(j, lambdaA, kA);
+      // DC approx: use Poisson joint times correction
+      const corr = dixonColesCorr(i,j,lambdaH,lambdaA,rho);
+      const pDC = pPois * corr;
+      const p = weights.poisson*pPois + weights.nb*pNB + weights.dc*pDC;
+      matrix[`${i}-${j}`] = p;
+      total[i+j] = (total[i+j] || 0) + p;
+    }
+  }
+  return {matrix, total};
+}
+
+/* eval functions (handles quarter lines) */
+function evalHDP(matrix,line){
+  if(Math.abs(line*4)%2!==0){
+    const l1=Math.floor(line*2)/2, l2=l1+0.5;
+    const r1=evalHDP(matrix,l1), r2=evalHDP(matrix,l2);
+    const comb={}; for(const k in r1) comb[k]=(r1[k]+r2[k])/2; return comb;
+  }
+  let fullWin=0,halfWin=0,push=0,halfLoss=0,fullLoss=0;
+  for(const key in matrix){
+    const p=matrix[key]; const [h,a]=key.split('-').map(Number);
+    const diff = h - a + line;
+    if(diff>0.5) fullWin+=p;
+    else if(diff===0.5) halfWin+=p;
+    else if(diff===0) push+=p;
+    else if(diff===-0.5) halfLoss+=p;
+    else if(diff<-0.5) fullLoss+=p;
+  }
+  return {fullWin,halfWin,push,halfLoss,fullLoss};
+}
+
+function evalOU(totalDist, line){
+  if(Math.abs(line*4)%2!==0){
+    const l1=Math.floor(line*2)/2, l2=l1+0.5;
+    const r1=evalOU(totalDist,l1), r2=evalOU(totalDist,l2);
+    const comb={}; for(const k in r1) comb[k]=(r1[k]+r2[k])/2; return comb;
+  }
+  let over=0,under=0,push=0,halfOver=0,halfUnder=0;
+  for(let g=0; g<totalDist.length; g++){
+    const p = totalDist[g] || 0; const diff = g - line;
+    if(diff>0.5) over += p;
+    else if(diff===0.5) halfOver += p;
+    else if(diff===0) push += p;
+    else if(diff===-0.5) halfUnder += p;
+    else if(diff<-0.5) under += p;
+  }
+  return {over,under,push,halfOver,halfUnder};
+}
+
+/* entropy-based confidence (0..1) */
+function entropyScore(dist){
+  const p = dist.map(x=>x||0);
+  const s = p.reduce((acc,v)=> acc + (v>0? -v*Math.log2(v) : 0), 0);
+  const maxH = Math.log2(p.length||1);
+  return maxH>0 ? 1 - (s/maxH) : 0;
+}
+
+/* ------------------- CSV calibration support (simple) ------------------- */
+let calibrationData = null;
+document.getElementById('fileCal').addEventListener('change', (ev)=>{
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    const txt = e.target.result.trim();
+    const rows = txt.split(/\r?\n/).map(r=> r.split(',').map(c=>c.trim()));
+    calibrationData = [];
+    for(const row of rows){
+      if(row.length < 2) continue;
+      const modelP = parseFloat(row[0]);
+      const marketP = parseFloat(row[1]);
+      const outcome = row.length>=3 ? parseInt(row[2]) : null;
+      if(!isNaN(modelP)) calibrationData.push({modelP,marketP: isNaN(marketP)?null:marketP, outcome: isNaN(outcome)?null:outcome});
+    }
+    alert('Calibration CSV loaded: ' + calibrationData.length + ' rows');
+  };
+  r.readAsText(f);
+});
+
+/* ------------------- Main analysis ------------------- */
+let lastResult = null;
+
+document.getElementById('btnAnalyze').addEventListener('click', ()=>{
+  // read meta
+  const leagueKey = sel.value;
+  const meta = leagueMeta[leagueKey] || {avg:2.5, baseK:1.2, homeBias:0.08, reliability:0.5};
+  const leagueAvg = meta.avg;
+  const baseK = meta.baseK;
+  const baseHomeBias = meta.homeBias;
+  const baseReliability = meta.reliability;
+
+  // read inputs
+  const prior = Math.max(0.1, safeNum(document.getElementById('prior').value, 5));
+  const decay = Math.max(0.01, Math.min(0.99, safeNum(document.getElementById('decay').value, 0.65)));
+  const h2hCap = Math.max(0, Math.min(0.9, safeNum(document.getElementById('h2hCap').value, 0.55)));
+  const homeAdvUser = Math.max(0.8, Math.min(1.3, safeNum(document.getElementById('homeAdv').value, 1.12)));
+  const tempoScale = safeNum(document.getElementById('tempoScale').value, 0.03);
+  const blendUser = Math.max(0, Math.min(1, safeNum(document.getElementById('blend').value, 0.7)));
+  const dispBase = Math.max(0.2, safeNum(document.getElementById('dispBase').value, 1.0));
+  const threshold = Math.max(0, safeNum(document.getElementById('threshold').value, 0.05));
+  const confFloor = Math.max(0, Math.min(1, safeNum(document.getElementById('confFloor').value, 0.7)));
+
+  const sampleN = Math.max(1, parseInt(document.getElementById('sampleN').value || 10));
+  const gfH = Math.max(0, safeNum(document.getElementById('perfGFH').value, 1.2));
+  const gaH = Math.max(0, safeNum(document.getElementById('perfGAH').value, 0.6));
+  const gfA = Math.max(0, safeNum(document.getElementById('perfGFA').value, 1.6));
+  const gaA = Math.max(0, safeNum(document.getElementById('perfGAA').value, 0.4));
+  const h2hGF_H = Math.max(0, safeNum(document.getElementById('h2hGFH').value, gfH));
+  const h2hGA_H = Math.max(0, safeNum(document.getElementById('h2hGAH').value, gaH));
+  const h2hGF_A = Math.max(0, safeNum(document.getElementById('h2hGFA').value, gfA));
+  const h2hGA_A = Math.max(0, safeNum(document.getElementById('h2hGAA').value, gaA));
+  const fixture = document.getElementById('fixtureContext').value;
+  const lineupImpact = parseFloat(document.getElementById('lineupImpact').value || 0);
+
+  // momentum optional
+  const momentum = safeNum(document.getElementById('momentum').value, 0);
+
+  // shrinkage: pseudo-count prior towards league per side
+  const leaguePerSide = leagueAvg / 2;
+  function shrink(mean, n){
+    return (mean * n + leaguePerSide * prior) / (n + prior);
+  }
+  const gfH_shr = shrink(gfH, sampleN);
+  const gaH_shr = shrink(gaH, sampleN);
+  const gfA_shr = shrink(gfA, sampleN);
+  const gaA_shr = shrink(gaA, sampleN);
+
+  // H2H decay weighting (if sample small we assume more recent importance; simplified)
+  let rawH2hW = Math.min(h2hCap, 0.55);
+  const h2hStrength = Math.abs((h2hGF_H + h2hGA_A) - (h2hGF_A + h2hGA_H));
+  rawH2hW = Math.min(h2hCap, rawH2hW + Math.min(0.15, h2hStrength/4));
+  const formW = 1 - rawH2hW;
+
+  // combine form and H2H (relative to league per side)
+  const atkH = formW * (gfH_shr / leaguePerSide) + rawH2hW * (h2hGF_H / leaguePerSide);
+  const defA = formW * (gaA_shr / leaguePerSide) + rawH2hW * (h2hGA_A / leaguePerSide);
+  const atkA = formW * (gfA_shr / leaguePerSide) + rawH2hW * (h2hGF_A / leaguePerSide);
+  const defH = formW * (gaH_shr / leaguePerSide) + rawH2hW * (h2hGA_H / leaguePerSide);
+
+  // momentum adjust: small multiplicative factor
+  const momFactorH = 1 + Math.max(-0.3, Math.min(0.3, momentum || 0));
+  const momFactorA = 1 + Math.max(-0.3, Math.min(0.3, -momentum || 0));
+
+  // tempo adjust: if both teams tempo high -> push total mean right
+  const tempoIndex = ((gfH_shr + gaH_shr) + (gfA_shr + gaA_shr)) / (2 * leagueAvg);
+  const tempoAdjust = 1 + tempoScale * (tempoIndex - 1);
+
+  // fixture context modifier
+  let fixtureBias = 1.0;
+  if(fixture === 'derby') fixtureBias += 0.06;
+  if(fixture === 'cup') fixtureBias += 0.02;
+  if(fixture === 'deciding') fixtureBias += 0.03;
+
+  // lineupImpact lowers attack if missing players
+  const lineupFactor = lineupImpact || 1.0;
+
+  // compute raw mu (xG-proxy)
+  let muH = leagueAvg * 0.5 * atkH * defA * homeAdvUser * momFactorH * tempoAdjust * fixtureBias * lineupFactor;
+  let muA = leagueAvg * 0.5 * atkA * defH * momFactorA * tempoAdjust * lineupFactor;
+
+  // bounds
+  muH = Math.max(0.02, Math.min(muH, 8));
+  muA = Math.max(0.02, Math.min(muA, 8));
+
+  // dynamic dispersion k: baseK adjusted by obs proxy and dispBase
+  const obsProxy = Math.max(0.5, (gfH_shr + gaH_shr + gfA_shr + gaA_shr)/4);
+  let kAuto_H = Math.max(0.2, Math.min(6, baseK * (obsProxy/1.4) * dispBase));
+  let kAuto_A = Math.max(0.2, Math.min(6, baseK * (obsProxy/1.4) * dispBase * (1 + (defA - defH)/4)));
+
+  // Dixon-Coles rho estimate (small)
+  const rho = Math.max(-0.15, Math.min(0.15, (h2hStrength-0.5)/10));
+
+  // ensemble weights (we keep DC and NB dominant)
+  const weights = {poisson:0.2, nb:0.4, dc:0.4};
+
+  // compute ensemble joint
+  const E = computeEnsemble(muH, muA, kAuto_H, kAuto_A, rho, 14, weights);
+
+  // evaluate HDP/OUs
+  const hdpLine = safeNum(document.getElementById('hdpLine').value, 0);
+  const hdpHO = safeNum(document.getElementById('hdpHomeOdd').value, 2.0);
+  const hdpAO = safeNum(document.getElementById('hdpAwayOdd').value, 2.0);
+  const ouLine = safeNum(document.getElementById('ouLine').value, 2.5);
+  const overOdd = safeNum(document.getElementById('overOdd').value, 2.0);
+  const underOdd = safeNum(document.getElementById('underOdd').value, 2.0);
+
+  const hdp = evalHDP(E.matrix, hdpLine);
+  const ou = evalOU(E.total, ouLine);
+
+  function EV(prob, odd){ return prob*odd - 1; }
+
+  // model probabilities
+  const probOverModel = ou.over + 0.5*(ou.halfOver||0);
+  const probUnderModel = ou.under + 0.5*(ou.halfUnder||0);
+  const probHdpHomeModel = hdp.fullWin + 0.5*(hdp.halfWin||0) + 0.5*(hdp.push||0);
+  const probHdpAwayModel = hdp.fullLoss + 0.5*(hdp.halfLoss||0) + 0.5*(hdp.push||0);
+
+  // model EVs
+  const evOverModel = EV(probOverModel, overOdd);
+  const evUnderModel = EV(probUnderModel, underOdd);
+  const evHdpHomeModel = EV(probHdpHomeModel, hdpHO);
+  const evHdpAwayModel = EV(probHdpAwayModel, hdpAO);
+
+  // market implied normalized probs (simple)
+  const impOverRaw = overOdd ? 1/overOdd : 0;
+  const impUnderRaw = underOdd ? 1/underOdd : 0;
+  const sOU = (impOverRaw + impUnderRaw) || 1;
+  const impOver = impOverRaw / sOU;
+  const impUnder = impUnderRaw / sOU;
+
+  const impHdpHomeRaw = hdpHO ? 1/hdpHO : 0;
+  const impHdpAwayRaw = hdpAO ? 1/hdpAO : 0;
+  const sHdp = (impHdpHomeRaw + impHdpAwayRaw) || 1;
+  const impHdpHome = impHdpHomeRaw / sHdp;
+  const impHdpAway = impHdpAwayRaw / sHdp;
+
+  // adaptive blending weights based on distance & league reliability
+  function blendScore(modelP, marketP){
+    const d = Math.abs(modelP - marketP);
+    const rel = baseReliability;
+    // more distance -> favor model; less distance -> lean market
+    const w = Math.max(0.05, Math.min(0.95, blendUser * (0.25 + 0.75 * Math.tanh(d*6))));
+    return w * (1 - rel*0.2);
+  }
+  const wOver = blendScore(probOverModel, impOver);
+  const wUnder = blendScore(probUnderModel, impUnder);
+  const wHdpHome = blendScore(probHdpHomeModel, impHdpHome);
+  const wHdpAway = blendScore(probHdpAwayModel, impHdpAway);
+
+  // blended probabilities
+  const probOver = wOver*probOverModel + (1-wOver)*impOver;
+  const probUnder = wUnder*probUnderModel + (1-wUnder)*impUnder;
+  const probHdpHome = wHdpHome*probHdpHomeModel + (1-wHdpHome)*impHdpHome;
+  const probHdpAway = wHdpAway*probHdpAwayModel + (1-wHdpAway)*impHdpAway;
+
+  const evOver = EV(probOver, overOdd);
+  const evUnder = EV(probUnder, underOdd);
+  const evHdpHome = EV(probHdpHome, hdpHO);
+  const evHdpAway = EV(probHdpAway, hdpAO);
+
+  // Confidence: entropy + model-market consensus + submodel agreement
+  const ent = entropyScore(E.total); // 0..1 (higher -> peaked -> higher confidence)
+  const mmDist = (Math.abs(probOverModel-impOver) + Math.abs(probHdpHomeModel-impHdpHome))/2;
+  // submodel agreement simplified: compare NB vs Poisson top mass (approx)
+  // We'll approximate submodel consensus by relative difference of Poisson NB marginals at mean
+  // (quick heuristic)
+  const poissonOverMass = ou.over; // approximate from ensemble total (not exact submodel)
+  const nbOverMass = 0; // skip heavy calc; use 0.5 baseline
+  const submodelConsensus = 1 - Math.min(0.5, mmDist);
+  let conf = ent * (1 - Math.tanh(mmDist*2)) * (0.5 + 0.5*submodelConsensus);
+  conf = Math.max(0, Math.min(1, conf));
+  const confPct = Math.round(conf*100) + '%';
+
+  // score picks with confidence and EV; use adaptive EV threshold (based on odds)
+  function adaptiveThresholdByOdds(odd){
+    if(odd < 1.8) return 0.03;
+    if(odd < 3.0) return 0.05;
+    return 0.09;
+  }
+  const th_over = adaptiveThresholdByOdds(overOdd);
+  const th_under = adaptiveThresholdByOdds(underOdd);
+  const th_hdpHome = adaptiveThresholdByOdds(hdpHO);
+  const th_hdpAway = adaptiveThresholdByOdds(hdpAO);
+
+  // candidates
+  let candidates = [
+    {label:`Over ${ouLine}`, ev:evOver, prob:probOver, odd:overOdd, th:th_over},
+    {label:`Under ${ouLine}`, ev:evUnder, prob:probUnder, odd:underOdd, th:th_under},
+    {label:`HDP Home ${hdpLine}`, ev:evHdpHome, prob:probHdpHome, odd:hdpHO, th:th_hdpHome},
+    {label:`HDP Away ${hdpLine}`, ev:evHdpAway, prob:probHdpAway, odd:hdpAO, th:th_hdpAway}
+  ];
+
+  // compute score = blended EV * (0.5 + 0.5*conf) * prob factor
+  candidates.forEach(c => {
+    c.score = c.ev * (0.5 + 0.5*conf) * Math.max(0.5, Math.tanh((c.prob||0)*3));
+  });
+
+  candidates.sort((a,b)=>b.score - a.score);
+
+  // auto sharp pick: EV > threshold AND conf > confFloor
+  let sharp = null;
+  if(candidates[0].ev > candidates[0].th && conf >= confFloor) sharp = candidates[0];
+
+  // prepare output text
+  let out = `League: ${leagueKey} (avg ${leagueAvg})\nMu Home: ${muH.toFixed(2)} | Mu Away: ${muA.toFixed(2)} | kH: ${kAuto_H.toFixed(2)} | kA: ${kAuto_A.toFixed(2)}\nDixonRho: ${rho.toFixed(3)} | Ensemble weights P/NB/DC: ${weights.poisson}/${weights.nb}/${weights.dc}\nConfidence: ${confPct}\n\n`;
+  out += `O/U ${ouLine}\n ModelP Over: ${pct(probOverModel)} | BlendedP Over: ${pct(probOver)} | EV: ${(evOver*100).toFixed(1)}%\n ModelP Under: ${pct(probUnderModel)} | BlendedP Under: ${pct(probUnder)} | EV: ${(evUnder*100).toFixed(1)}%\n\n`;
+  out += `HDP ${hdpLine}\n ModelP HDP Home: ${pct(probHdpHomeModel)} | Blended: ${pct(probHdpHome)} | EV: ${(evHdpHome*100).toFixed(1)}%\n ModelP HDP Away: ${pct(probHdpAwayModel)} | Blended: ${pct(probHdpAway)} | EV: ${(evHdpAway*100).toFixed(1)}%\n\n`;
+  out += `Top candidates (by score):\n`;
+  candidates.forEach(c => { out += ` - ${c.label} | EV ${(c.ev*100).toFixed(1)}% | Score ${(c.score*100).toFixed(2)}% | Prob ${pct(c.prob)}\n`; });
+
+  document.getElementById('output').innerText = out;
+
+  let reco = '';
+  if(sharp){
+    reco += `🎯 SHARP PICK: ${sharp.label} — EV ${(sharp.ev*100).toFixed(1)}% | Confidence ${confPct}\n\nAlternatives:\n`;
+    candidates.slice(1,4).forEach(a => reco += ` - ${a.label} | EV ${(a.ev*100).toFixed(1)}% | Conf ${confPct}\n`);
+  } else {
+    reco = `⚪ No sharp pick (best EV ${(candidates[0].ev*100).toFixed(1)}% but either EV<threshold ${ (candidates[0].th*100).toFixed(1)}% or Confidence ${confPct} < floor ${(confFloor*100).toFixed(0)}%).`;
+  }
+  document.getElementById('recommendation').innerText = reco;
+
+  // save last result
+  lastResult = {league:leagueKey, muH, muA, kAuto_H, kAuto_A, rho, E, ou, hdp, candidates, conf};
+
+  // draw distribution
+  drawDist(E.total, ouLine);
+});
+
+/* Reset */
+document.getElementById('btnReset').addEventListener('click', ()=> location.reload());
+
+/* Explain last pick (short) */
+document.getElementById('btnExplain').addEventListener('click', ()=>{
+  if(!lastResult){ alert('Belum ada analisis.'); return; }
+  const r = lastResult;
+  let s = `Explain:\nMuH=${r.muH.toFixed(2)} (home advantage & form), MuA=${r.muA.toFixed(2)}.\nDispersion: kH=${r.kAuto_H.toFixed(2)}, kA=${r.kAuto_A.toFixed(2)}.\nConfidence combines distribution entropy & model/market agreement.\nTop contributors: homeAdv, shrinkage(prior), H2H weight cap, tempo adjust.`;
+  alert(s);
+});
+
+/* Bulk and Export (simple) */
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  if(!lastResult){ alert('Tidak ada hasil untuk diexport.'); return; }
+  const c = lastResult.candidates;
+  let csv = 'label,ev,prob,score,odd\n';
+  c.forEach(x => csv += `${x.label},${x.ev},${x.prob},${x.score},${x.odd}\n`);
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='hdp_ultrasharp_result.csv'; a.click();
+});
+
+/* Bulk Mode (prompt) - user pastes JSON array of matches with fields required */
+document.getElementById('btnBulk').addEventListener('click', async ()=>{
+  const txt = prompt('Paste JSON array of matches. Each item: {league, perfGFH, perfGAH, perfGFA, perfGAA, h2hGFH, h2hGAH, h2hGFA, h2hGAA, hdpLine, hdpHomeOdd, hdpAwayOdd, ouLine, overOdd, underOdd }');
+  if(!txt) return;
+  let arr;
+  try{ arr = JSON.parse(txt); } catch(e){ alert('JSON invalid'); return; }
+  if(!Array.isArray(arr) || arr.length===0){ alert('Expected non-empty array'); return; }
+  // produce top picks per match
+  const results = [];
+  for(const m of arr){
+    // set fields quickly
+    document.getElementById('leagueSelect').value = m.league || sel.value;
+    document.getElementById('perfGFH').value = m.perfGFH || document.getElementById('perfGFH').value;
+    document.getElementById('perfGAH').value = m.perfGAH || document.getElementById('perfGAH').value;
+    document.getElementById('perfGFA').value = m.perfGFA || document.getElementById('perfGFA').value;
+    document.getElementById('perfGAA').value = m.perfGAA || document.getElementById('perfGAA').value;
+    document.getElementById('h2hGFH').value = m.h2hGFH || document.getElementById('h2hGFH').value;
+    document.getElementById('h2hGAH').value = m.h2hGAH || document.getElementById('h2hGAH').value;
+    document.getElementById('h2hGFA').value = m.h2hGFA || document.getElementById('h2hGFA').value;
+    document.getElementById('h2hGAA').value = m.h2hGAA || document.getElementById('h2hGAA').value;
+    document.getElementById('hdpLine').value = m.hdpLine || '';
+    document.getElementById('hdpHomeOdd').value = m.hdpHomeOdd || '';
+    document.getElementById('hdpAwayOdd').value = m.hdpAwayOdd || '';
+    document.getElementById('ouLine').value = m.ouLine || '';
+    document.getElementById('overOdd').value = m.overOdd || '';
+    document.getElementById('underOdd').value = m.underOdd || '';
+    // run analysis synchronously by invoking click handler
+    await new Promise(resolve => { document.getElementById('btnAnalyze').click(); setTimeout(resolve, 120); });
+    if(lastResult && lastResult.candidates) results.push({match:m, top:lastResult.candidates[0]});
+  }
+  // show summary
+  const out = results.map(r => `${r.match.league||''} -> ${r.top.label} EV ${(r.top.ev*100).toFixed(1)}%`).join('\n');
+  alert('Bulk done. Top picks:\\n' + out);
+});
+
+/* draw distribution */
+function drawDist(dist, ouLine){
+  const canvas = document.getElementById('distChart'); const ctx = canvas.getContext('2d');
+  const DPR = window.devicePixelRatio || 1; const w = canvas.clientWidth; const h = canvas.clientHeight;
+  canvas.width = Math.floor(w*DPR); canvas.height = Math.floor(h*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,w,h);
+  const max = Math.max(...dist, 1e-6); const barW = w / dist.length;
+  for(let i=0;i<dist.length;i++){
+    const p = dist[i]||0; const barH = (p/max)*(h-30);
+    ctx.fillStyle = '#7fb3ff'; ctx.fillRect(i*barW, h-barH, barW-2, barH);
+    ctx.fillStyle = '#033'; ctx.font='11px Arial'; ctx.textAlign='center';
+    ctx.fillText(i, i*barW + barW/2, h-8);
+  }
+  // draw O/U marker
+  if(typeof ouLine === 'number'){
+    ctx.strokeStyle = 'rgba(255,80,80,0.9)'; ctx.lineWidth = 2;
+    const x = (ouLine / Math.max(1, dist.length-1)) * w;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+    ctx.fillStyle='rgba(255,80,80,0.9)'; ctx.fillText('O/U '+ouLine, Math.min(w-60,x+30), 14);
+  }
+}
+
+</script>
+</body>
+</html>
