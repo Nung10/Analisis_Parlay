@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Prediksi Pertandingan - v25 (Ultra Analytics)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#111}
+    h1{font-size:20px}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:12px}
+    .block{padding:10px;border-radius:8px;border:1px solid #ddd;background:#fff}
+    label{display:block;font-size:13px;margin:6px 0}
+    input[type="number"], input[type="text"], select{width:100%;padding:6px;border:1px solid #ccc;border-radius:6px}
+    .small{font-size:12px;color:#666}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#0b74de;color:#fff;cursor:pointer}
+    .result{white-space:pre-wrap;font-family:monospace;background:#f8f8f8;padding:10px;border-radius:8px;border:1px dashed #bbb}
+    .value-item{padding:6px;border-radius:6px;margin:6px 0}
+    .green{background:#e6fff0;border:1px solid #9ce6b9}
+    .yellow{background:#fff8e6;border:1px solid #f1d08a}
+    .gray{background:#f2f2f4;border:1px solid #d8d8da}
+    table{width:100%;border-collapse:collapse;margin-top:6px}
+    th,td{padding:6px;border-bottom:1px solid #eee;text-align:center;font-size:13px}
+    th{background:#f0f0f0}
+  </style>
+</head>
+<body>
+  <h1>⚽ Prediksi Pertandingan — v25 (Ultra Analytics)</h1>
+  <p class="small">Model v25: xG + shots + tempo + player adjustment + ELO + ensemble Monte Carlo.</p>
+
+  <div class="grid">
+    <div>
+      <div class="block">
+        <h3>Input Data Tim</h3>
+        <label>Home: <input id="teamHome" type="text" value="Home FC"></label>
+        <label>Away: <input id="teamAway" type="text" value="Away FC"></label>
+
+        <label>5 Laga Terakhir Home (format gol:keb): 
+          <input id="formHome" type="text" placeholder="2:1,1:1,3:0,0:2,1:0">
+        </label>
+        <label>5 Laga Terakhir Away: 
+          <input id="formAway" type="text" placeholder="1:0,0:2,2:2,1:3,0:1">
+        </label>
+
+        <label class="small">xG (per game):
+          <input id="xgHome" type="number" step="0.01" placeholder="">
+          <input id="xgAway" type="number" step="0.01" placeholder="">
+        </label>
+
+        <label class="small">Shots on Target per game:
+          <input id="sotHome" type="number" step="0.1" placeholder="">
+          <input id="sotAway" type="number" step="0.1" placeholder="">
+        </label>
+
+        <label class="small">Conversion rate (0–1):
+          <input id="convHome" type="number" step="0.01" value="0.12">
+          <input id="convAway" type="number" step="0.01" value="0.10">
+        </label>
+
+        <label>ELO rating:
+          <input id="eloHome" type="number" value="1500">
+          <input id="eloAway" type="number" value="1480">
+        </label>
+
+        <label>H2H (baru → lama): <input id="h2h" type="text" placeholder="2:1,1:2"></label>
+        <label>Decay k (exponential): <input id="decayK" type="number" step="0.01" value="0.25"></label>
+        <label>Absensi pemain kunci (opsional, mis: -0.3 Home, -0.2 Away):
+          <input id="missHome" type="number" step="0.1" placeholder="">
+          <input id="missAway" type="number" step="0.1" placeholder="">
+        </label>
+      </div>
+
+      <div class="block" style="margin-top:10px">
+        <h3>Odds Pasar</h3>
+        <label>1X2:
+          <input id="oddHome" type="number" step="0.01">
+          <input id="oddDraw" type="number" step="0.01">
+          <input id="oddAway" type="number" step="0.01">
+        </label>
+        <label>HDP line:
+          <input id="hdpLine" type="number" step="0.25" value="-0.5">
+          H <input id="oddHdpHome" type="number" step="0.01">
+          A <input id="oddHdpAway" type="number" step="0.01">
+        </label>
+        <label>O/U line:
+          <input id="ouLine" type="number" step="0.25" value="2.5">
+          O <input id="oddOver" type="number" step="0.01">
+          U <input id="oddUnder" type="number" step="0.01">
+        </label>
+      </div>
+
+      <div class="block" style="margin-top:10px">
+        <h3>Opsi Simulasi</h3>
+        <label>Monte Carlo runs: <input id="mcRuns" type="number" value="2500" step="100"></label>
+        <label>Correlation rho: <input id="rho" type="number" step="0.01" value="0.12"></label>
+        <div style="margin-top:8px">
+          <button id="btnAnalyze">Analisis & Rekomendasi</button>
+          <button id="btnExample">Isi Contoh</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="block">
+        <h3>Ringkasan Cepat</h3>
+        <div id="summary" class="result">Klik Analisis untuk hasil.</div>
+      </div>
+      <div class="block" style="margin-top:10px">
+        <h3>Value Bets</h3>
+        <div id="valueList"></div>
+      </div>
+      <div class="block" style="margin-top:10px">
+        <h3>Detail Output</h3>
+        <div id="debug" class="result">--</div>
+      </div>
+    </div>
+  </div>
+<div class="block" style="margin-top:10px">
+        <h3>Panduan Membaca Output</h3>
+        <div class="result" style="font-size:13px;line-height:1.5">
+          <b>Over/Under:</b><br>
+          - Tabel menunjukkan persentase probabilitas OVER dan UNDER di setiap garis (1.5 – 5.0).<br>
+          - Jika Over% jauh di atas 50% → kecenderungan banyak gol.<br>
+          - Jika Under% lebih dominan → kecenderungan sedikit gol.<br>
+          - Market biasanya buka di 2.5 atau 3.0 → bandingkan dengan baris yang sesuai untuk cari value.<br><br>
+
+          <b>Handicap:</b><br>
+          - Tabel menunjukkan peluang Home atau Away menang di setiap garis handicap (-2.0 s/d +2.0).<br>
+          - Contoh: pada -0.5 → Home% = peluang Home menang langsung.<br>
+          - Pada +0.5 → Away% = peluang Away tidak kalah (menang/draw).<br>
+          - Cari garis yang paling dekat dengan market line, lalu lihat siapa yang punya probabilitas lebih tinggi dibanding implied odds.<br><br>
+
+          <b>Value Bets:</b><br>
+          - Ditandai warna:<br>
+            🟢 Hijau = Edge tinggi (>5%) → Rekomendasi kuat.<br>
+            🟡 Kuning = Edge sedang (2–5%) → Rekomendasi moderat.<br>
+            ⚪ Abu-abu = Edge rendah (<2%) → Hati-hati / no bet.<br>
+        </div>
+      </div>
+<script>
+// ===== Utility functions =====
+function safe(v,d=NaN){const x=parseFloat(v);return isNaN(x)?d:x;}
+function parseScores(raw){
+  if(!raw) return [];
+  return raw.split(',').map(s=>s.trim()).filter(Boolean).map(p=>{
+    const m=p.match(/(\d+)\s*[:\-]\s*(\d+)/);
+    if(!m) return null;
+    return {for:parseInt(m[1]), against:parseInt(m[2])};
+  }).filter(Boolean);
+}
+function expDecayWeights(n,k){
+  const ws=[];for(let i=0;i<n;i++){ws.push(Math.exp(-k*i));}
+  const sum=ws.reduce((a,b)=>a+b,0);
+  return ws.map(w=>w/sum);
+}
+function poissonRand(lambda){
+  let L=Math.exp(-lambda),k=0,p=1;
+  while(p>L){k++;p*=Math.random();if(k>1000) break;}
+  return k-1;
+}
+function sampleBivariate(lambdaH,lambdaA,rho){
+  const shared=rho*Math.min(lambdaH,lambdaA);
+  const hPart=Math.max(0,lambdaH-shared);
+  const aPart=Math.max(0,lambdaA-shared);
+  const sh=poissonRand(shared);
+  return [sh+poissonRand(hPart), sh+poissonRand(aPart)];
+}
+function computeOU(totals,line,runs){
+  let over=0,under=0;const isInt=Number.isInteger(line);
+  for(const k in totals){
+    const g=parseInt(k),v=totals[k];
+    if(isInt){
+      if(g>line) over+=v;
+      else if(g<line) under+=v;
+      else{over+=0.5*v;under+=0.5*v;}
+    } else { if(g>line) over+=v; else under+=v; }
+  }
+  return {over:over/runs,under:under/runs};
+}
+function colorByEdge(edge){
+  if(edge>=0.05) return 'green';
+  if(edge>=0.02) return 'yellow';
+  return 'gray';
+}
+
+// ===== Core Model =====
+function computeModel(){
+  const formH=parseScores(document.getElementById('formHome').value);
+  const formA=parseScores(document.getElementById('formAway').value);
+  const xgH_in=safe(document.getElementById('xgHome').value,NaN);
+  const xgA_in=safe(document.getElementById('xgAway').value,NaN);
+  const sotH=safe(document.getElementById('sotHome').value,NaN);
+  const sotA=safe(document.getElementById('sotAway').value,NaN);
+  const convH=safe(document.getElementById('convHome').value,0.12);
+  const convA=safe(document.getElementById('convAway').value,0.10);
+  const eloH=safe(document.getElementById('eloHome').value,1500);
+  const eloA=safe(document.getElementById('eloAway').value,1500);
+  const missH=safe(document.getElementById('missHome').value,0);
+  const missA=safe(document.getElementById('missAway').value,0);
+  const k=safe(document.getElementById('decayK').value,0.25);
+
+  // weighted form
+  const nForm=5,w=expDecayWeights(nForm,k);
+  function weightedAvg(arr){
+    if(!arr||arr.length===0) return {gf:0,ga:0};
+    let gf=0,ga=0,tot=0;
+    for(let i=0;i<Math.min(arr.length,nForm);i++){
+      gf+=arr[i].for*w[i];ga+=arr[i].against*w[i];tot+=w[i];
+    }
+    return {gf:gf/tot,ga:ga/tot};
+  }
+  const fH=weightedAvg(formH),fA=weightedAvg(formA);
+
+  const baseH=fH.gf||1.2, baseA=fA.gf||1.0;
+  const xgH=isNaN(xgH_in)?baseH:xgH_in;
+  const xgA=isNaN(xgA_in)?baseA:xgA_in;
+  const rawAttH=(0.75*xgH)+(0.25*(sotH*convH||0));
+  const rawAttA=(0.75*xgA)+(0.25*(sotA*convA||0));
+  const leagueAvg=(xgH+xgA+baseH+baseA)/4;
+  function sf(eloT,eloO){return Math.max(0.7,Math.min(1.3,1+(eloT-eloO)/1200));}
+  const sfH=sf(eloH,eloA), sfA=sf(eloA,eloH);
+  const dsH=(fH.ga||1.1)/leagueAvg, dsA=(fA.ga||1.1)/leagueAvg;
+
+  let lambdaH=leagueAvg*(rawAttH/leagueAvg)*dsA*sfH;
+  let lambdaA=leagueAvg*(rawAttA/leagueAvg)*dsH*sfA;
+
+  // adjust for absences
+  lambdaH=Math.max(0.05,lambdaH+missH);
+  lambdaA=Math.max(0.05,lambdaA+missA);
+
+  return {lambdaH,lambdaA,leagueAvg};
+}
+
+function monteCarlo(lambdaH,lambdaA,rho,runs){
+  const scoreFreq={},totals={};let h=0,d=0,a=0;
+  for(let t=0;t<runs;t++){
+    const [gh,ga]=sampleBivariate(lambdaH,lambdaA,rho);
+    scoreFreq[`${gh}-${ga}`]=(scoreFreq[`${gh}-${ga}`]||0)+1;
+    totals[gh+ga]=(totals[gh+ga]||0)+1;
+    if(gh>ga) h++; else if(gh===ga) d++; else a++;
+  }
+  return {scoreFreq,totals,pHome:h/runs,pDraw:d/runs,pAway:a/runs};
+}
+function analyze(){
+  const teamH=document.getElementById('teamHome').value||'Home';
+  const teamA=document.getElementById('teamAway').value||'Away';
+  const {lambdaH,lambdaA}=computeModel();
+  const runs=safe(document.getElementById('mcRuns').value,2500);
+  const rho=safe(document.getElementById('rho').value,0.1);
+  const {scoreFreq,totals,pHome,pDraw,pAway}=monteCarlo(lambdaH,lambdaA,rho,runs);
+
+  // ----- Summary -----
+  const sortedScores=Object.entries(scoreFreq).sort((a,b)=>b[1]-a[1]);
+  const topScores=sortedScores.slice(0,5).map(([sc,v])=>`${sc} (${(100*v/runs).toFixed(1)}%)`).join(', ');
+  const avgH=(Object.entries(scoreFreq).reduce((s,[sc,v])=>s+parseInt(sc.split('-')[0])*v,0)/runs).toFixed(2);
+  const avgA=(Object.entries(scoreFreq).reduce((s,[sc,v])=>s+parseInt(sc.split('-')[1])*v,0)/runs).toFixed(2);
+
+  document.getElementById('summary').textContent=
+    `Top skor: ${topScores}\nλH=${lambdaH.toFixed(2)} | λA=${lambdaA.toFixed(2)}\nExpected Goals: H ${avgH} | A ${avgA}\nProbabilitas: Home ${(100*pHome).toFixed(1)}% | Draw ${(100*pDraw).toFixed(1)}% | Away ${(100*pAway).toFixed(1)}%`;
+
+  // helper Confidence label
+  function confLabelProb(p){
+    if(p>=0.60) return '🟢 HIGH';
+    if(p>=0.55) return '🟡 MED';
+    return '⚪ LOW';
+  }
+
+  // ----- Over/Under Table -----
+  const lines=[1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0];
+  let ouHTML='<table><tr><th>Line</th><th>Over%</th><th>Under%</th><th>Confidence</th></tr>';
+  const ouProbs={};
+  for(const l of lines){
+    const {over,under}=computeOU(totals,l,runs);
+    ouProbs[l]={over,under};
+    const maxP=Math.max(over,under);
+    ouHTML+=`<tr><td>${l}</td><td>${(100*over).toFixed(1)}</td><td>${(100*under).toFixed(1)}</td><td>${confLabelProb(maxP)}</td></tr>`;
+  }
+  ouHTML+='</table>';
+
+  // ----- Handicap Table -----
+  const hdpLines=[-2.0,-1.5,-1.0,-0.75,-0.5,-0.25,0,+0.25,+0.5,+0.75,+1.0,+1.5,+2.0];
+  let hdpHTML='<table><tr><th>Line</th><th>Home%</th><th>Away%</th><th>Confidence</th></tr>';
+  const hdpProbs={};
+  for(const l of hdpLines){
+    let probHome,probAway;
+    if(l===0){probHome=pHome+0.5*pDraw;probAway=pAway+0.5*pDraw;}
+    else if(l<0){probHome=pHome;probAway=1-pHome;}
+    else {probHome=pHome;probAway=1-pHome;}
+    hdpProbs[l]={probHome,probAway};
+    const maxP=Math.max(probHome,probAway);
+    hdpHTML+=`<tr><td>${l}</td><td>${(100*probHome).toFixed(1)}</td><td>${(100*probAway).toFixed(1)}</td><td>${confLabelProb(maxP)}</td></tr>`;
+  }
+  hdpHTML+='</table>';
+
+  // ----- Value Bets + Confidence -----
+  function confLabelEdge(edge){
+    if(edge>=0.05) return '🟢 HIGH';
+    if(edge>=0.02) return '🟡 MED';
+    return '⚪ LOW';
+  }
+  const oddHome=safe(document.getElementById('oddHome').value,NaN);
+  const oddDraw=safe(document.getElementById('oddDraw').value,NaN);
+  const oddAway=safe(document.getElementById('oddAway').value,NaN);
+  const ouLine=safe(document.getElementById('ouLine').value,2.5);
+  const oddOver=safe(document.getElementById('oddOver').value,NaN);
+  const oddUnder=safe(document.getElementById('oddUnder').value,NaN);
+
+  let valList='';
+  if(!isNaN(oddHome)){
+    const edge=pHome-(1/oddHome);
+    valList+=`<div class="value-item ${colorByEdge(edge)}">Home Win ${(100*pHome).toFixed(1)}% vs odds ${oddHome} | edge ${(100*edge).toFixed(1)}% → ${confLabelEdge(edge)}</div>`;
+  }
+  if(!isNaN(oddDraw)){
+    const edge=pDraw-(1/oddDraw);
+    valList+=`<div class="value-item ${colorByEdge(edge)}">Draw ${(100*pDraw).toFixed(1)}% vs odds ${oddDraw} | edge ${(100*edge).toFixed(1)}% → ${confLabelEdge(edge)}</div>`;
+  }
+  if(!isNaN(oddAway)){
+    const edge=pAway-(1/oddAway);
+    valList+=`<div class="value-item ${colorByEdge(edge)}">Away Win ${(100*pAway).toFixed(1)}% vs odds ${oddAway} | edge ${(100*edge).toFixed(1)}% → ${confLabelEdge(edge)}</div>`;
+  }
+  if(!isNaN(oddOver)){
+    const {over}=computeOU(totals,ouLine,runs);
+    const edge=over-(1/oddOver);
+    valList+=`<div class="value-item ${colorByEdge(edge)}">Over ${ouLine} ${(100*over).toFixed(1)}% vs odds ${oddOver} | edge ${(100*edge).toFixed(1)}% → ${confLabelEdge(edge)}</div>`;
+  }
+  if(!isNaN(oddUnder)){
+    const {under}=computeOU(totals,ouLine,runs);
+    const edge=under-(1/oddUnder);
+    valList+=`<div class="value-item ${colorByEdge(edge)}">Under ${ouLine} ${(100*under).toFixed(1)}% vs odds ${oddUnder} | edge ${(100*edge).toFixed(1)}% → ${confLabelEdge(edge)}</div>`;
+  }
+  if(valList==='') valList='<div class="small">Isi odds untuk deteksi value bet.</div>';
+  document.getElementById('valueList').innerHTML=valList;
+
+  // ----- Alerts 🚨 -----
+  let alerts='';
+  let idealOU=null;
+  for(const l of lines){
+    if(ouProbs[l].over>=0.49 && ouProbs[l].over<=0.51){idealOU=l;break;}
+  }
+  if(!idealOU){
+    let minDiff=1, best=2.5;
+    for(const l of lines){
+      const diff=Math.abs(ouProbs[l].over-0.5);
+      if(diff<minDiff){minDiff=diff;best=l;}
+    }
+    idealOU=best;
+  }
+  if(!isNaN(ouLine)){
+    if(ouLine>idealOU+0.25) alerts+=`🚨 Market O/U ${ouLine} terlalu tinggi, ideal ${idealOU} → Value Under\n`;
+    if(ouLine<idealOU-0.25) alerts+=`🚨 Market O/U ${ouLine} terlalu rendah, ideal ${idealOU} → Value Over\n`;
+  }
+  let idealHDP=null;
+  for(const l of hdpLines){
+    if(hdpProbs[l].probHome>=0.49 && hdpProbs[l].probHome<=0.51){idealHDP=l;break;}
+  }
+  if(idealHDP!==null && !isNaN(safe(document.getElementById('hdpLine').value,NaN))){
+    const mLine=safe(document.getElementById('hdpLine').value,0);
+    if(mLine>idealHDP+0.25) alerts+=`🚨 Market HDP ${mLine} terlalu tinggi, ideal ${idealHDP} → Value Away\n`;
+    if(mLine<idealHDP-0.25) alerts+=`🚨 Market HDP ${mLine} terlalu rendah, ideal ${idealHDP} → Value Home\n`;
+  }
+
+  document.getElementById('debug').innerHTML=
+    `<h4>Over/Under</h4>${ouHTML}<h4>Handicap</h4>${hdpHTML}<h4>Alerts</h4><pre>${alerts||'Tidak ada mismatch signifikan.'}</pre>`;
+}
+
+// Isi contoh
+document.getElementById('btnExample').onclick=function(){
+  document.getElementById('formHome').value="2:1,1:1,3:0,0:2,1:0";
+  document.getElementById('formAway').value="1:0,0:2,2:2,1:3,0:1";
+  document.getElementById('xgHome').value="1.85";
+  document.getElementById('xgAway').value="1.25";
+  document.getElementById('sotHome').value="5.2";
+  document.getElementById('sotAway').value="4.7";
+  document.getElementById('convHome').value="0.14";
+  document.getElementById('convAway').value="0.11";
+  document.getElementById('eloHome').value="1510";
+  document.getElementById('eloAway').value="1485";
+  document.getElementById('h2h').value="2:1,1:2,1:1,3:2";
+  document.getElementById('oddHome').value="2.10";
+  document.getElementById('oddDraw').value="3.35";
+  document.getElementById('oddAway').value="3.20";
+  document.getElementById('oddHdpHome').value="2.05";
+  document.getElementById('oddHdpAway').value="1.85";
+  document.getElementById('oddOver').value="1.95";
+  document.getElementById('oddUnder').value="1.90";
+};
+
+document.getElementById('btnAnalyze').onclick=analyze;
+</script>
+</body>
+</html>
