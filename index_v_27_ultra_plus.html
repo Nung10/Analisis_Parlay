@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Prediksi Pertandingan - v28 Tactical Elite</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+ body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:#121212;color:#f5f5f5}
+ h1{font-size:20px}
+ .grid{display:grid;grid-template-columns:1fr 360px;gap:12px}
+ .block{padding:10px;border-radius:8px;border:1px solid #333;background:#1e1e1e}
+ label{display:block;font-size:13px;margin:6px 0}
+ input[type="number"],input[type="text"]{width:100%;padding:6px;border:1px solid #555;border-radius:6px;background:#222;color:#fff}
+ button{padding:8px 12px;border-radius:8px;border:0;background:#0b74de;color:#fff;cursor:pointer}
+ .result{white-space:pre-wrap;font-family:monospace;background:#181818;padding:10px;border-radius:8px;border:1px dashed #444}
+ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+ th,td{padding:6px;border-bottom:1px solid #333;text-align:center}
+ th{background:#222}
+ .green{background:#173d2b;border:1px solid #2d8b4d}
+ .yellow{background:#3d3a17;border:1px solid #a89b2d}
+ .gray{background:#2a2a2a;border:1px solid #555}
+</style>
+</head>
+<body>
+<h1>⚽ Prediksi Pertandingan — v28 Tactical Elite (Balanced Lognormal)</h1>
+<p class="small">Model lognormal: attack 45% / defense 55%, anti-bias Over, dengan deteksi Odds Trap dinamis.</p>
+<div class="grid">
+ <div>
+  <div class="block">
+   <h3>Input Data Tim</h3>
+   <label>Home Team: <input id="teamHome" type="text" value="Home FC"></label>
+   <label>Away Team: <input id="teamAway" type="text" value="Away FC"></label>
+   <label>xG per Game: <input id="xgHome" type="number" step="0.01"> <input id="xgAway" type="number" step="0.01"></label>
+   <label>Shots on Target: <input id="sotHome" type="number" step="0.1"> <input id="sotAway" type="number" step="0.1"></label>
+   <label>Conversion Rate (0-1): <input id="convHome" type="number" step="0.01"> <input id="convAway" type="number" step="0.01"></label>
+   <label>Big Chances / Missed: <input id="bigHome" type="number" step="0.1"> <input id="missHome" type="number" step="0.1"><br><input id="bigAway" type="number" step="0.1"> <input id="missAway" type="number" step="0.1"></label>
+   <label>Goals Conceded: <input id="gcHome" type="number" step="0.1"> <input id="gcAway" type="number" step="0.1"></label>
+   <label>Saves per Game: <input id="saveHome" type="number" step="0.1"> <input id="saveAway" type="number" step="0.1"></label>
+   <label>Tackles + Interceptions: <input id="tackleHome" type="number" step="0.1"> <input id="tackleAway" type="number" step="0.1"></label>
+   <label>Possession %: <input id="possHome" type="number" step="0.1"> <input id="possAway" type="number" step="0.1"></label>
+   <label>Errors Leading to Goal: <input id="errHome" type="number" step="1"> <input id="errAway" type="number" step="1"></label>
+   <label>ELO Rating: <input id="eloHome" type="number" value="1500"> <input id="eloAway" type="number" value="1480"></label>
+   <label>Monte Carlo runs: <input id="mcRuns" type="number" value="2500" step="100"></label>
+   <label>Correlation rho: <input id="rho" type="number" step="0.01" value="0.12"></label>
+   <label>Dispersion Sigma (0.25–0.5): <input id="dispersionSigma" type="number" step="0.01" value="0.30"></label>
+   <h4>Odds (Awal & Terbaru)</h4>
+   <label>1X2 Awal: H <input id="oddHome0" type="number" step="0.01"> D <input id="oddDraw0" type="number" step="0.01"> A <input id="oddAway0" type="number" step="0.01"></label>
+   <label>1X2 Terbaru: H <input id="oddHome1" type="number" step="0.01"> D <input id="oddDraw1" type="number" step="0.01"> A <input id="oddAway1" type="number" step="0.01"></label>
+   <label>O/U Line <input id="ouLine" type="number" step="0.25" value="2.5"> Over Awal <input id="oddOver0" type="number" step="0.01"> Under Awal <input id="oddUnder0" type="number" step="0.01"><br>Over Terbaru <input id="oddOver1" type="number" step="0.01"> Under Terbaru <input id="oddUnder1" type="number" step="0.01"></label>
+   <div style="margin-top:8px"><button id="btnAnalyze">Analisis</button></div>
+  </div>
+ </div>
+ <div>
+  <div class="block">
+   <h3>Ringkasan Cepat</h3>
+   <div id="summary" class="result">Klik Analisis untuk hasil.</div>
+   <h3>Rekomendasi HDP & O/U</h3>
+   <div id="rekom" class="result">--</div>
+   <h3>Odds Trap Detector</h3>
+   <table id="trapTable"><tr><th>Pasar</th><th>Odds Awal</th><th>Odds Terbaru</th><th>Δ%</th><th>Prob Model</th><th>Sinyal</th></tr></table>
+   <h3>Histogram Total Gol</h3>
+   <canvas id="histChart" width="320" height="160" style="background:#0f0f0f;border-radius:6px;margin-top:10px"></canvas>
+   <h3>Debug</h3>
+   <div id="debug" class="result">--</div>
+  </div>
+ </div>
+</div>
+<script>
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+function randNormal(mu=0,sigma=1){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return mu+sigma*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function poissonRand(lambda){let L=Math.exp(-lambda),k=0,p=1;while(p>L){k++;p*=Math.random();if(k>1000)break;}return k-1;}
+function sampleBivariateLognormal(lambdaH,lambdaA,rho,sigma){const z1=randNormal(0,sigma);const z2=rho*z1+Math.sqrt(1-rho*rho)*randNormal(0,sigma);const lamH=Math.max(0.01,lambdaH*Math.exp(z1-0.5*sigma*sigma));const lamA=Math.max(0.01,lambdaA*Math.exp(z2-0.5*sigma*sigma));return [poissonRand(lamH),poissonRand(lamA)];}
+function monteCarlo(lambdaH,lambdaA,rho,runs,sigma){const scoreFreq={},totals={};let h=0,d=0,a=0;for(let t=0;t<runs;t++){const [gh,ga]=sampleBivariateLognormal(lambdaH,lambdaA,rho,sigma);scoreFreq[`${gh}-${ga}`]=(scoreFreq[`${gh}-${ga}`]||0)+1;totals[gh+ga]=(totals[gh+ga]||0)+1;if(gh>ga)h++;else if(gh===ga)d++;else a++;}return{scoreFreq,totals,pHome:h/runs,pDraw:d/runs,pAway:a/runs};}
+function computeOU(totals,line,runs){let over=0,under=0;const isInt=Number.isInteger(line);for(const k in totals){const g=parseInt(k),v=totals[k];if(isInt){if(g>line)over+=v;else if(g<line)under+=v;else{over+=0.5*v;under+=0.5*v;}}else{if(g>line)over+=v;else under+=v;}}return{over:over/runs,under:under/runs};}
+function sf(eloT,eloO){return Math.max(0.7,Math.min(1.3,1+(eloT-eloO)/1200));}
+function analyze(){
+ const h={xg:safe(xgHome.value),sot:safe(sotHome.value),conv:safe(convHome.value),big:safe(bigHome.value),miss:safe(missHome.value),gc:safe(gcHome.value),save:safe(saveHome.value),tackle:safe(tackleHome.value),poss:safe(possHome.value),err:safe(errHome.value),elo:safe(eloHome.value)};
+ const a={xg:safe(xgAway.value),sot:safe(sotAway.value),conv:safe(convAway.value),big:safe(bigAway.value),miss:safe(missAway.value),gc:safe(gcAway.value),save:safe(saveAway.value),tackle:safe(tackleAway.value),poss:safe(possAway.value),err:safe(errAway.value),elo:safe(eloAway.value)};
+ const attH=0.4*h.xg+0.25*(h.sot*h.conv)+0.15*h.big-0.1*h.miss+0.05*h.poss/50;
+ const attA=0.4*a.xg+0.25*(a.sot*a.conv)+0.15*a.big-0.1*a.miss+0.05*a.poss/50;
+ const defH=1+(0.3*h.gc-0.1*h.save-0.1*h.tackle/20+0.1*h.err);
+ const defA=1+(0.3*a.gc-0.1*a.save-0.1*a.tackle/20+0.1*a.err);
+ const leagueAvg=(h.xg+a.xg)/2||1;
+ const sfH=sf(h.elo,a.elo),sfA=sf(a.elo,h.elo);
+ let lambdaH=leagueAvg*(attH/leagueAvg)*(1/defA)*sfH;
+ let lambdaA=leagueAvg*(attA/leagueAvg)*(1/defH)*sfA;
+ const balance=0.55;lambdaH*=0.45/balance;lambdaA*=0.55/balance;
+ const runs=safe(mcRuns.value,2500),rho=safe(rho.value,0.12),sigma=safe(dispersionSigma.value,0.30);
+ const mc=monteCarlo(lambdaH,lambdaA,rho,runs,sigma);
+ const sorted=Object.entries(mc.scoreFreq).sort((a,b)=>b[1]-a[1]);
+ const top=sorted.slice(0,5).map(([sc,v])=>`${sc} (${(100*v/runs).toFixed(1)}%)`).join(', ');
+ const ouLine=safe(ouLine.value,2.5);const {over,under}=computeOU(mc.totals,ouLine,runs);
+ const avgH=(Object.entries(mc.scoreFreq).reduce((s,[sc,v])=>s+parseInt(sc.split('-')[0])*v,0)/runs).toFixed(2);
+ const avgA=(Object.entries(mc.scoreFreq).reduce((s,[sc,v])=>s+parseInt(sc.split('-')[1])*v,0)/runs).toFixed(2);
+ const oddOver1=safe(oddOver1.value,NaN),oddUnder1=safe(oddUnder1.value,NaN);
+ let overImp=1/oddOver1,underImp=1/oddUnder1;
+ const conf=Math.max(0.2,Math.min(0.9,1-(sigma/0.6)));
+ const postOver=conf*over+(1-conf)*overImp;
+ const postUnder=conf*under+(1-conf)*underImp;
+ let rekomText='';
+ const edgeOver=postOver-overImp,edgeUnder=postUnder-underImp;
+ if(postOver>=0.57&&edgeOver>=0.02)rekomText+=`✅ Over ${ouLine} layak (Prob ${(100*postOver).toFixed(1)}%, Edge ${(100*edgeOver).toFixed(1)}%)\n`;
+ else if(postUnder>=0.57&&edgeUnder>=0.02)rekomText+=`✅ Under ${ouLine} layak (Prob ${(100*postUnder).toFixed(1)}%, Edge ${(100*edgeUnder).toFixed(1)}%)\n`;
+ else rekomText+='⚖️ Tidak ada value jelas untuk O/U\n';
+ rekomText+=`Prediksi skor dominan: ${top}`;
+ document.getElementById('summary').textContent=`λH=${lambdaH.toFixed(2)} λA=${lambdaA.toFixed(2)} | xG rata2 H:${avgH} A:${avgA}\nProb 1X2 H:${(100*mc.pHome).toFixed(1)}% D:${(100*mc.pDraw).toFixed(1)}% A:${(100*mc.pAway).toFixed(1)}%\nOver${ouLine}:${(100*postOver).toFixed(1)}% Under:${(100*postUnder).toFixed(1)}%`;
+ document.getElementById('rekom').textContent=rekomText;
+ // Trap Table
+ const trapRows=[['Home',oddHome0.value,oddHome1.value,mc.pHome],['Draw',oddDraw0.value,oddDraw1.value,mc.pDraw],['Away',oddAway0.value,oddAway1.value,mc.pAway],['Over',oddOver0.value,oddOver1.value,postOver],['Under',oddUnder0.value,oddUnder1.value,postUnder]];
+ let html='<tr><th>Pasar</th><th>Awal</th><th>Terbaru</th><th>Δ%</th><th>Prob Model</th><th>Sinyal</th></tr>';
+ trapRows.forEach(([n,o0,o1,p])=>{o0=safe(o0),o1=safe(o1);if(!o0||!o1)return;const diff=((o1-o0)/o0*100).toFixed(1);let sig='Netral';if(diff< -3 && p<1/o1) sig='⚠️ Trap Turun'; if(diff>3 && p>1/o1) sig='⚠️ Trap Naik';html+=`<tr><td>${n}</td><td>${o0}</td><td>${o1}</td><td>${diff}%</td><td>${(100*p).toFixed(1)}%</td><td>${sig}</td></tr>`;});
+ document.getElementById('trapTable').innerHTML=html;
+ // histogram
+ const ctx=document.getElementById('histChart').getContext('2d');ctx.clearRect(0,0,320,160);const totals=mc.totals;const labels=Object.keys(totals).map(x=>parseInt(x)).sort((a,b)=>a-b);const maxC=Math.max(...labels.map(k=>totals[k]));const w=300/labels.length;labels.forEach((g,i)=>{const h=(totals[g]/maxC)*140;ctx.fillStyle='#0b74de';ctx.fillRect(10+i*w,150-h,w-2,h);});
+ document.getElementById('debug').textContent=`MonteCarlo:${runs} sigma:${sigma} rho:${rho}`;
+}
+document.getElementById('btnAnalyze').onclick=analyze;
+</script>
+</body>
+</html>
