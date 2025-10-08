@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Prediksi Pertandingan - v29.4 Tactical Elite Ultra+++ SmartH2H SafeMode</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:18px;color:#f5f5f5;background:#121212}
+    h1{font-size:20px}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:12px}
+    .block{padding:10px;border-radius:8px;border:1px solid #333;background:#1e1e1e}
+    label{display:block;font-size:13px;margin:6px 0}
+    input[type="number"],input[type="text"]{width:100%;padding:6px;border:1px solid #555;border-radius:6px;background:#222;color:#fff}
+    .small{font-size:12px;color:#aaa}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#0b74de;color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:6px}
+    th,td{padding:6px;border-bottom:1px solid #333;text-align:center;font-size:13px}
+    th{background:#222}
+    .result{white-space:pre-wrap;font-family:monospace;background:#181818;padding:10px;border-radius:8px;border:1px dashed #444}
+  </style>
+</head>
+<body>
+<h1>⚽ Prediksi Pertandingan — v29.4 Tactical Elite Ultra+++ SmartH2H SafeMode</h1>
+<p class="small">Model: xG + H2H otomatis + form + defense + ELO + Monte Carlo</p>
+
+<div class="grid">
+  <div>
+    <div class="block">
+      <h3>Input Data Tim</h3>
+      <label>Home Team: <input id="teamHome" type="text" value="Home FC"></label>
+      <label>Away Team: <input id="teamAway" type="text" value="Away FC"></label>
+
+      <label>H2H Last 5 Results (Home perspective):
+        <input id="h2hResults" type="text" maxlength="5"
+          title="Isi hasil 5 pertemuan terakhir (contoh: WDLWL). Biarkan kosong jika belum pernah bertemu.">
+      </label>
+
+      <label>xG per Game: <input id="xgHome" type="number" step="0.01"> <input id="xgAway" type="number" step="0.01"></label>
+      <label>Shots on Target: <input id="sotHome" type="number" step="0.1"> <input id="sotAway" type="number" step="0.1"></label>
+      <label>Conversion Rate (0-1): <input id="convHome" type="number" step="0.01"> <input id="convAway" type="number" step="0.01"></label>
+      <label>Clean Sheet per Game: <input id="csHome" type="number" step="0.01"> <input id="csAway" type="number" step="0.01"></label>
+      <label>Goals Conceded per Game: <input id="gcHome" type="number" step="0.1"> <input id="gcAway" type="number" step="0.1"></label>
+      <label>Tackles + Interceptions: <input id="tiHome" type="number" step="0.1"> <input id="tiAway" type="number" step="0.1"></label>
+      <label>ELO Rating: <input id="eloHome" type="number" value="1500"> <input id="eloAway" type="number" value="1480"></label>
+
+      <h4>Odds HDP</h4>
+      <label>HDP Pasar 1: Home <input id="hdp1Home" type="number" step="0.01"> Away <input id="hdp1Away" type="number" step="0.01"></label>
+      <label>HDP Pasar 2: Home <input id="hdp2Home" type="number" step="0.01"> Away <input id="hdp2Away" type="number" step="0.01"></label>
+
+      <h4>Over/Under</h4>
+      <label>O/U Pasar 1: <input id="ou1Line" type="number" step="0.25" value="2.5"> Over <input id="ou1Over" type="number" step="0.01"> Under <input id="ou1Under" type="number" step="0.01"></label>
+      <label>O/U Pasar 2: <input id="ou2Line" type="number" step="0.25" value="3.0"> Over <input id="ou2Over" type="number" step="0.01"> Under <input id="ou2Under" type="number" step="0.01"></label>
+
+      <div style="margin-top:8px">
+        <button id="btnExample">Isi Contoh Otomatis</button>
+        <button id="btnReset">Reset</button>
+        <button id="btnAnalyze">Analisis</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="block">
+      <h3>Ringkasan Cepat</h3>
+      <div id="summary" class="result">Klik Analisis untuk hasil.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+
+// === H2H auto compute ===
+function calcH2HRate(results){
+  if(!results.trim() || !/^[WDL]+$/i.test(results)){
+    return {homeWinRate:0, awayWinRate:0, valid:false};
+  }
+  const s=results.trim().toUpperCase().slice(0,5);
+  let win=0,draw=0,lose=0;
+  for(let c of s){
+    if(c==='W')win++;
+    else if(c==='D')draw++;
+    else if(c==='L')lose++;
+  }
+  const homeWinRate=(win/5)*100;
+  const awayWinRate=(lose/5)*100;
+  return {homeWinRate,awayWinRate,valid:true};
+}
+
+function sf(eloT,eloO){return Math.max(0.7,Math.min(1.3,1+(eloT-eloO)/1200));}
+function computeDefense(cs,gc,ti){return 1 + (0.3*gc - 0.2*cs - 0.05*(ti/20));}
+
+function analyze(){
+  const h2h = calcH2HRate(document.getElementById('h2hResults').value);
+  const xgH = safe(document.getElementById('xgHome').value);
+  const xgA = safe(document.getElementById('xgAway').value);
+  const gcH = safe(document.getElementById('gcHome').value);
+  const gcA = safe(document.getElementById('gcAway').value);
+  const csH = safe(document.getElementById('csHome').value);
+  const csA = safe(document.getElementById('csAway').value);
+  const tiH = safe(document.getElementById('tiHome').value);
+  const tiA = safe(document.getElementById('tiAway').value);
+  const eloH = safe(document.getElementById('eloHome').value);
+  const eloA = safe(document.getElementById('eloAway').value);
+
+  const defH = computeDefense(csH,gcH,tiH);
+  const defA = computeDefense(csA,gcA,tiA);
+  const sfH = sf(eloH,eloA);
+  const sfA = sf(eloA,eloH);
+  const leagueAvg = (xgH+xgA)/2 || 1;
+
+  let lambdaH = leagueAvg*(xgH/leagueAvg)*(1/defA)*sfH;
+  let lambdaA = leagueAvg*(xgA/leagueAvg)*(1/defH)*sfA;
+
+  if(h2h.valid){
+    const h2hFactor = 1 + 0.05*((h2h.homeWinRate - h2h.awayWinRate)/100);
+    lambdaH *= h2hFactor;
+    lambdaA /= h2hFactor;
+  }
+
+  let summary = `🧮 Expected Goals\nHome λ=${lambdaH.toFixed(2)} | Away λ=${lambdaA.toFixed(2)}\n`;
+  summary += `🛡️ Defense Index\nHome ${defH.toFixed(2)} | Away ${defA.toFixed(2)}\n`;
+  if(h2h.valid){
+    summary += `⚔️ H2H Win Rate — Home ${h2h.homeWinRate.toFixed(1)}% | Away ${h2h.awayWinRate.toFixed(1)}%\n`;
+  } else {
+    summary += `⚔️ H2H data tidak tersedia — faktor diabaikan.\n`;
+  }
+  document.getElementById('summary').textContent=summary;
+}
+
+document.getElementById('btnAnalyze').onclick=analyze;
+document.getElementById('btnReset').onclick=()=>{document.querySelectorAll('input').forEach(i=>i.value='');document.getElementById('summary').textContent='Data direset.';};
+document.getElementById('btnExample').onclick=()=>{
+  document.getElementById('teamHome').value='Arsenal';
+  document.getElementById('teamAway').value='Chelsea';
+  document.getElementById('h2hResults').value='WDLWL';
+  document.getElementById('xgHome').value='1.9';
+  document.getElementById('xgAway').value='1.3';
+  document.getElementById('sotHome').value='6.8';
+  document.getElementById('sotAway').value='5.1';
+  document.getElementById('convHome').value='0.18';
+  document.getElementById('convAway').value='0.14';
+  document.getElementById('csHome').value='0.45';
+  document.getElementById('csAway').value='0.32';
+  document.getElementById('gcHome').value='0.9';
+  document.getElementById('gcAway').value='1.2';
+  document.getElementById('tiHome').value='27.0';
+  document.getElementById('tiAway').value='25.4';
+  document.getElementById('eloHome').value='1540';
+  document.getElementById('eloAway').value='1490';
+};
+</script>
+</body>
+</html>
