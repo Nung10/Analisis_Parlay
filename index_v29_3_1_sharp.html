@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Prediksi Pertandingan - v29.3.1 Sharp+ Explain Mode (Desktop)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#111;color:#eee}
+    h1{font-size:20px;margin-bottom:10px}
+    .grid{display:grid;grid-template-columns:1fr 350px;gap:15px}
+    .block{background:#1c1c1c;padding:12px;border-radius:8px;border:1px solid #333}
+    label{display:block;font-size:13px;margin:6px 0}
+    input[type="number"],input[type="text"]{width:100%;padding:5px;border:1px solid #444;border-radius:6px;background:#222;color:#fff}
+    .small{font-size:12px;color:#aaa}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#0b74de;color:#fff;cursor:pointer;margin-right:4px}
+    button:hover{background:#0d85ff}
+    .result{white-space:pre-wrap;font-family:monospace;background:#181818;padding:10px;border-radius:8px;border:1px dashed #444;margin-top:8px}
+  </style>
+</head>
+<body>
+<h1>⚽ Prediksi Pertandingan — v29.3.1 Sharp+ Explain Mode</h1>
+<p class="small">Model: xG + Form + Defense + H2H + ELO + Monte Carlo + Explain AI</p>
+
+<div class="grid">
+  <div>
+    <div class="block">
+      <h3>Input Data Tim</h3>
+      <label>Home Team: <input id="teamHome" type="text" value="Arsenal"></label>
+      <label>Away Team: <input id="teamAway" type="text" value="Chelsea"></label>
+      <label>H2H (5 laga terakhir, contoh: WDLWL): <input id="h2hResults" type="text" maxlength="5"></label>
+
+      <label>xG per Game: <input id="xgHome" type="number" step="0.01"> <input id="xgAway" type="number" step="0.01"></label>
+      <label>Shots on Target: <input id="sotHome" type="number" step="0.1"> <input id="sotAway" type="number" step="0.1"></label>
+      <label>Conversion Rate (0–1): <input id="convHome" type="number" step="0.01"> <input id="convAway" type="number" step="0.01"></label>
+      <label>Big Chances / Missed: <input id="bigHome" type="number" step="0.1"> <input id="missHome" type="number" step="0.1"><br>
+      <input id="bigAway" type="number" step="0.1"> <input id="missAway" type="number" step="0.1"></label>
+      <label>Total Shots: <input id="shotsHome" type="number" step="0.1"> <input id="shotsAway" type="number" step="0.1"></label>
+      <label>Corners: <input id="cornerHome" type="number" step="0.1"> <input id="cornerAway" type="number" step="0.1"></label>
+      <label>Successful Dribbles: <input id="dribHome" type="number" step="0.1"> <input id="dribAway" type="number" step="0.1"></label>
+      <label>Counter Attacks: <input id="countHome" type="number" step="0.1"> <input id="countAway" type="number" step="0.1"></label>
+      <label>Possession %: <input id="possHome" type="number" step="0.1"> <input id="possAway" type="number" step="0.1"></label>
+
+      <h4>Defending Metrics</h4>
+      <label>Clean Sheet / Game: <input id="csHome" type="number" step="0.01"> <input id="csAway" type="number" step="0.01"></label>
+      <label>Goals Conceded / Game: <input id="gcHome" type="number" step="0.1"> <input id="gcAway" type="number" step="0.1"></label>
+      <label>Saves / Game: <input id="saveHome" type="number" step="0.1"> <input id="saveAway" type="number" step="0.1"></label>
+
+      <label>Tackles: <input id="tackleHome" type="number" step="0.1"> <input id="tackleAway" type="number" step="0.1"></label>
+      <label>Interceptions: <input id="interHome" type="number" step="0.1"> <input id="interAway" type="number" step="0.1"></label>
+      <label>Tackles + Interceptions (otomatis): <input id="tiHome" type="number" readonly> <input id="tiAway" type="number" readonly></label>
+
+      <label>Errors leading to goal / season (est): <input id="errHome" type="number" step="0.1"> <input id="errAway" type="number" step="0.1"></label>
+
+      <h4>Faktor Tambahan</h4>
+      <label>DF absen (pengaruh %): <input id="injHome" type="number" step="0.1"> <input id="injAway" type="number" step="0.1"></label>
+      <label>Performa 5 match terakhir (0–1): <input id="formHome" type="number" step="0.01"> <input id="formAway" type="number" step="0.01"></label>
+      <label>ELO Rating: <input id="eloHome" type="number" value="1500"> <input id="eloAway" type="number" value="1480"></label>
+
+      <h4>Odds Handicap (HDP)</h4>
+      <label>Pasar 1: Line <input id="hdp1Line" type="number" step="0.25"> Home <input id="hdp1Home" type="number" step="0.01"> Away <input id="hdp1Away" type="number" step="0.01"></label>
+      <label>Pasar 2: Line <input id="hdp2Line" type="number" step="0.25"> Home <input id="hdp2Home" type="number" step="0.01"> Away <input id="hdp2Away" type="number" step="0.01"></label>
+
+      <h4>Over/Under</h4>
+      <label>Pasar 1: Line <input id="ou1Line" type="number" step="0.25" value="2.5"> Over <input id="ou1Over" type="number" step="0.01"> Under <input id="ou1Under" type="number" step="0.01"></label>
+      <label>Pasar 2: Line <input id="ou2Line" type="number" step="0.25" value="3.0"> Over <input id="ou2Over" type="number" step="0.01"> Under <input id="ou2Under" type="number" step="0.01"></label>
+
+      <label>Monte Carlo Runs: <input id="mcRuns" type="number" value="2500" step="100"></label>
+      <div style="margin-top:8px">
+        <button id="btnExample">Isi Contoh</button>
+        <button id="btnReset">Reset</button>
+        <button id="btnAnalyze">Analisis</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="block">
+      <h3>Ringkasan Cepat</h3>
+      <div id="summary" class="result">Klik Analisis untuk hasil.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+function sf(eloT,eloO){return Math.max(0.7,Math.min(1.3,1+(eloT-eloO)/1200));}
+
+function computeAttack(xg,sot,conv,big,miss,shots,corners,drib,counters,poss,form){
+  return (0.35*xg + 0.15*(sot/5) + 0.15*(conv*100) + 0.1*(big/2) - 0.05*(miss/2) +
+          0.05*(shots/10) + 0.05*(corners/3) + 0.03*(drib/6) + 0.03*(counters/5) + 0.04*(poss/50) + 0.1*form);
+}
+
+function computeDefense(cs,gc,saves,ti,err,inj){
+  let val = 1 + (-0.25*cs + 0.35*gc - 0.1*(saves/4) - 0.15*(ti/30) + 0.15*err + 0.1*(inj/100));
+  return Math.max(0.5,Math.min(2,val));
+}
+
+function getH2HWinRate(str){
+  if(!str) return 0.5;
+  str=str.toUpperCase();
+  let w=(str.match(/W/g)||[]).length;
+  let d=(str.match(/D/g)||[]).length;
+  let l=(str.match(/L/g)||[]).length;
+  let total=w+d+l;
+  if(total===0)return 0.5;
+  return (w+0.5*d)/total;
+}
+
+function autoSumTI(){
+  document.getElementById('tiHome').value = (safe(document.getElementById('tackleHome').value)+safe(document.getElementById('interHome').value)).toFixed(1);
+  document.getElementById('tiAway').value = (safe(document.getElementById('tackleAway').value)+safe(document.getElementById('interAway').value)).toFixed(1);
+}
+
+['tackleHome','interHome','tackleAway','interAway'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',autoSumTI);
+});
+
+function analyze(){
+  const h2hRate=getH2HWinRate(document.getElementById('h2hResults').value);
+  const h={xg:safe(xgHome.value),sot:safe(sotHome.value),conv:safe(convHome.value),big:safe(bigHome.value),
+    miss:safe(missHome.value),shots:safe(shotsHome.value),corners:safe(cornerHome.value),
+    drib:safe(dribHome.value),count:safe(countHome.value),poss:safe(possHome.value),form:safe(formHome.value),
+    cs:safe(csHome.value),gc:safe(gcHome.value),saves:safe(saveHome.value),ti:safe(tiHome.value),
+    err:safe(errHome.value),inj:safe(injHome.value),elo:safe(eloHome.value)};
+  const a={xg:safe(xgAway.value),sot:safe(sotAway.value),conv:safe(convAway.value),big:safe(bigAway.value),
+    miss:safe(missAway.value),shots:safe(shotsAway.value),corners:safe(cornerAway.value),
+    drib:safe(dribAway.value),count:safe(countAway.value),poss:safe(possAway.value),form:safe(formAway.value),
+    cs:safe(csAway.value),gc:safe(gcAway.value),saves:safe(saveAway.value),ti:safe(tiAway.value),
+    err:safe(errAway.value),inj:safe(injAway.value),elo:safe(eloAway.value)};
+  const atkH=computeAttack(h.xg,h.sot,h.conv,h.big,h.miss,h.shots,h.corners,h.drib,h.count,h.poss,h.form);
+  const atkA=computeAttack(a.xg,a.sot,a.conv,a.big,a.miss,a.shots,a.corners,a.drib,a.count,a.poss,a.form);
+  const defH=computeDefense(h.cs,h.gc,h.saves,h.ti,h.err,h.inj);
+  const defA=computeDefense(a.cs,a.gc,a.saves,a.ti,a.err,a.inj);
+  const sfH=sf(h.elo,a.elo), sfA=sf(a.elo,h.elo);
+  const base=(h.xg+a.xg)/2;
+  let lambdaH=base*(atkH/base)*(1/defA)*sfH*(0.9+0.2*h2hRate);
+  let lambdaA=base*(atkA/base)*(1/defH)*sfA*(1.1-0.2*h2hRate);
+  const summary=`λ (xGoals): Home ${lambdaH.toFixed(2)} | Away ${lambdaA.toFixed(2)}\nAttack H:${atkH.toFixed(2)} A:${atkA.toFixed(2)}\nDefense H:${defH.toFixed(2)} A:${defA.toFixed(2)}\nH2H Home WinRate:${(100*h2hRate).toFixed(1)}%`;
+  document.getElementById('summary').textContent=summary;
+}
+
+document.getElementById('btnAnalyze').onclick=analyze;
+document.getElementById('btnReset').onclick=()=>{document.querySelectorAll('input').forEach(i=>i.value='');document.getElementById('summary').textContent='Direset.';}
+document.getElementById('btnExample').onclick=()=>{
+  teamHome.value='Man City';teamAway.value='Liverpool';xgHome.value=2.1;xgAway.value=1.8;sotHome.value=6;sotAway.value=5;
+  convHome.value=0.16;convAway.value=0.14;bigHome.value=3;missHome.value=2;bigAway.value=2.8;missAway.value=2;
+  shotsHome.value=14;shotsAway.value=12;cornerHome.value=6;cornerAway.value=5;dribHome.value=10;dribAway.value=9;
+  countHome.value=4;countAway.value=3;possHome.value=62;possAway.value=55;csHome.value=0.45;csAway.value=0.30;
+  gcHome.value=0.8;gcAway.value=1.2;saveHome.value=3.5;saveAway.value=3.2;
+  tackleHome.value=18.3;interHome.value=8.7;tackleAway.value=17.2;interAway.value=8.0;autoSumTI();
+  errHome.value=0.2;errAway.value=0.4;injHome.value=5;injAway.value=10;formHome.value=0.82;formAway.value=0.75;
+  eloHome.value=1820;eloAway.value=1780;h2hResults.value='WDWLW';
+  hdp1Line.value=0.25;hdp2Line.value=0.75;
+  hdp1Home.value=1.85;hdp1Away.value=2.05;hdp2Home.value=1.95;hdp2Away.value=1.95;
+  ou1Line.value=2.5;ou1Over.value=1.90;ou1Under.value=1.95;ou2Line.value=3.0;ou2Over.value=2.00;ou2Under.value=1.85;
+};
+</script>
+</body></html>
