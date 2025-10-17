@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Football Analyzer Pro Dark v49</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+:root{--bg:#030617;--panel:#071a2a;--card:#081a26;--accent:#06b6d4;--muted:#9fd6ee;--text:#eaf6ff;--danger:#ff6b6b;}
+body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
+.container{max-width:1200px;margin:12px auto;padding:18px}
+h1{font-size:22px;margin:2px 0 6px}
+.small{font-size:13px;color:var(--muted)}
+.block{background:var(--panel);border:1px solid rgba(11,78,94,0.18);padding:14px;border-radius:10px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.col{flex:1;min-width:160px}
+label{display:block;font-size:13px;color:var(--muted);margin:6px 0}
+input[type="text"],input[type="number"],select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(11,78,94,0.2);background:#031821;color:var(--text)}
+button{background:var(--accent);border:0;color:#022;padding:8px 12px;border-radius:8px;cursor:pointer}
+.btn-muted{background:#0b2f3a;color:var(--text);border:1px solid rgba(255,255,255,0.02)}
+.pre{background:#021425;padding:10px;border-radius:8px;border:1px dashed rgba(11,78,94,0.2);font-family:ui-monospace,monospace;margin-top:8px;white-space:pre-wrap}
+.canvas-wrap{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+canvas{background:#02121a;border-radius:6px;border:1px solid rgba(11,78,94,0.2);}
+.kv{font-size:13px;color:var(--muted)}
+.footer{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
+.card{background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(11,78,94,0.12);}
+.mini-bar{height:10px;border-radius:6px;background:#031a22;overflow:hidden;margin-top:6px}
+.mini-bar > i{display:block;height:100%;background:var(--accent);}
+.legend{display:flex;gap:8px;align-items:center}
+.legend > span{display:inline-block;padding:6px 8px;border-radius:6px;background:#041a22;color:var(--muted);font-size:12px}
+.note{font-size:12px;color:#9fd6ee;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Football Analyzer Pro Dark v49</h1>
+  <div class="small">Versi v49 — ELO manual (default 1500 bila kosong) • Momentum graph • Travel & Fatigue • Confidence gauge • Desktop</div>
+
+  <div class="block">
+    <h3>Match Info</h3>
+    <div class="row">
+      <div class="col"><label>Home Team: <input id="teamHome" type="text" value="Team Home"></label></div>
+      <div class="col"><label>Away Team: <input id="teamAway" type="text" value="Team Away"></label></div>
+      <div class="col"><label>Competition: <input id="comp" type="text" placeholder="e.g. World Cup Qualifier"></label></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>Country Home: <input id="countryHome" list="countries" type="text" placeholder="Pilih atau ketik"></label></div>
+      <div class="col"><label>Country Away: <input id="countryAway" list="countries" type="text" placeholder="Pilih atau ketik"></label></div>
+      <div class="col"><label>ELO Home (manual): <input id="eloHome" type="number" placeholder="1500"></label></div>
+    </div>
+    <div class="row">
+      <div class="col"><label></label></div>
+      <div class="col"><label>ELO Away (manual): <input id="eloAway" type="number" placeholder="1500"></label></div>
+      <div class="col"><div class="note">🛈 Jika dikosongkan, <strong>ELO default = 1500</strong> (netral)</div></div>
+    </div>
+    <datalist id="countries">
+      <option value="Indonesia"></option><option value="England"></option><option value="France"></option><option value="Spain"></option><option value="Germany"></option>
+      <option value="Italy"></option><option value="Portugal"></option><option value="Netherlands"></option><option value="Belgium"></option><option value="Scotland"></option>
+      <option value="Brazil"></option><option value="Argentina"></option><option value="Japan"></option><option value="South Korea"></option><option value="United States"></option>
+    </datalist>
+  </div>
+
+  <div class="block">
+    <h3>Core Inputs & Auto-Index</h3>
+    <div class="row">
+      <div class="col"><label>xG Home: <input id="xgHome" type="number" step="0.01" value="1.45"></label></div>
+      <div class="col"><label>xG Away: <input id="xgAway" type="number" step="0.01" value="1.10"></label></div>
+      <div class="col"><label>SOT Home: <input id="sotHome" type="number" step="0.1" value="4.1"></label></div>
+      <div class="col"><label>SOT Away: <input id="sotAway" type="number" step="0.1" value="3.2"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Goals avg Home: <input id="goalsHome" type="number" step="0.1"></label></div>
+      <div class="col"><label>Goals avg Away: <input id="goalsAway" type="number" step="0.1"></label></div>
+      <div class="col"><label>Total Shots Home: <input id="shotsHome" type="number"></label></div>
+      <div class="col"><label>Total Shots Away: <input id="shotsAway" type="number"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Days rest Home: <input id="daysRestHome" type="number" value="4"></label></div>
+      <div class="col"><label>Days rest Away: <input id="daysRestAway" type="number" value="3"></label></div>
+      <div class="col"><label>Bench Home: <input id="benchHome" type="number" value="6"></label></div>
+      <div class="col"><label>Bench Away: <input id="benchAway" type="number" value="6"></label></div>
+    </div>
+    <div style="margin-top:8px"><button id="btnAutoIndexHome" class="btn-muted">Auto Index Home</button> <button id="btnAutoIndexAway" class="btn-muted">Auto Index Away</button> <button id="btnCR" class="btn-muted">Hitung CR Otomatis</button></div>
+  </div>
+
+  <div class="block">
+    <h3>Defense, Absence & Errors</h3>
+    <div class="row">
+      <div class="col"><label>Tackles Home: <input id="tackleHome" type="number" value="18"></label></div>
+      <div class="col"><label>Inter Home: <input id="interHome" type="number" value="9"></label></div>
+      <div class="col"><label>Tackles Away: <input id="tackleAway" type="number" value="12"></label></div>
+      <div class="col"><label>Inter Away: <input id="interAway" type="number" value="6"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>CS Home: <input id="csHome" type="number" step="0.01" value="0.30"></label></div>
+      <div class="col"><label>CS Away: <input id="csAway" type="number" step="0.01" value="0.25"></label></div>
+      <div class="col"><label>GC Home: <input id="gcHome" type="number" step="0.1" value="1.1"></label></div>
+      <div class="col"><label>GC Away: <input id="gcAway" type="number" step="0.1" value="1.3"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Saves Home: <input id="saveHome" type="number" step="0.1" value="3.5"></label></div>
+      <div class="col"><label>Saves Away: <input id="saveAway" type="number" step="0.1" value="3.2"></label></div>
+      <div class="col"><label>Errors→goal Home (est/season): <input id="errHome" type="number" step="0.1" value="6"></label></div>
+      <div class="col"><label>Errors→goal Away (est/season): <input id="errAway" type="number" step="0.1" value="7"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>DF abs Home: <input id="absDfHome" type="number" value="0"></label></div>
+      <div class="col"><label>MF abs Home: <input id="absMfHome" type="number" value="0"></label></div>
+      <div class="col"><label>FW abs Home: <input id="absFwHome" type="number" value="0"></label></div>
+      <div class="col"><label>GK abs Home: <input id="absGkHome" type="number" value="0"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>DF abs Away: <input id="absDfAway" type="number" value="0"></label></div>
+      <div class="col"><label>MF abs Away: <input id="absMfAway" type="number" value="0"></label></div>
+      <div class="col"><label>FW abs Away: <input id="absFwAway" type="number" value="0"></label></div>
+      <div class="col"><label>GK abs Away: <input id="absGkAway" type="number" value="0"></label></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Travel & Map (map muncul saat Analisis)</h3>
+    <div class="row">
+      <div class="col"><label>Lat Home (manual): <input id="latHome" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lon Home (manual): <input id="lonHome" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lat Away (manual): <input id="latAway" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lon Away (manual): <input id="lonAway" type="number" step="0.0001"></label></div>
+    </div>
+    <div style="margin-top:8px"><button id="btnAnalyze" style="background:var(--accent);padding:10px 14px;border-radius:8px">Analisis v49</button> <button id="btnExample" class="btn-muted">Isi Contoh</button> <button id="btnReset" class="btn-muted">Reset</button></div>
+  </div>
+
+  <div class="block">
+    <h3>Output & Visual</h3>
+    <div class="canvas-wrap">
+      <div style="flex:2">
+        <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong id="matchTitle">-</strong><div class="small" id="matchMeta">-</div></div><div><canvas id="gauge" width="160" height="120"></canvas></div></div></div>
+        <div style="margin-top:8px" class="card"><canvas id="momentum" width="800" height="220"></canvas><div class="legend"><span>Home Prob</span><span>Draw Prob</span><span>Away Prob</span></div></div>
+      </div>
+      <div style="flex:1;">
+        <div class="card"><h4 class="small">Summary</h4><pre id="summary" class="pre">—</pre></div>
+        <div class="card" style="margin-top:8px"><h4 class="small">Map (on Analyze)</h4><canvas id="miniMap" width="320" height="140"></canvas><div id="mapInfo" class="kv">Map akan muncul setelah Analisis.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Logs & Export</h3>
+    <div style="display:flex;gap:8px"><button id="btnExportCSV" class="btn-muted">Export CSV</button><button id="btnExportJSON" class="btn-muted">Export JSON</button><button id="btnShowLogs" class="btn-muted">Show Logs</button></div>
+    <div id="evalLog" class="card small" style="margin-top:8px;max-height:220px;overflow:auto">Log evaluasi kosong.</div>
+  </div>
+
+  <div class="footer">Football Analyzer Pro Dark v49 • Manual ELO</div>
+</div>
+
+<script>
+// Utilities
+function safe(v,d=0){ const x=parseFloat(v); return isNaN(x)?d:x; }
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+function randNormal(mu=0,sigma=1){ let u=0,v=0; while(u===0) u=Math.random(); while(v===0) v=Math.random(); return mu + sigma*Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v); }
+function poisson(lambda){ let L=Math.exp(-lambda), p=1, k=0; while(p> L){ k++; p *= Math.random(); if(k>2000) break; } return Math.max(0,k-1); }
+function percent(x){ return (100*x).toFixed(1)+'%'; }
+
+// minimal capitals (for convenience) - optional use
+const capitals = {
+  "France": {lat:48.8566, lon:2.3522, city:'Paris'}, "Japan":{lat:35.6895, lon:139.6917, city:'Tokyo'}, "England":{lat:51.5074, lon:-0.1278, city:'London'},
+  "Indonesia":{lat:-6.2088, lon:106.8456, city:'Jakarta'}, "Spain":{lat:40.4168, lon:-3.7038, city:'Madrid'}
+};
+
+function haversine(lat1, lon1, lat2, lon2){ const R=6371; const toRad=x=>x*Math.PI/180; const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
+
+// Auto Index (reuse approach)
+function computeAutoIndex(suf){
+  const shots = safe(document.getElementById('shots'+suf).value, 0);
+  const sot = safe(document.getElementById('sot'+suf).value, 0);
+  const xg = safe(document.getElementById('xg'+suf).value, 0);
+  const corners = safe(document.getElementById('corners'+suf)?.value, 0);
+  const frees = safe(document.getElementById('free'+suf)?.value, 0);
+  const crosses = safe(document.getElementById('crosses'+suf)?.value, 0);
+  let finishingRaw = (sot>0 && safe(document.getElementById('goals'+suf).value, NaN)>0)? (safe(document.getElementById('goals'+suf).value)/sot) : (xg>0? (safe(document.getElementById('goals'+suf).value,0)/Math.max(0.1,xg)) : 0.35);
+  let finishingIndex = 1 + (finishingRaw - 0.35) * 1.4; finishingIndex = clamp(finishingIndex, 0.7, 1.35);
+  let shotScore = (xg/2) + (sot/5) + (shots/10); let shotIndex = shotScore / 3.3; shotIndex = clamp(shotIndex, 0.7, 1.4);
+  return {fin:finishingIndex, sqi:shotIndex, spe: clamp((corners + 0.5*frees + 0.3*crosses)/10,0.6,1.4), tempo:1.0};
+}
+
+document.getElementById('btnAutoIndexHome').addEventListener('click', ()=>{
+  const idx = computeAutoIndex('Home'); window.modelFields = window.modelFields||{}; window.modelFields.finHome = idx.fin; window.modelFields.sqiHome=idx.sqi; window.modelFields.speHome=idx.spe; alert('Auto Index Home terapkan.'); 
+});
+document.getElementById('btnAutoIndexAway').addEventListener('click', ()=>{
+  const idx = computeAutoIndex('Away'); window.modelFields = window.modelFields||{}; window.modelFields.finAway = idx.fin; window.modelFields.sqiAway=idx.sqi; window.modelFields.speAway=idx.spe; alert('Auto Index Away terapkan.'); 
+});
+
+// Auto CR
+document.getElementById('btnCR').addEventListener('click', ()=>{
+  const gh = safe(document.getElementById('goalsHome').value, NaN), sh = safe(document.getElementById('sotHome').value, NaN);
+  const ga = safe(document.getElementById('goalsAway').value, NaN), sa = safe(document.getElementById('sotAway').value, NaN);
+  if(sh>0) document.getElementById('convHome').value = (gh/sh).toFixed(2);
+  if(sa>0) document.getElementById('convAway').value = (ga/sa).toFixed(2);
+  alert('Conversion Rate otomatis terisi jika data tersedia.');
+});
+
+// Draw gauge
+function drawGauge(scoreObj){
+  const c=document.getElementById('gauge'); const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  const cx=c.width/2, cy=c.height*0.8, r=50; ctx.lineWidth=10;
+  ctx.beginPath(); ctx.strokeStyle='#04202a'; ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.stroke();
+  const val=clamp(scoreObj.score,0,1); const end=Math.PI + val*Math.PI;
+  ctx.beginPath(); ctx.strokeStyle = val>0.8? '#2dd36f' : (val>0.55? '#f7b731' : '#ff6b6b'); ctx.lineWidth=10; ctx.arc(cx,cy,r,Math.PI,end); ctx.stroke();
+  ctx.fillStyle='#cfe8ff'; ctx.font='14px Arial'; ctx.textAlign='center'; ctx.fillText((val*100).toFixed(1)+'%',cx,cy-10); ctx.font='11px Arial'; ctx.fillText(scoreObj.label, cx, cy+14);
+}
+
+// Draw momentum graph
+function drawMomentum(mins, homeArr, drawArr, awayArr){
+  const c=document.getElementById('momentum'); const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle='#041220'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle='rgba(159,214,238,0.06)'; for(let i=0;i<5;i++){ const y = 10 + i*(c.height-30)/4; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(c.width-10,y); ctx.stroke(); }
+  const left=40, right=c.width-10, top=10, bottom=c.height-20; const w=right-left;
+  function x(i){ return left + (i/(mins-1))*w; }
+  function y(v){ return bottom - v*(bottom-top); }
+  ctx.beginPath(); ctx.strokeStyle='#0b74de'; ctx.lineWidth=2; ctx.moveTo(x(0), y(homeArr[0])); for(let i=1;i<mins;i++) ctx.lineTo(x(i), y(homeArr[i])); ctx.stroke();
+  ctx.globalAlpha=0.08; ctx.fillStyle='#0b74de'; ctx.beginPath(); ctx.moveTo(x(0), y(homeArr[0])); for(let i=1;i<mins;i++) ctx.lineTo(x(i), y(homeArr[i])); ctx.lineTo(x(mins-1), bottom); ctx.lineTo(x(0), bottom); ctx.fill(); ctx.globalAlpha=1;
+  ctx.beginPath(); ctx.strokeStyle='#9aa8b2'; ctx.lineWidth=2; ctx.moveTo(x(0), y(drawArr[0])); for(let i=1;i<mins;i++) ctx.lineTo(x(i), y(drawArr[i])); ctx.stroke();
+  ctx.beginPath(); ctx.strokeStyle='#ff7b7b'; ctx.lineWidth=2; ctx.moveTo(x(0), y(awayArr[0])); for(let i=1;i<mins;i++) ctx.lineTo(x(i), y(awayArr[i])); ctx.stroke();
+  ctx.fillStyle='#9fd6ee'; ctx.font='10px Arial'; ctx.fillText('0', left-8, bottom+12); ctx.fillText('90', right-10, bottom+12); ctx.fillText('Probability', left, top+10);
+}
+
+// Map draw
+function drawMiniMap(lat1, lon1, name1, lat2, lon2, name2, kmLabel){
+  const c=document.getElementById('miniMap'); const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle='#02121a'; ctx.fillRect(0,0,c.width,c.height);
+  function project(lat, lon){ const margin=12; const x = margin + ((lon + 180)/360)*(c.width - margin*2); const y = margin + ((90 - lat)/180)*(c.height - margin*2); return {x,y}; }
+  const p1=project(lat1, lon1), p2=project(lat2, lon2);
+  ctx.beginPath(); ctx.moveTo(p1.x,p1.y); const cx=(p1.x+p2.x)/2 + (p1.y-p2.y)/6; const cy=(p1.y+p2.y)/2 + (p2.x-p1.x)/12; ctx.quadraticCurveTo(cx,cy,p2.x,p2.y); ctx.strokeStyle='#ff7b7b'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#06b6d4'; ctx.beginPath(); ctx.arc(p1.x,p1.y,5,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#ffb86b'; ctx.beginPath(); ctx.arc(p2.x,p2.y,5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#cfe8ff'; ctx.font='11px Arial'; ctx.fillText(name1+' ('+Math.round(lat1)+','+Math.round(lon1)+')', p1.x+8, p1.y-8); ctx.fillText(name2+' ('+Math.round(lat2)+','+Math.round(lon2)+')', p2.x+8, p2.y-8);
+  ctx.fillStyle='#9fd6ee'; ctx.fillText(kmLabel, c.width/2-30, c.height-10);
+}
+
+// simulate momentum using Poisson + random minutes
+function simulateMomentum(lambdaH, lambdaA, runs){
+  const mins=91; const homeCounts=new Array(mins).fill(0), drawCounts=new Array(mins).fill(0), awayCounts=new Array(mins).fill(0);
+  for(let r=0;r<runs;r++){
+    const gh=poisson(lambdaH), ga=poisson(lambdaA);
+    const mh=[]; for(let i=0;i<gh;i++) mh.push(Math.floor(Math.random()*91));
+    const ma=[]; for(let i=0;i<ga;i++) ma.push(Math.floor(Math.random()*91));
+    const events=new Array(mins).fill(0).map(()=>({h:0,a:0}));
+    mh.forEach(m=> events[m].h++); ma.forEach(m=> events[m].a++);
+    let sh=0, sa=0;
+    for(let m=0;m<mins;m++){ sh+=events[m].h; sa+=events[m].a; if(sh>sa) homeCounts[m]++; else if(sh===sa) drawCounts[m]++; else awayCounts[m]++; }
+  }
+  return {mins, homeProb: homeCounts.map(c=>c/runs), drawProb: drawCounts.map(c=>c/runs), awayProb: awayCounts.map(c=>c/runs)};
+}
+
+// compute lambda similar to v48 but use manual ELO
+function computeLambda(h,a, travelFactorAway, stamH, stamA){
+  const atkH = Math.max(0.1, 0.42*h.xg + 0.18*(h.sot/5));
+  const atkA = Math.max(0.1, 0.42*a.xg + 0.18*(a.sot/5));
+  const defH = Math.max(0.25, 1 + 0.28*Math.log(Math.max(1,h.gc)+1) - 0.27*h.cs - 0.12*(h.ti/28));
+  const defA = Math.max(0.25, 1 + 0.28*Math.log(Math.max(1,a.gc)+1) - 0.27*a.cs - 0.12*(a.ti/28));
+  const atkA_adj = atkA * travelFactorAway; const defA_adj = defA * (1/travelFactorAway);
+  let lambdaH = 1.15 * (atkH / defA_adj); let lambdaA = 1.0 * (atkA_adj / defH);
+  lambdaH *= stamH; lambdaA *= stamA;
+  lambdaH = clamp(lambdaH,0.03,4.5); lambdaA = clamp(lambdaA,0.03,4.5);
+  return {lambdaH, lambdaA};
+}
+
+// logs
+const LOG_KEY = 'v49_manualELO_logs';
+function getLogs(){ return JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }
+function saveLog(pred){ const logs=getLogs(); logs.unshift(pred); if(logs.length>1500) logs.pop(); localStorage.setItem(LOG_KEY, JSON.stringify(logs)); renderLogs(); }
+function renderLogs(){ const logs=getLogs(); const el=document.getElementById('evalLog'); if(!logs||logs.length===0){ el.innerHTML='Belum ada log.'; return; } let html='<table style="width:100%;border-collapse:collapse"><tr><th>Waktu</th><th>Match</th><th>λH</th><th>λA</th><th>Best</th></tr>'; logs.forEach(l=>{ html += `<tr><td style="font-size:12px">${l.time}</td><td style="font-size:12px">${l.match}</td><td style="font-size:12px">${l.lambdaH.toFixed(2)}</td><td style="font-size:12px">${l.lambdaA.toFixed(2)}</td><td style="font-size:12px">${l.best}</td></tr>`; }); html += '</table>'; el.innerHTML=html; }
+
+// main analyze
+document.getElementById('btnAnalyze').addEventListener('click', ()=>{
+  try{
+    // coordinates (manual or via capitals fallback)
+    const latH = safe(document.getElementById('latHome').value, NaN); const lonH = safe(document.getElementById('lonHome').value, NaN);
+    const latA = safe(document.getElementById('latAway').value, NaN); const lonA = safe(document.getElementById('lonAway').value, NaN);
+    const cHome = document.getElementById('countryHome').value.trim(); const cAway = document.getElementById('countryAway').value.trim();
+    const coordsH = (!isNaN(latH) && !isNaN(lonH))? {lat:latH, lon:lonH, city:cHome||'Home'} : (capitals[cHome] || null);
+    const coordsA = (!isNaN(latA) && !isNaN(lonA))? {lat:latA, lon:lonA, city:cAway||'Away'} : (capitals[cAway] || null);
+    if(!coordsH || !coordsA){ alert('Isi koordinat manual atau pilih negara yang ada di daftar sample.'); return; }
+    const km = Math.round(haversine(coordsH.lat, coordsH.lon, coordsA.lat, coordsA.lon));
+    let impact = (km<5)? {factor:1.0,label:'Negligible (same city)'} : (km<300? {factor:0.99,label:'Short trip'} : (km<800? {factor:0.97,label:'Medium trip'} : (km<2000? {factor:0.94,label:'Long travel'}:{factor:0.88,label:'Intercontinental'})));
+    if(document.getElementById('intlBreak')?.checked && impact.factor<1.0){ impact.factor = Math.max(0.7, impact.factor * 0.85); impact.label += ' (Intl break effect)'; }
+    document.getElementById('mapInfo').textContent = `Travel ${km} km • ${impact.label} • factor=${impact.factor.toFixed(3)}`;
+    drawMiniMap(coordsH.lat, coordsH.lon, coordsH.city||'Home', coordsA.lat, coordsA.lon, coordsA.city||'Away', km+' km');
+
+    // read inputs & manual ELO defaulting to 1500 if empty
+    const eloH = safe(document.getElementById('eloHome').value, 1500);
+    const eloA = safe(document.getElementById('eloAway').value, 1500);
+    const h = { xg: safe(document.getElementById('xgHome').value,1.2), sot: safe(document.getElementById('sotHome').value,3.5), gc: safe(document.getElementById('gcHome')?.value,1.1), cs: safe(document.getElementById('csHome')?.value,0.3), ti: safe(document.getElementById('tackleHome')?.value,18)+safe(document.getElementById('interHome')?.value,8), elo: eloH };
+    const a = { xg: safe(document.getElementById('xgAway').value,1.0), sot: safe(document.getElementById('sotAway').value,3.0), gc: safe(document.getElementById('gcAway')?.value,1.3), cs: safe(document.getElementById('csAway')?.value,0.25), ti: safe(document.getElementById('tackleAway')?.value,16)+safe(document.getElementById('interAway')?.value,6), elo: eloA };
+    const restH = safe(document.getElementById('daysRestHome').value,4), restA = safe(document.getElementById('daysRestAway').value,3);
+    const benchH = safe(document.getElementById('benchHome').value,6), benchA = safe(document.getElementById('benchAway').value,6);
+    function stamina(days, km, bench){ const restPenalty = Math.max(0,(3-days))*0.035; const travelPenalty = Math.max(0,(km-200))*0.00016; const benchBonus = Math.max(0,(bench-5))*0.006; return clamp(1 - restPenalty - travelPenalty + benchBonus,0.65,1.06); }
+    const stamH = stamina(restH, 0, benchH), stamA = stamina(restA, km, benchA);
+
+    // compute lambdas & simulate
+    const lamb = computeLambda(h,a, impact.factor, stamH, stamA);
+    const runs = Math.max(2000,  safe(document.getElementById('mcRuns')?.value,8000));
+    let homeWins=0, draws=0, awayWins=0; const totals={}; const freq={};
+    for(let i=0;i<runs;i++){ const gh=poisson(lamb.lambdaH); const ga=poisson(lamb.lambdaA); freq[`${gh}-${ga}`]=(freq[`${gh}-${ga}`]||0)+1; totals[gh+ga]=(totals[gh+ga]||0)+1; if(gh>ga) homeWins++; else if(gh===ga) draws++; else awayWins++; }
+    const pHome = homeWins/runs, pDraw = draws/runs, pAway = awayWins/runs;
+    const over = Object.keys(totals).reduce((s,k)=> s + ((parseInt(k)>2)? totals[k]:0), 0)/runs;
+    const under = 1 - over;
+    // confidence (distribution variance + travel)
+    let meanG=0,cnt=0; for(const t in totals){ meanG += parseInt(t)*totals[t]; cnt+=totals[t]; } meanG = meanG/Math.max(1,cnt);
+    let varG=0; for(const t in totals){ varG += ((parseInt(t)-meanG)**2)*totals[t]; } varG = varG/Math.max(1,cnt);
+    let confScore = clamp(1 - Math.min(1,(varG/8)), 0.12, 0.98); confScore *= clamp(1 - (impact.factor<1? 0.12*(1-impact.factor):0), 0.6, 1.02);
+    const confLabel = confScore>0.8? 'High' : (confScore>0.55? 'Medium':'Low');
+    // momentum
+    const momentumRuns = Math.min(3000, Math.max(500, Math.floor(runs/2)));
+    const momentumResult = simulateMomentum(lamb.lambdaH, lamb.lambdaA, momentumRuns);
+    drawMomentum(momentumResult.mins, momentumResult.homeProb, momentumResult.drawProb, momentumResult.awayProb);
+    drawGauge({score:confScore, label:confLabel});
+
+    // render outputs
+    const matchTitle = `${document.getElementById('teamHome').value} vs ${document.getElementById('teamAway').value}`;
+    document.getElementById('matchTitle').textContent = matchTitle;
+    document.getElementById('matchMeta').textContent = `${document.getElementById('countryHome').value} — ${document.getElementById('countryAway').value} • ${impact.label}`;
+    const summary = `ELO Home: ${eloH} | ELO Away: ${eloA}\nλ Home: ${lamb.lambdaH.toFixed(2)} | λ Away: ${lamb.lambdaA.toFixed(2)}\n1X2 — Home ${(100*pHome).toFixed(1)}% Draw ${(100*pDraw).toFixed(1)}% Away ${(100*pAway).toFixed(1)}%\nOU(2.5) → Over ${(100*over).toFixed(1)}% | Under ${(100*under).toFixed(1)}%\nConfidence: ${confLabel} (${(100*confScore).toFixed(1)}%)\nStamina H:${stamH.toFixed(3)} A:${stamA.toFixed(3)} • Runs: ${runs}`;
+    document.getElementById('summary').textContent = summary;
+
+    saveLog({time:new Date().toISOString(), match:matchTitle, lambdaH:lamb.lambdaH, lambdaA:lamb.lambdaA, best:(pHome>pAway? 'Home': (pAway>pHome? 'Away':'Draw')), conf:(100*confScore).toFixed(1)+'%'});
+    renderLogs();
+
+  }catch(e){ alert('Error saat analisis: '+e.message); }
+});
+
+// example fill
+document.getElementById('btnExample').addEventListener('click', ()=>{
+  document.getElementById('teamHome').value='Latvia'; document.getElementById('teamAway').value='Andorra';
+  document.getElementById('countryHome').value='Latvia'; document.getElementById('countryAway').value='Andorra';
+  document.getElementById('latHome').value='56.9496'; document.getElementById('lonHome').value='24.1052';
+  document.getElementById('latAway').value='42.5063'; document.getElementById('lonAway').value='1.5218';
+  document.getElementById('xgHome').value='1.45'; document.getElementById('xgAway').value='1.10';
+  document.getElementById('sotHome').value='4.1'; document.getElementById('sotAway').value='3.2';
+  document.getElementById('daysRestHome').value='4'; document.getElementById('daysRestAway').value='3';
+  document.getElementById('eloHome').value='1400'; document.getElementById('eloAway').value='1300';
+  alert('Contoh terisi. Klik Analisis v49.');
+});
+
+// reset & exports
+document.getElementById('btnReset').addEventListener('click', ()=>{ if(!confirm('Reset semua input?')) return; document.querySelectorAll('input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else if(i.type!=='button') i.value=''; }); document.getElementById('summary').textContent='-'; document.getElementById('matchTitle').textContent='-'; document.getElementById('matchMeta').textContent='-'; document.getElementById('miniMap').getContext('2d').clearRect(0,0,320,140); document.getElementById('momentum').getContext('2d').clearRect(0,0,800,220); document.getElementById('gauge').getContext('2d').clearRect(0,0,160,120); renderLogs(); });
+document.getElementById('btnExportCSV').addEventListener('click', ()=>{ const logs=getLogs(); if(!logs||logs.length===0){ alert('Tidak ada log'); return; } const header=['time','match','lambdaH','lambdaA','best','conf']; const rows = logs.map(l=>[l.time,l.match,l.lambdaH,l.lambdaA,l.best,l.conf]); const csv=[header.join(','), ...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='v49_logs_'+(new Date()).toISOString().replace(/[:.]/g,'')+'.csv'; a.click(); });
+document.getElementById('btnExportJSON').addEventListener('click', ()=>{ const logs=getLogs(); const blob=new Blob([JSON.stringify(logs,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='v49_logs_'+(new Date()).toISOString().replace(/[:.]/g,'')+'.json'; a.click(); });
+document.getElementById('btnShowLogs').addEventListener('click', ()=>{ renderLogs(); alert('Logs ditampilkan di panel bawah.'); });
+
+// init render
+renderLogs();
+</script>
+</body>
+</html>
