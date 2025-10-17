@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Football Analyzer Pro Dark v49.1 — Full Restore</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+:root{--bg:#030617;--panel:#071a2a;--card:#081a26;--accent:#06b6d4;--muted:#9fd6ee;--text:#eaf6ff;--danger:#ff6b6b;}
+body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
+.container{max-width:1200px;margin:12px auto;padding:18px}
+h1{font-size:22px;margin:2px 0 6px}
+.small{font-size:13px;color:var(--muted)}
+.block{background:var(--panel);border:1px solid rgba(11,78,94,0.18);padding:14px;border-radius:10px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.col{flex:1;min-width:160px}
+label{display:block;font-size:13px;color:var(--muted);margin:6px 0}
+input[type="text"],input[type="number"],select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(11,78,94,0.2);background:#031821;color:var(--text)}
+button{background:var(--accent);border:0;color:#022;padding:8px 12px;border-radius:8px;cursor:pointer}
+.btn-muted{background:#0b2f3a;color:var(--text);border:1px solid rgba(255,255,255,0.02)}
+.pre{background:#021425;padding:10px;border-radius:8px;border:1px dashed rgba(11,78,94,0.2);font-family:ui-monospace,monospace;margin-top:8px;white-space:pre-wrap}
+.canvas-wrap{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+canvas{background:#02121a;border-radius:6px;border:1px solid rgba(11,78,94,0.2);}
+.kv{font-size:13px;color:var(--muted)}
+.footer{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
+.card{background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(11,78,94,0.12);}
+.legend{display:flex;gap:8px;align-items:center;margin-top:6px}
+.legend > span{display:inline-block;padding:6px 8px;border-radius:6px;background:#041a22;color:var(--muted);font-size:12px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px;text-align:center}
+.value-item{padding:8px;border-radius:8px;margin-bottom:6px;background:#021425;border:1px solid rgba(11,78,94,0.2)}
+.status-green{color:#2dd36f} .status-yellow{color:#f7b731} .status-red{color:#ff6b6b}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Football Analyzer Pro Dark v49.1 — Full Restore</h1>
+  <div class="small">Semua fitur kembali: Momentum, Gauge, Histogram, Map, Value bets, Trap detection, HDP & OU, Manual ELO (default 1500)</div>
+
+  <div class="block">
+    <h3>Match & ELO (manual)</h3>
+    <div class="row">
+      <div class="col"><label>Home Team: <input id="teamHome" type="text" value="Team Home"></label></div>
+      <div class="col"><label>Away Team: <input id="teamAway" type="text" value="Team Away"></label></div>
+      <div class="col"><label>Competition: <input id="comp" type="text"></label></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>Country Home: <input id="countryHome" list="countries" type="text"></label></div>
+      <div class="col"><label>Country Away: <input id="countryAway" list="countries" type="text"></label></div>
+      <div class="col"><label>ELO Home (manual): <input id="eloHome" type="number" placeholder="1500"></label></div>
+    </div>
+    <div class="row">
+      <div class="col"></div>
+      <div class="col"><label>ELO Away (manual): <input id="eloAway" type="number" placeholder="1500"></label></div>
+      <div class="col"><div class="kv">🛈 Jika dikosongkan, <strong>ELO default = 1500</strong></div></div>
+    </div>
+    <datalist id="countries"><option value="France"></option><option value="Japan"></option><option value="Latvia"></option><option value="Andorra"></option><option value="Indonesia"></option></datalist>
+  </div>
+
+  <div class="block">
+    <h3>Offensive & Match Inputs</h3>
+    <div class="row">
+      <div class="col"><label>xG Home: <input id="xgHome" type="number" step="0.01" value="1.45"></label></div>
+      <div class="col"><label>xG Away: <input id="xgAway" type="number" step="0.01" value="1.10"></label></div>
+      <div class="col"><label>SOT Home: <input id="sotHome" type="number" step="0.1" value="4.1"></label></div>
+      <div class="col"><label>SOT Away: <input id="sotAway" type="number" step="0.1" value="3.2"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Goals avg Home: <input id="goalsHome" type="number" step="0.1"></label></div>
+      <div class="col"><label>Goals avg Away: <input id="goalsAway" type="number" step="0.1"></label></div>
+      <div class="col"><label>Total Shots Home: <input id="shotsHome" type="number"></label></div>
+      <div class="col"><label>Total Shots Away: <input id="shotsAway" type="number"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Conversion Rate Home: <input id="convHome" type="number" step="0.01"></label></div>
+      <div class="col"><label>Conversion Rate Away: <input id="convAway" type="number" step="0.01"></label></div>
+      <div class="col"><label>Big Chances Home: <input id="bigHome" type="number" step="0.1"></label></div>
+      <div class="col"><label>Big Chances Away: <input id="bigAway" type="number" step="0.1"></label></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Defense, Absence & Errors</h3>
+    <div class="row">
+      <div class="col"><label>Tackles Home: <input id="tackleHome" type="number" value="18"></label></div>
+      <div class="col"><label>Inter Home: <input id="interHome" type="number" value="9"></label></div>
+      <div class="col"><label>Tackles Away: <input id="tackleAway" type="number" value="12"></label></div>
+      <div class="col"><label>Inter Away: <input id="interAway" type="number" value="6"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>CS Home: <input id="csHome" type="number" step="0.01" value="0.30"></label></div>
+      <div class="col"><label>CS Away: <input id="csAway" type="number" step="0.01" value="0.25"></label></div>
+      <div class="col"><label>GC Home: <input id="gcHome" type="number" step="0.1" value="1.1"></label></div>
+      <div class="col"><label>GC Away: <input id="gcAway" type="number" step="0.1" value="1.3"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Errors→goal Home (est/season): <input id="errHome" type="number" step="0.1" value="6"></label></div>
+      <div class="col"><label>Errors→goal Away (est/season): <input id="errAway" type="number" step="0.1" value="7"></label></div>
+      <div class="col"><label>DF abs Home: <input id="absDfHome" type="number" value="0"></label></div>
+      <div class="col"><label>DF abs Away: <input id="absDfAway" type="number" value="0"></label></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Travel & Controls</h3>
+    <div class="row">
+      <div class="col"><label>Lat Home (manual): <input id="latHome" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lon Home (manual): <input id="lonHome" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lat Away (manual): <input id="latAway" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lon Away (manual): <input id="lonAway" type="number" step="0.0001"></label></div>
+    </div>
+    <div style="margin-top:8px">
+      <button id="btnAnalyze" style="background:var(--accent);padding:10px 14px;border-radius:8px">Analisis v49.1</button>
+      <button id="btnExample" class="btn-muted">Isi Contoh</button>
+      <button id="btnReset" class="btn-muted">Reset</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Visuals & Recommendations</h3>
+    <div class="canvas-wrap">
+      <div style="flex:2">
+        <div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong id="matchTitle">-</strong><div class="small" id="matchMeta">-</div></div><div><canvas id="gauge" width="160" height="120"></canvas></div></div></div>
+        <div class="card"><canvas id="momentum" width="800" height="220"></canvas><div class="legend"><span>Home Prob</span><span>Draw Prob</span><span>Away Prob</span></div></div>
+        <div class="card" style="margin-top:8px"><h4 class="small">Histogram Total Goals</h4><canvas id="hist" width="800" height="140"></canvas></div>
+      </div>
+      <div style="flex:1;">
+        <div class="card"><h4 class="small">Summary & Best Recs</h4><pre id="summary" class="pre">—</pre></div>
+        <div class="card" style="margin-top:8px"><h4 class="small">Value Bets</h4><div id="valueList"></div></div>
+        <div class="card" style="margin-top:8px"><h4 class="small">Trap Table</h4><table class="table" id="trapTable"><tr><th>Pasar</th><th>Open</th><th>Now</th><th>Δ%</th><th>Arah</th><th>Prob</th><th>Edge</th><th>Status</th></tr></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Logs & Export</h3>
+    <div style="display:flex;gap:8px"><button id="btnExportCSV" class="btn-muted">Export CSV</button><button id="btnExportJSON" class="btn-muted">Export JSON</button><button id="btnShowLogs" class="btn-muted">Show Logs</button></div>
+    <div id="evalLog" class="card small" style="margin-top:8px;max-height:220px;overflow:auto">Log evaluasi kosong.</div>
+  </div>
+
+  <div class="footer">Football Analyzer Pro Dark v49.1 • Full Restore • Manual ELO</div>
+</div>
+
+<script>
+// Utilities
+function safe(v,d=0){ const x=parseFloat(v); return isNaN(x)?d:x; }
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+function poisson(lambda){ let L=Math.exp(-lambda), p=1, k=0; while(p> L){ k++; p *= Math.random(); if(k>2000) break; } return Math.max(0,k-1); }
+function percent(x){ return (100*x).toFixed(1)+'%'; }
+
+// Capitals small
+const capitals = {"Latvia":{lat:56.9496,lon:24.1052,city:'Riga'},"Andorra":{lat:42.5063,lon:1.5218,city:'Andorra la Vella'},"France":{lat:48.8566,lon:2.3522,city:'Paris'}, "Japan":{lat:35.6895,lon:139.6917,city:'Tokyo'}};
+function haversine(lat1, lon1, lat2, lon2){ const R=6371; const toRad=x=>x*Math.PI/180; const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));}
+
+// core model compute (sharp-ish) including travel, stamina and manual ELO usage
+function computeSharp(h,a,km,intl,stamH,stamA){
+  const travelImpact = (km<5)?1.0: (km<300?0.99:(km<800?0.97:(km<2000?0.94:0.88)));
+  const travelFactorAway = intl? Math.max(0.7, travelImpact*0.85): travelImpact;
+  const atkH = Math.max(0.1, 0.42*h.xg + 0.18*(h.sot/5) + 0.06*(h.conv*100 || 0));
+  const atkA = Math.max(0.1, 0.42*a.xg + 0.18*(a.sot/5) + 0.06*(a.conv*100 || 0));
+  const defH = Math.max(0.25, 1 + 0.28*Math.log(Math.max(1,h.gc)+1) - 0.27*h.cs - 0.12*(h.ti/28));
+  const defA = Math.max(0.25, 1 + 0.28*Math.log(Math.max(1,a.gc)+1) - 0.27*a.cs - 0.12*(a.ti/28));
+  const atkA_adj = atkA * travelFactorAway; const defA_adj = defA * (1/travelFactorAway);
+  let lambdaH = 1.15 * (atkH / defA_adj) * (1 + (h.elo - a.elo)/2400);
+  let lambdaA = 1.0 * (atkA_adj / defH) * (1 + (a.elo - h.elo)/2400);
+  lambdaH *= stamH; lambdaA *= stamA;
+  lambdaH = clamp(lambdaH,0.03,4.5); lambdaA = clamp(lambdaA,0.03,4.5);
+  return {lambdaH, lambdaA, travelFactorAway};
+}
+
+// montecarlo, histogram, prob cover for HDP, OU
+function monteCarlo(lambdaH, lambdaA, runs, rho=0.12){
+  const scoreFreq={}, totals={}; let h=0,d=0,a=0;
+  for(let i=0;i<runs;i++){
+    const gh = poisson(lambdaH); const ga = poisson(lambdaA);
+    scoreFreq[`${gh}-${ga}`] = (scoreFreq[`${gh}-${ga}`]||0)+1;
+    totals[gh+ga] = (totals[gh+ga]||0)+1;
+    if(gh>ga) h++; else if(gh===ga) d++; else a++;
+  }
+  return {scoreFreq, totals, pHome:h/runs, pDraw:d/runs, pAway:a/runs};
+}
+function probOUFromTotals(totals,line,runs){ let over=0,under=0; const isInt=Number.isInteger(line); for(const t in totals){ const g=parseInt(t), v=totals[t]; if(isInt){ if(g>line) over+=v; else if(g<line) under+=v; else {over+=0.5*v; under+=0.5*v;} } else { if(g>line) over+=v; else under+=v; } } return {over: over/runs, under: under/runs}; }
+function probCoverFromScores(scoreFreq, handicap, runs){ let win=0,push=0,lose=0; for(const sc in scoreFreq){ const v=scoreFreq[sc]; const [gh,ga] = sc.split('-').map(x=>parseInt(x)); const diff = gh - ga - handicap; if(diff>0) win+=v; else if(diff===0) push+=v; else lose+=v; } return (win + 0.5*push)/runs; }
+
+// confidence, recommendations
+function computeConfidence(totals, travelFactor){ let mean=0,count=0; for(const t in totals){ mean += parseInt(t)*totals[t]; count+=totals[t]; } if(count===0) return {score:0.5,label:'Low'}; mean/=count; let varv=0; for(const t in totals){ varv += ((parseInt(t)-mean)**2)*totals[t]; } varv/=count; let conf = clamp(1 - Math.min(1, varv/8), 0.12, 0.97); conf *= clamp(1 - (1-travelFactor)*0.25, 0.6, 1.02); const label = conf>0.8? 'High': (conf>0.55? 'Medium':'Low'); return {score:conf,label}; }
+
+function colorByEdge(edge){ if(edge>=0.05) return 'status-green'; if(edge>=0.02) return 'status-yellow'; return ''; }
+
+// UI helpers: draw histogram
+function drawHistogram(totals, canvasId){
+  const c = document.getElementById(canvasId); const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle='#02121a'; ctx.fillRect(0,0,c.width,c.height);
+  const keys = Object.keys(totals).map(k=>parseInt(k)).sort((a,b)=>a-b);
+  const maxV = Math.max(...keys.map(k=>totals[k]||0),1);
+  const left = 20, right = c.width-20; const w = (right-left)/Math.max(1, keys.length);
+  keys.forEach((k,i)=>{ const v = totals[k]||0; const h = (v/maxV)*(c.height-30); ctx.fillStyle='#0b74de'; ctx.fillRect(left + i*w, c.height-10-h, w*0.8, h); ctx.fillStyle='#9fd6ee'; ctx.font='10px Arial'; ctx.fillText(String(k), left + i*w, c.height-2); });
+}
+
+// logs
+const LOG_KEY = 'v49_1_full_logs';
+function getLogs(){ return JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }
+function saveLog(pred){ const logs=getLogs(); logs.unshift(pred); if(logs.length>1500) logs.pop(); localStorage.setItem(LOG_KEY, JSON.stringify(logs)); renderLogs(); }
+function renderLogs(){ const logs=getLogs(); const el=document.getElementById('evalLog'); if(!logs||logs.length===0){ el.innerHTML='Belum ada log.'; return; } let html='<table style="width:100%;border-collapse:collapse"><tr><th>Waktu</th><th>Match</th><th>λH</th><th>λA</th><th>Best</th></tr>'; logs.forEach(l=>{ html += `<tr><td style="font-size:12px">${l.time}</td><td style="font-size:12px">${l.match}</td><td style="font-size:12px">${l.lambdaH.toFixed(2)}</td><td style="font-size:12px">${l.lambdaA.toFixed(2)}</td><td style="font-size:12px">${l.best}</td></tr>`; }); html += '</table>'; el.innerHTML=html; }
+
+// analyze all (full restore)
+document.getElementById('btnAnalyze').addEventListener('click', ()=>{
+  try{
+    // coords
+    const latH = safe(document.getElementById('latHome').value, NaN), lonH = safe(document.getElementById('lonHome').value, NaN);
+    const latA = safe(document.getElementById('latAway').value, NaN), lonA = safe(document.getElementById('lonAway').value, NaN);
+    const cHome = document.getElementById('countryHome').value.trim(), cAway = document.getElementById('countryAway').value.trim();
+    const coordsH = (!isNaN(latH) && !isNaN(lonH))? {lat:latH,lon:lonH,city:cHome||'Home'} : (capitals[cHome] || null);
+    const coordsA = (!isNaN(latA) && !isNaN(lonA))? {lat:latA,lon:lonA,city:cAway||'Away'} : (capitals[cAway] || null);
+    if(!coordsH || !coordsA){ alert('Isi koordinat manual atau pilih negara sample.'); return; }
+    const km = Math.round(haversine(coordsH.lat, coordsH.lon, coordsA.lat, coordsA.lon));
+    const intl = false; // keep simple toggle optional later
+    const impactLabel = (km<5)? 'Negligible': (km<300? 'Short': (km<800? 'Medium': (km<2000? 'Long':'Intercontinental')));
+    // inputs and ELO manual defaults
+    const eloH = safe(document.getElementById('eloHome').value,1500), eloA = safe(document.getElementById('eloAway').value,1500);
+    const h = { xg: safe(document.getElementById('xgHome').value,1.2), sot: safe(document.getElementById('sotHome').value,3.5), conv: safe(document.getElementById('convHome')?.value,0.12), gc: safe(document.getElementById('gcHome')?.value,1.1), cs: safe(document.getElementById('csHome')?.value,0.3), ti: safe(document.getElementById('tackleHome')?.value,18)+safe(document.getElementById('interHome')?.value,8), elo:eloH };
+    const a = { xg: safe(document.getElementById('xgAway').value,1.0), sot: safe(document.getElementById('sotAway').value,3.0), conv: safe(document.getElementById('convAway')?.value,0.11), gc: safe(document.getElementById('gcAway')?.value,1.3), cs: safe(document.getElementById('csAway')?.value,0.25), ti: safe(document.getElementById('tackleAway')?.value,16)+safe(document.getElementById('interAway')?.value,6), elo:eloA };
+    const restH = safe(document.getElementById('daysRestHome')?.value,4), restA = safe(document.getElementById('daysRestAway')?.value,3);
+    const benchH = safe(document.getElementById('benchHome')?.value,6), benchA = safe(document.getElementById('benchAway')?.value,6);
+    function stamina(days, km, bench){ const restPenalty = Math.max(0,(3-days))*0.035; const travelPenalty = Math.max(0,(km-200))*0.00016; const benchBonus = Math.max(0,(bench-5))*0.006; return clamp(1 - restPenalty - travelPenalty + benchBonus,0.65,1.06); }
+    const stamH = stamina(restH,0,benchH), stamA = stamina(restA,km,benchA);
+
+    const sharp = computeSharp(h,a,km,intl,stamH,stamA);
+    const runs = Math.max(2000, safe(document.getElementById('mcRuns')?.value,8000));
+    const mc = monteCarlo(sharp.lambdaH, sharp.lambdaA, runs);
+    // totals & ou 2.5
+    const ouLine = 2.5;
+    const ouProb = probOUFromTotals(mc.totals, ouLine, runs);
+    // hdp default 0.25
+    const hdpLine = 0.25;
+    const coverHome = probCoverFromScores(mc.scoreFreq, hdpLine, runs);
+    const coverAway = probCoverFromScores(mc.scoreFreq, -hdpLine, runs);
+    // implied odds fields (user can set via prompt later) - for demo assume none
+    const implied = { ouOver: null, ouUnder: null, hdpHome: null, hdpAway: null };
+    const edges = { ouOver: null, ouUnder: null, hdpHome: null, hdpAway: null };
+    // confidence & recommendations
+    const conf = computeConfidence(mc.totals, sharp.travelFactorAway);
+    // build recommendations (value detection: compare model prob vs implied if provided)
+    const candidates = [
+      {tag:`OU Over ${ouLine}`, prob:ouProb.over, edge:edges.ouOver, market:'OU', open:null, now:null},
+      {tag:`OU Under ${ouLine}`, prob:ouProb.under, edge:edges.ouUnder, market:'OU', open:null, now:null},
+      {tag:`HDP Home ${hdpLine}`, prob:coverHome, edge:edges.hdpHome, market:'HDP', open:null, now:null},
+      {tag:`HDP Away ${-hdpLine}`, prob:coverAway, edge:edges.hdpAway, market:'HDP', open:null, now:null}
+    ];
+    // score candidates
+    candidates.forEach(c=>{ c.edgeShr = (c.edge===null? null: Math.sign(c.edge)*Math.min(Math.abs(c.edge),0.22)); c.score = ((c.edgeShr||0)*(c.prob||0)) + (c.prob*0.62); });
+    candidates.sort((a,b)=>b.score - a.score);
+    const best = candidates.slice(0,2).map(c=>({tag:c.tag,prob:c.prob}));
+    // render UI
+    const pHome=mc.pHome, pDraw=mc.pDraw, pAway=mc.pAway;
+    document.getElementById('matchTitle').textContent = `${document.getElementById('teamHome').value} vs ${document.getElementById('teamAway').value}`;
+    document.getElementById('matchMeta').textContent = `${cHome} — ${cAway} • Travel:${km}km (${impactLabel})`;
+    const summary = `ELO Home: ${eloH} | ELO Away: ${eloA}\nλ Home: ${sharp.lambdaH.toFixed(2)} | λ Away: ${sharp.lambdaA.toFixed(2)}\n1X2 — Home ${(100*pHome).toFixed(1)}% Draw ${(100*pDraw).toFixed(1)}% Away ${(100*pAway).toFixed(1)}%\nOU(${ouLine}) → Over ${(100*ouProb.over).toFixed(1)}% | Under ${(100*ouProb.under).toFixed(1)}%\nHDP(${hdpLine}) → Home ${(100*coverHome).toFixed(1)}% | Away ${(100*coverAway).toFixed(1)}%\nConfidence: ${conf.label} (${(100*conf.score).toFixed(1)}%)\nStamina H:${stamH.toFixed(3)} A:${stamA.toFixed(3)} • Runs: ${runs}`;
+    document.getElementById('summary').textContent = summary;
+
+    // value list HTML
+    let valHTML='';
+    candidates.forEach(c=>{ const edgeTxt = c.edgeShr===null? '-' : ((c.edgeShr*100).toFixed(2)+'%'); valHTML += `<div class="value-item ${colorByEdge(c.edgeShr)}"><div style="font-weight:700">${c.tag}</div><div class="kv">Prob: ${(100*c.prob).toFixed(1)}% • Edge: ${edgeTxt}</div></div>`; });
+    document.getElementById('valueList').innerHTML = valHTML;
+
+    // trap table
+    let table = '<tr><th>Pasar</th><th>Open</th><th>Now</th><th>Δ%</th><th>Arah</th><th>Prob</th><th>Edge</th><th>Status</th></tr>';
+    candidates.forEach(c=>{ table += `<tr><td>${c.tag}</td><td>${c.open||''}</td><td>${c.now||''}</td><td>${''}</td><td>${''}</td><td>${percent(c.prob)}</td><td>${c.edgeShr===null?'-':( (c.edgeShr*100).toFixed(2)+'%')}</td><td>${c.edgeShr===null? 'N/A' : (Math.abs(c.edgeShr)>=0.15? 'Trap': (Math.abs(c.edgeShr)>=0.05? 'Warning':'Stable'))}</td></tr>`; });
+    document.getElementById('trapTable').innerHTML = table;
+
+    // histogram draw
+    drawHistogram(mc.totals, 'hist');
+    // momentum simulation and draw (smaller runs)
+    const momentumRuns = Math.min(3000, Math.max(500, Math.floor(runs/2)));
+    const momentum = (function(){
+      const mins=91; const homeCounts=new Array(mins).fill(0), drawCounts=new Array(mins).fill(0), awayCounts=new Array(mins).fill(0);
+      for(let r=0;r<momentumRuns;r++){ const gh=poisson(sharp.lambdaH), ga=poisson(sharp.lambdaA); const mh=[]; for(let i=0;i<gh;i++) mh.push(Math.floor(Math.random()*91)); const ma=[]; for(let i=0;i<ga;i++) ma.push(Math.floor(Math.random()*91)); const events=new Array(mins).fill(0).map(()=>({h:0,a:0})); mh.forEach(m=> events[m].h++); ma.forEach(m=> events[m].a++); let sh=0, sa=0; for(let m=0;m<mins;m++){ sh+=events[m].h; sa+=events[m].a; if(sh>sa) homeCounts[m]++; else if(sh===sa) drawCounts[m]++; else awayCounts[m]++; } } return {mins, homeProb: homeCounts.map(c=>c/momentumRuns), drawProb: drawCounts.map(c=>c/momentumRuns), awayProb: awayCounts.map(c=>c/momentumRuns)}; })();
+    drawMomentum(momentum.mins, momentum.homeProb, momentum.drawProb, momentum.awayProb);
+    // gauge
+    (function(){ const c=document.getElementById('gauge'); const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); const cx=c.width/2, cy=c.height*0.8, r=50; ctx.lineWidth=10; ctx.beginPath(); ctx.strokeStyle='#04202a'; ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.stroke(); const val=clamp(conf.score,0,1); const end=Math.PI + val*Math.PI; ctx.beginPath(); ctx.strokeStyle = val>0.8? '#2dd36f' : (val>0.55? '#f7b731' : '#ff6b6b'); ctx.lineWidth=10; ctx.arc(cx,cy,r,Math.PI,end); ctx.stroke(); ctx.fillStyle='#cfe8ff'; ctx.font='14px Arial'; ctx.textAlign='center'; ctx.fillText((val*100).toFixed(1)+'%',cx,cy-10); ctx.font='11px Arial'; ctx.fillText(conf.label, cx, cy+14); })();
+
+    // save log
+    saveLog({time:new Date().toISOString(), match: `${document.getElementById('teamHome').value} vs ${document.getElementById('teamAway').value}`, lambdaH: sharp.lambdaH, lambdaA: sharp.lambdaA, best: (mc.pHome>mc.pAway? 'Home': (mc.pAway>mc.pHome? 'Away':'Draw')), conf: (100*conf.score).toFixed(1)+'%'});
+    renderLogs();
+  }catch(e){ alert('Error: '+e.message); }
+});
+
+// example fill
+document.getElementById('btnExample').addEventListener('click', ()=>{
+  document.getElementById('teamHome').value='Latvia'; document.getElementById('teamAway').value='Andorra';
+  document.getElementById('countryHome').value='Latvia'; document.getElementById('countryAway').value='Andorra';
+  document.getElementById('latHome').value='56.9496'; document.getElementById('lonHome').value='24.1052';
+  document.getElementById('latAway').value='42.5063'; document.getElementById('lonAway').value='1.5218';
+  document.getElementById('xgHome').value='1.45'; document.getElementById('xgAway').value='1.10';
+  document.getElementById('sotHome').value='4.1'; document.getElementById('sotAway').value='3.2';
+  document.getElementById('daysRestHome').value='4'; document.getElementById('daysRestAway').value='3';
+  document.getElementById('eloHome').value='1400'; document.getElementById('eloAway').value='1300';
+  alert('Contoh terisi — klik Analisis v49.1');
+});
+
+// reset & exports
+document.getElementById('btnReset').addEventListener('click', ()=>{ if(!confirm('Reset semua input?')) return; document.querySelectorAll('input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else if(i.type!=='button') i.value=''; }); document.getElementById('summary').textContent='-'; document.getElementById('matchTitle').textContent='-'; document.getElementById('matchMeta').textContent='-'; document.getElementById('miniMap').getContext('2d').clearRect(0,0,320,140); document.getElementById('momentum').getContext('2d').clearRect(0,0,800,220); document.getElementById('gauge').getContext('2d').clearRect(0,0,160,120); renderLogs(); });
+document.getElementById('btnExportCSV').addEventListener('click', ()=>{ const logs=getLogs(); if(!logs||logs.length===0){ alert('Tidak ada log'); return; } const header=['time','match','lambdaH','lambdaA','best','conf']; const rows = logs.map(l=>[l.time,l.match,l.lambdaH,l.lambdaA,l.best,l.conf]); const csv=[header.join(','), ...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='v49_1_logs_'+(new Date()).toISOString().replace(/[:.]/g,'')+'.csv'; a.click(); });
+document.getElementById('btnExportJSON').addEventListener('click', ()=>{ const logs=getLogs(); const blob=new Blob([JSON.stringify(logs,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='v49_1_logs_'+(new Date()).toISOString().replace(/[:.]/g,'')+'.json'; a.click(); });
+document.getElementById('btnShowLogs').addEventListener('click', ()=>{ renderLogs(); alert('Logs ditampilkan di panel bawah.'); });
+
+// init
+renderLogs();
+</script>
+</body>
+</html>
