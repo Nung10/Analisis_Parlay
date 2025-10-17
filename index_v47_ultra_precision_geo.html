@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Prediksi v47 — Ultra Precision++ (Geo Smart)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+:root{--bg:#041022;--panel:#071a2a;--card:#05232f;--accent:#06b6d4;--muted:#9fd6ee;--text:#eaf6ff;--danger:#ff6b6b;}
+body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
+.container{max-width:1100px;margin:12px auto;padding:18px}
+h1{font-size:22px;margin:2px 0 6px}
+.small{font-size:13px;color:var(--muted)}
+.block{background:var(--panel);border:1px solid rgba(11,78,94,0.2);padding:14px;border-radius:10px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.col{flex:1;min-width:160px}
+label{display:block;font-size:13px;color:var(--muted);margin:6px 0}
+input[type="text"],input[type="number"],select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(11,78,94,0.2);background:#02161d;color:var(--text)}
+button{background:var(--accent);border:0;color:#022;padding:8px 12px;border-radius:8px;cursor:pointer}
+.canvas-box{background:#02121a;border-radius:6px;border:1px solid rgba(11,78,94,0.2);padding:10px}
+.footer{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
+.kv{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚽ Prediksi v47 — Ultra Precision++ (Geo Smart)</h1>
+  <div class="small">Auto travel (berdasarkan ibu kota) & mini-map (muncul saat Analisis). Jika negara tidak ada di daftar, isi lat/lon manual.</div>
+
+  <div class="block">
+    <h3>Match & Geo</h3>
+    <div class="row">
+      <div class="col"><label>Home Team: <input id="teamHome" type="text" value="Team Home"></label></div>
+      <div class="col"><label>Away Team: <input id="teamAway" type="text" value="Team Away"></label></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>Negara Home: <input id="countryHome" list="countries" type="text" placeholder="Pilih atau ketik"></label></div>
+      <div class="col"><label>Negara Away: <input id="countryAway" list="countries" type="text" placeholder="Pilih atau ketik"></label></div>
+    </div>
+    <datalist id="countries">
+      <!-- small sample; user can type custom country names -->
+      <option value="Indonesia"></option><option value="England"></option><option value="France"></option><option value="Spain"></option><option value="Germany"></option>
+      <option value="Italy"></option><option value="Portugal"></option><option value="Netherlands"></option><option value="Belgium"></option><option value="Scotland"></option>
+      <option value="United States"></option><option value="Brazil"></option><option value="Argentina"></option><option value="Japan"></option><option value="South Korea"></option>
+      <option value="Australia"></option><option value="Russia"></option><option value="Turkey"></option><option value="Poland"></option><option value="Sweden"></option>
+    </datalist>
+
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Lat Home (manual): <input id="latHome" type="number" step="0.0001" placeholder="isi jika negara tidak ada"></label></div>
+      <div class="col"><label>Lon Home (manual): <input id="lonHome" type="number" step="0.0001" placeholder=""></label></div>
+      <div class="col"><label>Lat Away (manual): <input id="latAway" type="number" step="0.0001"></label></div>
+      <div class="col"><label>Lon Away (manual): <input id="lonAway" type="number" step="0.0001"></label></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label><input type="checkbox" id="intlBreak"> International Break Mode (multiplier)</label></div>
+      <div class="col"><button id="btnAnalyze">Analisis (map muncul)</button></div>
+      <div class="col"><button id="btnFillGeo" class="btn-muted">Isi Geo contoh</button></div>
+    </div>
+    <div id="travelLabel" class="kv" style="margin-top:8px">Travel: -</div>
+  </div>
+
+  <div class="block">
+    <h3>Core stats (minimal untuk demo)</h3>
+    <div class="row">
+      <div class="col"><label>xG Home: <input id="xgHome" type="number" step="0.01" value="1.45"></label></div>
+      <div class="col"><label>xG Away: <input id="xgAway" type="number" step="0.01" value="1.10"></label></div>
+      <div class="col"><label>SOT Home: <input id="sotHome" type="number" step="0.1" value="4.1"></label></div>
+      <div class="col"><label>SOT Away: <input id="sotAway" type="number" step="0.1" value="3.2"></label></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Days rest Home: <input id="daysRestHome" type="number" value="4"></label></div>
+      <div class="col"><label>Days rest Away: <input id="daysRestAway" type="number" value="3"></label></div>
+      <div class="col"><label>Bench Home: <input id="benchHome" type="number" value="6"></label></div>
+      <div class="col"><label>Bench Away: <input id="benchAway" type="number" value="6"></label></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Map (muncul setelah ANALISIS)</h3>
+    <div class="canvas-box">
+      <canvas id="miniMap" width="960" height="280" style="display:block;margin:0 auto"></canvas>
+      <div id="mapInfo" class="kv" style="margin-top:8px;text-align:center">Map akan muncul setelah Analisis.</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Ringkasan</h3>
+    <pre id="summary" class="kv">Hasil analisis akan muncul di sini.</pre>
+  </div>
+
+  <div class="footer">v47 • Ultra Precision++ • Geo Smart • Map on analyze</div>
+</div>
+
+<script>
+// Minimal capitals dataset (latitude, longitude) for auto travel detection
+const capitals = {
+  "Indonesia": {lat: -6.2088, lon: 106.8456, city:'Jakarta'},
+  "England": {lat: 51.5074, lon: -0.1278, city:'London'},
+  "France": {lat: 48.8566, lon: 2.3522, city:'Paris'},
+  "Spain": {lat: 40.4168, lon: -3.7038, city:'Madrid'},
+  "Germany": {lat: 52.52, lon: 13.405, city:'Berlin'},
+  "Italy": {lat: 41.9028, lon: 12.4964, city:'Rome'},
+  "Portugal": {lat: 38.7223, lon: -9.1393, city:'Lisbon'},
+  "Netherlands": {lat: 52.3676, lon: 4.9041, city:'Amsterdam'},
+  "Belgium": {lat: 50.8503, lon: 4.3517, city:'Brussels'},
+  "Scotland": {lat: 55.9533, lon: -3.1883, city:'Edinburgh'},
+  "United States": {lat: 38.9072, lon: -77.0369, city:'Washington D.C.'},
+  "Brazil": {lat: -15.7939, lon: -47.8828, city:'Brasilia'},
+  "Argentina": {lat: -34.6037, lon: -58.3816, city:'Buenos Aires'},
+  "Japan": {lat: 35.6895, lon: 139.6917, city:'Tokyo'},
+  "South Korea": {lat: 37.5665, lon: 126.9780, city:'Seoul'},
+  "Australia": {lat: -35.2809, lon: 149.1300, city:'Canberra'},
+  "Russia": {lat: 55.7558, lon: 37.6173, city:'Moscow'},
+  "Turkey": {lat: 39.9334, lon: 32.8597, city:'Ankara'},
+  "Poland": {lat: 52.2297, lon: 21.0122, city:'Warsaw'},
+  "Sweden": {lat: 59.3293, lon: 18.0686, city:'Stockholm'}
+};
+
+function haversine(lat1, lon1, lat2, lon2){
+  const R = 6371; // km
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function travelImpactLabel(km, intl=false){
+  if(km < 5) return {factor:1.0, label:'🚌 Travel negligible — same city'};
+  if(km < 300) return {factor:0.99, label:'🚐 Short trip — minimal'};
+  if(km < 800) return {factor:0.97, label:'🚍 Medium trip — mild fatigue'};
+  if(km < 2000) return {factor:0.94, label:'✈️ Long travel — moderate fatigue'};
+  return {factor:0.88, label:'🌍 Intercontinental — heavy fatigue'};
+}
+
+// projection: simple equirectangular to canvas
+function project(lat, lon, w, h){
+  // lat: -90..90, lon: -180..180 -> map to margin
+  const margin = 40;
+  const x = margin + ( (lon + 180)/360 ) * (w - margin*2);
+  const y = margin + ( (90 - lat)/180 ) * (h - margin*2);
+  return {x,y};
+}
+
+// draw mini map with two points and great circle approximation (simple arc)
+function drawMiniMap(lat1, lon1, name1, lat2, lon2, name2, kmLabel){
+  const c = document.getElementById('miniMap');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  // background grid (subtle)
+  ctx.fillStyle = '#03161d'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle = 'rgba(159,214,238,0.06)'; ctx.lineWidth=1;
+  for(let i=0;i<24;i++){ const x = (i/24)*c.width; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,c.height); ctx.stroke(); }
+  for(let j=0;j<12;j++){ const y=(j/12)*c.height; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(c.width,y); ctx.stroke(); }
+  // project points
+  const p1 = project(lat1, lon1, c.width, c.height);
+  const p2 = project(lat2, lon2, c.width, c.height);
+  // draw arc (quadratic curve)
+  ctx.beginPath(); ctx.moveTo(p1.x, p1.y);
+  const cx = (p1.x + p2.x)/2 + (p1.y - p2.y)/6; const cy = (p1.y + p2.y)/2 + (p2.x - p1.x)/12;
+  ctx.quadraticCurveTo(cx, cy, p2.x, p2.y);
+  ctx.strokeStyle = '#ff7b7b'; ctx.lineWidth = 3; ctx.stroke();
+  // draw points
+  ctx.fillStyle = '#06b6d4'; ctx.beginPath(); ctx.arc(p1.x, p1.y, 6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ffb86b'; ctx.beginPath(); ctx.arc(p2.x, p2.y, 6,0,Math.PI*2); ctx.fill();
+  // labels
+  ctx.fillStyle = '#cfe8ff'; ctx.font='13px Arial'; ctx.fillText(name1, p1.x+8, p1.y-8); ctx.fillText(name2, p2.x+8, p2.y-8);
+  // km label centered
+  ctx.fillStyle = '#9fd6ee'; ctx.font='12px Arial'; ctx.fillText(kmLabel, c.width/2 - 40, c.height - 12);
+}
+
+// Model: simplified attack/def and lambda computation (with travel factor integration)
+// reuse some of the v46 logic, but compact for this demo
+function computeModelAndApplyTravel(h,a,travelFactorHome, travelFactorAway){
+  // basic attack/def indices
+  const atkH = Math.max(0.1, 0.42*h.xg + 0.18*(h.sot/5) + 0.08*(h.conv*100));
+  const atkA = Math.max(0.1, 0.42*a.xg + 0.18*(a.sot/5) + 0.08*(a.conv*100));
+  const defH = Math.max(0.25, 1 + 0.28*Math.log(Math.max(1,h.gc)+1) - 0.27*h.cs - 0.12*(h.ti/28));
+  const defA = Math.max(0.25, 1 + 0.28*Math.log(Math.max(1,a.gc)+1) - 0.27*a.cs - 0.12*(a.ti/28));
+  // apply travel factors to away team (and home as well if desired)
+  const atkA_adj = atkA * travelFactorAway;
+  const defA_adj = defA * (1/travelFactorAway);
+  const atkH_adj = atkH * travelFactorHome;
+  const defH_adj = defH * (1/travelFactorHome);
+  // elo influence small
+  const sfH = 1 + (h.elo - a.elo)/2400; const sfA = 1 + (a.elo - h.elo)/2400;
+  let lambdaH = 1.2 * (atkH_adj / defA_adj) * sfH;
+  let lambdaA = 1.05 * (atkA_adj / defH_adj) * sfA;
+  // clamp & shrink
+  lambdaH = Math.max(0.05, Math.min(4.5, lambdaH));
+  lambdaA = Math.max(0.05, Math.min(4.5, lambdaA));
+  return {lambdaH, lambdaA, atkH_adj, atkA_adj, defH_adj, defA_adj};
+}
+
+// helper to read lat/lon from country or manual
+function getCoords(country, latEl, lonEl){
+  const countryTrim = (country||'').trim();
+  if(countryTrim && capitals[countryTrim]){
+    return {lat: capitals[countryTrim].lat, lon: capitals[countryTrim].lon, city: capitals[countryTrim].city};
+  }
+  const lat = safe(document.getElementById(latEl).value, NaN);
+  const lon = safe(document.getElementById(lonEl).value, NaN);
+  if(isNaN(lat) || isNaN(lon)) return null;
+  return {lat, lon, city: countryTrim || 'Custom'};
+}
+
+// analysis button
+document.getElementById('btnAnalyze').addEventListener('click', ()=>{
+  try{
+    const cHome = document.getElementById('countryHome').value.trim();
+    const cAway = document.getElementById('countryAway').value.trim();
+    const coordsH = getCoords(cHome, 'latHome', 'lonHome');
+    const coordsA = getCoords(cAway, 'latAway', 'lonAway');
+
+    if(!coordsH || !coordsA){
+      alert('Isi koordinat ibu kota kedua negara (atau pilih dari daftar) agar travel otomatis dihitung.');
+      return;
+    }
+
+    // compute km
+    const km = Math.round(haversine(coordsH.lat, coordsH.lon, coordsA.lat, coordsA.lon));
+    const intl = document.getElementById('intlBreak').checked;
+    let impact = travelImpactLabel(km);
+    if(intl && impact.factor < 1.0) impact.factor = Math.max(0.7, impact.factor * 0.85), impact.label += ' (IntlBreak x1.5 applied)';
+    document.getElementById('travelLabel').textContent = `Travel: ${km} km • ${impact.label} • factor=${impact.factor.toFixed(3)}`;
+
+    // draw mini map
+    drawMiniMap(coordsH.lat, coordsH.lon, (coordsH.city||cHome||'Home'), coordsA.lat, coordsA.lon, (coordsA.city||cAway||'Away'), km+' km');
+
+    // read core stats
+    const h = { xg: safe(document.getElementById('xgHome').value,1.2), sot: safe(document.getElementById('sotHome').value,3.5), conv: clamp(safe(document.getElementById('convHome')?.value,0.12),0,1), gc: safe(document.getElementById('gcHome')?.value,1.1), cs: safe(document.getElementById('csHome')?.value,0.3), ti: safe(document.getElementById('tackleHome')?.value,18)+safe(document.getElementById('interHome')?.value,8), elo:1500 };
+    const a = { xg: safe(document.getElementById('xgAway').value,1.0), sot: safe(document.getElementById('sotAway').value,3.0), conv: clamp(safe(document.getElementById('convAway')?.value,0.11),0,1), gc: safe(document.getElementById('gcAway')?.value,1.3), cs: safe(document.getElementById('csAway')?.value,0.25), ti: safe(document.getElementById('tackleAway')?.value,16)+safe(document.getElementById('interAway')?.value,6), elo:1480 };
+
+    // stamina penalties from days rest & bench
+    const restH = safe(document.getElementById('daysRestHome').value,4), restA = safe(document.getElementById('daysRestAway').value,3);
+    const benchH = safe(document.getElementById('benchHome').value,6), benchA = safe(document.getElementById('benchAway').value,6);
+    function staminaFactor(days, km, bench){
+      const restPenalty = Math.max(0, (3 - days))*0.035;
+      const travelPenalty = Math.max(0, (km - 200))*0.00016;
+      const benchBonus = Math.max(0, (bench - 5))*0.006;
+      return clamp(1 - restPenalty - travelPenalty + benchBonus, 0.65, 1.06);
+    }
+
+    const stamH = staminaFactor(restH, 0, benchH);
+    const stamA = staminaFactor(restA, km, benchA);
+
+    // apply travel factor
+    const travelFactorHome = 1.0; // home travel negligible (we assume home base)
+    let travelFactorAway = impact.factor;
+    if(intl && impact.factor < 1.0) travelFactorAway = impact.factor; // already adjusted above
+
+    // compute model
+    const model = computeModelAndApplyTravel(h,a,travelFactorHome, travelFactorAway);
+    // apply stamina
+    model.lambdaH *= stamH; model.lambdaA *= stamA;
+
+    // simple Monte Carlo sampling (poisson)
+    const runs = 5000;
+    const freq = {}, totals={}; let homeWins=0, draws=0, awayWins=0;
+    for(let i=0;i<runs;i++){
+      const gh = poisson(model.lambdaH), ga = poisson(model.lambdaA);
+      freq[`${gh}-${ga}`] = (freq[`${gh}-${ga}`]||0)+1;
+      totals[gh+ga] = (totals[gh+ga]||0)+1;
+      if(gh>ga) homeWins++; else if(gh===ga) draws++; else awayWins++;
+    }
+    const pHome = homeWins/runs, pDraw = draws/runs, pAway = awayWins/runs;
+
+    // ou 2.5
+    const over = Object.keys(totals).reduce((s,k)=> s + ((parseInt(k)>2)? totals[k]:0), 0)/runs;
+    const under = 1 - over;
+
+    // display summary
+    const summary = `Home: ${document.getElementById('teamHome').value} | Away: ${document.getElementById('teamAway').value}\n`+
+      `Travel: ${km} km • ${impact.label} • travelFactor=${impact.factor.toFixed(3)} • Intl:${intl? 'Yes':'No'}\n`+
+      `λ Home: ${model.lambdaH.toFixed(2)} | λ Away: ${model.lambdaA.toFixed(2)}\n`+
+      `Prob 1X2 — Home ${(100*pHome).toFixed(1)}% Draw ${(100*pDraw).toFixed(1)}% Away ${(100*pAway).toFixed(1)}%\n`+
+      `OU 2.5 → Over ${(100*over).toFixed(1)}% | Under ${(100*under).toFixed(1)}%\n`+
+      `Stamina factors: Home ${stamH.toFixed(3)} Away ${stamA.toFixed(3)}\n`+
+      `(Map displayed above)`;
+    document.getElementById('summary').textContent = summary;
+    document.getElementById('mapInfo').textContent = `Home: ${coordsH.city||cHome} — Away: ${coordsA.city||cAway} • ${km} km`;
+
+  }catch(e){ alert('Error: '+e.message); }
+});
+
+// fill geo example
+document.getElementById('btnFillGeo').addEventListener('click', ()=>{
+  document.getElementById('teamHome').value='France A'; document.getElementById('teamAway').value='Japan B';
+  document.getElementById('countryHome').value='France'; document.getElementById('countryAway').value='Japan';
+  document.getElementById('xgHome').value='1.8'; document.getElementById('xgAway').value='1.1';
+  document.getElementById('sotHome').value='6'; document.getElementById('sotAway').value='3.5';
+  alert('Contoh geo terisi. Klik Analisis untuk melihat peta dan hasil.');
+});
+</script>
+</body>
+</html>
