@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Football Analyzer Pro — v64 Full-AutoTempo Enhanced</title>
+<style>
+:root{
+  --bg:#041018; --panel:#071826; --card:#081923; --muted:#9fb3c5; --accent:#0b74de; --ok:#27ae60; --warn:#f1c40f; --danger:#e74c3c; --glass: rgba(255,255,255,0.03);
+  --maxw:1300px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, "Segoe UI", Arial, sans-serif;background:var(--bg);color:#e6f3fb;padding:18px;display:flex;justify-content:center}
+.app{width:100%;max-width:var(--maxw)}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.h-left{font-size:20px;font-weight:700}
+.h-right{display:flex;gap:10px;align-items:center}
+.status{font-size:13px;padding:6px 10px;border-radius:8px;background:#06232a;color:#bff0df;border:1px solid rgba(255,255,255,0.03)}
+.download-last{background:var(--accent);color:#fff;padding:6px 10px;border-radius:8px;border:0;cursor:pointer}
+.layout{display:grid;grid-template-columns:1fr 480px;gap:14px}
+.panel{background:var(--panel);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03)}
+.col-left .section{margin-bottom:14px}
+.section h2{margin:0 0 8px;font-size:18px}
+.label{display:block;font-size:13px;color:var(--muted);margin:6px 0}
+.row{display:flex;gap:8px}
+.row> *{flex:1}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--card);color:#e6f3fb}
+textarea{min-height:60px}
+.small{font-size:12px;color:var(--muted)}
+.btn{background:var(--accent);border:0;padding:8px 10px;border-radius:8px;color:white;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+.summary{white-space:pre-wrap;font-family:monospace;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:8px;margin-top:8px;color:#d9f0ff;min-height:220px}
+.visuals{margin-top:12px}
+.canvas-wrap{background:transparent;margin-top:8px;border-radius:8px;overflow:hidden}
+.rec{background:linear-gradient(90deg, rgba(11,116,222,0.06), rgba(23,165,137,0.03));padding:8px;border-radius:8px;margin-top:8px;color:#dff3ff}
+.pre{background:var(--glass);padding:8px;border-radius:8px;margin-top:8px;white-space:pre-wrap;font-size:13px;color:#dff3ff}
+.kv{font-weight:700;color:#eaf7ff}
+.footer{margin-top:12px;padding:10px;text-align:center;color:var(--muted);font-size:12px}
+.flex-row{display:flex;gap:8px;align-items:center}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.small-muted{font-size:11px;color:#9fb3c5}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="h-left">Football Analyzer Pro • v64 (Full Desktop)</div>
+    <div class="h-right">
+      <div class="status" id="status">Status: Online</div>
+      <button class="download-last" id="btnDownloadLast">Download Last CSV</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT column (inputs) -->
+    <div class="panel col-left">
+      <div class="section">
+        <h2>Match Info</h2>
+        <label class="label">League: <input id="league" type="text" placeholder="e.g. Premier League"></label>
+        <div class="row">
+          <input id="matchLabel" type="text" placeholder="Match (Home vs Away) e.g. Atalanta vs Lazio">
+          <input id="matchDate" type="text" placeholder="YYYY-MM-DD">
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Teams & Basic Stats</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label kv">Home Team</label>
+            <label class="label">Home name: <input id="teamHome" type="text" value="Atalanta"></label>
+            <label class="label">xG Home: <input id="xgHome" type="number" step="0.01" value="0.90"></label>
+            <label class="label">SOT Home: <input id="sotHome" type="number" value="6.2"></label>
+            <label class="label">Goals Home (recent total): <input id="goalsHome" type="number" value="9"></label>
+          </div>
+          <div>
+            <label class="label kv">Away Team</label>
+            <label class="label">Away name: <input id="teamAway" type="text" value="Lazio"></label>
+            <label class="label">xG Away: <input id="xgAway" type="number" step="0.01" value="0.78"></label>
+            <label class="label">SOT Away: <input id="sotAway" type="number" value="4.1"></label>
+            <label class="label">Goals Away (recent total): <input id="goalsAway" type="number" value="5"></label>
+          </div>
+        </div>
+
+        <div style="margin-top:8px" class="flex-row">
+          <button id="btnAutoCR" class="btn-ghost">Auto CR</button>
+          <button id="btnAutoTI" class="btn-ghost">Auto TI</button>
+          <button id="btnAutoTempo" class="btn-ghost">Auto Tempo</button>
+          <button id="btnComputeP" class="btn-ghost">Compute p</button>
+        </div>
+
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <label class="label">Conversion Home: <input id="convHome" type="text" readonly placeholder="auto"></label>
+            <label class="label">Big Chances Home: <input id="bigHome" type="number" value="3"></label>
+            <label class="label">Missed Big Home: <input id="missHome" type="number" value="1"></label>
+            <label class="label">Total Shots Home: <input id="shotsHome" type="number" value="14"></label>
+          </div>
+          <div>
+            <label class="label">Conversion Away: <input id="convAway" type="text" readonly placeholder="auto"></label>
+            <label class="label">Big Chances Away: <input id="bigAway" type="number" value="2"></label>
+            <label class="label">Missed Big Away: <input id="missAway" type="number" value="2"></label>
+            <label class="label">Total Shots Away: <input id="shotsAway" type="number" value="9"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Attack / Defense / Tempo</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label">Possession Home (%): <input id="possHome" type="number" value="62"></label>
+            <label class="label">Tempo Index Home (auto): <input id="tempoHome" type="number" value="70"></label>
+            <label class="label">Shot Index Home: <input id="shotHome" type="number" value="75"></label>
+          </div>
+          <div>
+            <label class="label">Possession Away (%): <input id="possAway" type="number" value="38"></label>
+            <label class="label">Tempo Index Away (auto): <input id="tempoAway" type="number" value="68"></label>
+            <label class="label">Shot Index Away: <input id="shotAway" type="number" value="68"></label>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <label class="label">Tackles Home: <input id="tackleHome" type="number" value="22"></label>
+            <label class="label">Interceptions Home: <input id="interHome" type="number" value="9"></label>
+            <label class="label">TI Home (auto): <input id="tiHome" type="text" readonly></label>
+          </div>
+          <div>
+            <label class="label">Tackles Away: <input id="tackleAway" type="number" value="17"></label>
+            <label class="label">Interceptions Away: <input id="interAway" type="number" value="7"></label>
+            <label class="label">TI Away (auto): <input id="tiAway" type="text" readonly></label>
+          </div>
+        </div>
+
+        <div style="margin-top:8px" class="grid-2">
+          <div><label class="label">Clearances Home: <input id="clearHome" type="number" value="35"></label></div>
+          <div><label class="label">Clearances Away: <input id="clearAway" type="number" value="30"></label></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Defense & Errors / Absence</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label">Clean sheets Home (ratio or decimal e.g. 3/5 or 0.6): <input id="csHome" type="text" value="0.48"></label>
+            <label class="label">Goals conceded Home (avg): <input id="gcHome" type="number" value="0.8"></label>
+            <label class="label">Saves Home: <input id="saveHome" type="number" value="3.6"></label>
+            <label class="label">Errors -> Goal (season est) Home: <input id="errHome" type="number" value="5"></label>
+          </div>
+          <div>
+            <label class="label">Clean sheets Away: <input id="csAway" type="text" value="0.30"></label>
+            <label class="label">Goals conceded Away (avg): <input id="gcAway" type="number" value="1.3"></label>
+            <label class="label">Saves Away: <input id="saveAway" type="number" value="3.2"></label>
+            <label class="label">Errors -> Goal (season est) Away: <input id="errAway" type="number" value="9"></label>
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <label class="label kv">Absence (enter counts; leave blank = 0)</label>
+          <div class="grid-2">
+            <div>
+              <label class="label">DF Home: <input id="absDfHome" type="number" value="0"></label>
+              <label class="label">MF Home: <input id="absMfHome" type="number" value="0"></label>
+              <label class="label">FW Home: <input id="absFwHome" type="number" value="1"></label>
+            </div>
+            <div>
+              <label class="label">DF Away: <input id="absDfAway" type="number" value="0"></label>
+              <label class="label">MF Away: <input id="absMfAway" type="number" value="0"></label>
+              <label class="label">FW Away: <input id="absFwAway" type="number" value="1"></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Form & H2H / ELO</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label">Form 5 Home (scores, comma separated): <input id="last5Home" type="text" value="2-0,1-1,0-0,1-2,3-0"></label>
+            <label class="label">H2H (W/D/L sequence e.g. W,D,L,W): <input id="h2hRaw" type="text" value="W,D,L,W,D"></label>
+          </div>
+          <div>
+            <label class="label">Form 5 Away: <input id="last5Away" type="text" value="0-0,0-1,1-0,2-2,0-3"></label>
+            <label class="label">ELO Home (manual): <input id="eloHome" type="number" value="1500"></label>
+            <label class="label">ELO Away (manual): <input id="eloAway" type="number" value="1500"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Odds & Run</h2>
+        <div class="grid-2">
+          <div>
+            <label class="label">HDP line: <input id="hdpLine" type="number" step="0.25" value="0.25"></label>
+            <label class="label">HDP Home Open: <input id="hdpHomeOpen" type="number" step="0.01" value="1.95"></label>
+            <label class="label">HDP Home Now: <input id="hdpHomeNow" type="number" step="0.01" value="1.88"></label>
+            <label class="label">HDP Away Open: <input id="hdpAwayOpen" type="number" step="0.01" value="1.95"></label>
+            <label class="label">HDP Away Now: <input id="hdpAwayNow" type="number" step="0.01" value="2.05"></label>
+          </div>
+          <div>
+            <label class="label">OU line: <input id="ouLine" type="number" step="0.25" value="2.5"></label>
+            <label class="label">OU Over Open: <input id="ouOverOpen" type="number" step="0.01" value="1.95"></label>
+            <label class="label">OU Over Now: <input id="ouOverNow" type="number" step="0.01" value="1.88"></label>
+            <label class="label">OU Under Open: <input id="ouUnderOpen" type="number" step="0.01" value="1.90"></label>
+            <label class="label">OU Under Now: <input id="ouUnderNow" type="number" step="0.01" value="2.00"></label>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <label class="small">alpha:<input id="alpha" type="number" step="0.01" value="0.15" style="width:80px;margin-left:6px"></label>
+          <label class="small">MC runs:<input id="mcRuns" type="number" value="80000" step="1000" style="width:120px;margin-left:6px"></label>
+          <label class="small">rho:<input id="rho" type="number" step="0.01" value="0.12" style="width:80px;margin-left:6px"></label>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="btnAnalyze" class="btn">Analyze</button>
+          <button id="btnDetectTrap" class="btn-ghost">Detect Trap</button>
+          <button id="btnDownload" class="btn-ghost">Download CSV</button>
+          <button id="btnReset" class="btn-ghost">Reset</button>
+          <button id="btnExample" class="btn-ghost">Fill Example</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT column (outputs) -->
+    <div class="panel col-right">
+      <h2>Summary & Controls</h2>
+      <div id="summary" class="summary">Press "Analyze" to run simulation.</div>
+
+      <div class="visuals">
+        <div class="canvas-wrap"><canvas id="hist" width="720" height="240" style="width:100%;height:240px"></canvas></div>
+        <div style="display:flex;gap:12px;margin-top:10px;align-items:center">
+          <div style="flex:1;background:var(--glass);padding:8px;border-radius:8px">
+            <div id="gaugeLabel" class="small">Confidence: -</div>
+            <div style="height:12px;background:#07121a;border-radius:8px;margin-top:6px">
+              <div id="gaugeFill" style="height:12px;width:0%;background:var(--accent);border-radius:8px"></div>
+            </div>
+            <div style="margin-top:6px" class="small-muted">Green = higher confidence</div>
+          </div>
+          <div style="width:360px"><div id="bestRec" class="rec">Top recommendations will appear here.</div></div>
+        </div>
+
+        <div class="pre" style="margin-top:10px"><pre id="trapTable">Trap status: —\nMarket table will appear here.</pre></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <h3>Stadium & Travel (Home + Away)</h3>
+        <div class="grid-2">
+          <div>
+            <label class="label">Stadium (Home): <input id="stadiumHome" type="text" placeholder="Etihad Stadium"></label>
+            <label class="label">Lat Home (auto): <input id="latHome" type="text" readonly></label>
+            <label class="label">Lon Home (auto): <input id="lonHome" type="text" readonly></label>
+            <button id="btnFindHome" class="btn-ghost">Find Coordinates (Home)</button>
+          </div>
+          <div>
+            <label class="label">Stadium (Away): <input id="stadiumAway" type="text" placeholder="Olympic Stadium"></label>
+            <label class="label">Lat Away (auto): <input id="latAway" type="text" readonly></label>
+            <label class="label">Lon Away (auto): <input id="lonAway" type="text" readonly></label>
+            <button id="btnFindAway" class="btn-ghost">Find Coordinates (Away)</button>
+          </div>
+        </div>
+        <div style="margin-top:10px" class="grid-2">
+          <div><label class="label">Travel Km (auto/manual): <input id="travelKm" type="number" value="120"></label></div>
+          <div><label class="label">Day rest (both): <input id="dayRest" type="number" value="4"></label></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="pre small" id="logArea">LOG EVALUATION: No logs yet.</div>
+      <div style="display:flex;gap:8px;margin-top:8px"><input id="actualInput" placeholder="Actual e.g. 0-0"><button id="btnSaveActual" class="btn-ghost">Save Actual</button></div>
+    </div>
+
+  </div>
+
+  <div class="footer">v64 • Full-AutoTempo Enhanced • Dark Theme • Layout = v57</div>
+</div>
+
+<script>
+/* ------------------------
+   Utilities
+   ------------------------ */
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function percent(x){return (100*x).toFixed(1) + '%';}
+function randNormal(mu=0,sigma=1){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return mu+Math.cos(2*Math.PI* Math.random())*Math.sqrt(-2*Math.log(Math.random()))*sigma;}
+function nowStr(){return new Date().toISOString().slice(0,19).replace('T',' ');}
+
+/* ------------------------
+   Local storage: logs & example fill
+   ------------------------ */
+function appendLog(txt){
+  const area=document.getElementById('logArea');
+  const prefix = nowStr() + ' • ';
+  if(area.textContent.includes('No logs yet.')) area.textContent = prefix + txt;
+  else area.textContent += '\n' + prefix + txt;
+  localStorage.setItem('v64_log', area.textContent);
+}
+(function(){ const saved = localStorage.getItem('v64_log'); if(saved) document.getElementById('logArea').textContent = saved; })();
+
+/* ------------------------
+   Example fill (auto on first load)
+   ------------------------ */
+document.getElementById('btnExample').addEventListener('click', fillExample);
+function fillExample(){
+  document.getElementById('league').value='Serie A';
+  document.getElementById('matchLabel').value='Atalanta vs Lazio';
+  document.getElementById('matchDate').value='2025-10-19';
+  document.getElementById('teamHome').value='Atalanta';
+  document.getElementById('teamAway').value='Lazio';
+  document.getElementById('xgHome').value='0.90'; document.getElementById('xgAway').value='0.78';
+  document.getElementById('sotHome').value='6.2'; document.getElementById('sotAway').value='4.1';
+  document.getElementById('goalsHome').value='9'; document.getElementById('goalsAway').value='5';
+  document.getElementById('tackleHome').value='22'; document.getElementById('interHome').value='9';
+  document.getElementById('tackleAway').value='17'; document.getElementById('interAway').value='7';
+  document.getElementById('last5Home').value='2-0,1-1,0-0,1-2,3-0';
+  document.getElementById('last5Away').value='0-0,0-1,1-0,2-2,0-3';
+  document.getElementById('mcRuns').value='80000';
+  document.getElementById('hdpLine').value='0.25';
+  document.getElementById('ouLine').value='2.5';
+  appendLog('Example filled');
+}
+window.addEventListener('load', ()=>{ if(!localStorage.getItem('v64_example')){ fillExample(); localStorage.setItem('v64_example','1'); } });
+
+/* ------------------------
+   Auto CR (conversion rate), Auto TI (tackles+inter), Auto Tempo
+   ------------------------ */
+document.getElementById('btnAutoCR').addEventListener('click', ()=>{
+  const gh = safe(document.getElementById('goalsHome').value,NaN);
+  const sh = safe(document.getElementById('sotHome').value,NaN);
+  const ga = safe(document.getElementById('goalsAway').value,NaN);
+  const sa = safe(document.getElementById('sotAway').value,NaN);
+  document.getElementById('convHome').value = (sh>0)? (gh/sh).toFixed(3) : '';
+  document.getElementById('convAway').value = (sa>0)? (ga/sa).toFixed(3) : '';
+  appendLog('Auto CR executed');
+});
+
+document.getElementById('btnAutoTI').addEventListener('click', ()=>{
+  const tH = safe(document.getElementById('tackleHome').value,0), iH = safe(document.getElementById('interHome').value,0);
+  const tA = safe(document.getElementById('tackleAway').value,0), iA = safe(document.getElementById('interAway').value,0);
+  document.getElementById('tiHome').value = (tH + iH).toFixed(1);
+  document.getElementById('tiAway').value = (tA + iA).toFixed(1);
+  appendLog('Auto TI executed');
+});
+
+document.getElementById('btnAutoTempo').addEventListener('click', ()=>{
+
+  const xgH=safe(document.getElementById('xgHome').value,1), sotH=safe(document.getElementById('sotHome').value,3), possH=safe(document.getElementById('possHome').value,50);
+
+  const xgA=safe(document.getElementById('xgAway').value,1), sotA=safe(document.getElementById('sotAway').value,3), possA=safe(document.getElementById('possAway').value,50);
+
+  const tH = Math.round(clamp(50 + (xgH*12) + (sotH*2) + (possH-50)*0.25, 30, 95));
+
+  const tA = Math.round(clamp(50 + (xgA*12) + (sotA*2) + (possA-50)*0.25, 30, 95));
+
+  document.getElementById('tempoHome').value = tH;
+
+  document.getElementById('tempoAway').value = tA;
+
+  appendLog('Auto Tempo executed');
+
+});
+
+
+
+/* ------------------------
+
+   Small stadium DB for coordinate lookup
+
+   ------------------------ */
+
+const STADIUM_DB = {
+
+  "etihad": {lat:53.4831, lon:-2.2004, country:'England'},
+
+  "old trafford": {lat:53.4631, lon:-2.2913, country:'England'},
+
+  "san siro": {lat:45.4781, lon:9.1242, country:'Italy'},
+
+  "allianz": {lat:45.4386, lon:10.9928, country:'Italy'},
+
+  "stadio olimpico": {lat:41.9333, lon:12.4544, country:'Italy'}
+
+};
+
+document.getElementById('btnFindHome').addEventListener('click', ()=> findCoord('stadiumHome','latHome','lonHome'));
+
+document.getElementById('btnFindAway').addEventListener('click', ()=> findCoord('stadiumAway','latAway','lonAway'));
+
+function findCoord(fieldId, latId, lonId){
+
+  const name = (document.getElementById(fieldId).value||'').toLowerCase().trim();
+
+  if(!name){ alert('Enter stadium name or club name'); return; }
+
+  for(const k in STADIUM_DB){
+
+    if(name.includes(k)){
+
+      document.getElementById(latId).value = STADIUM_DB[k].lat;
+
+      document.getElementById(lonId).value = STADIUM_DB[k].lon;
+
+      appendLog('Coordinates found for ' + name);
+
+      return;
+
+    }
+
+  }
+
+  alert('Stadium not found in local DB — please fill coordinates manually');
+
+  appendLog('Coordinates not found: ' + name);
+
+}
+
+
+
+/* ------------------------
+
+   Statistical core: adaptive rho, ZIP, bivariate sampling, Monte Carlo
+
+   ------------------------ */
+
+function estimateP0(tempo, cs, conv){
+
+  // tempo scaled 30..95 mapped to 0..1
+
+  const tn = clamp((tempo - 30) / 65, 0, 1);
+
+  let p0 = 0.12 * (1 - tn) + 0.06 * clamp(cs,0,1);
+
+  if(conv && conv > 0.18) p0 *= 0.85;
+
+  return clamp(p0, 0, 0.32);
+
+}
+
+function computeAdaptiveRho(base, tempoH, tempoA, h2hRaw){
+
+  // tempo similarity increases positive coupling (higher shared pace)
+
+  const tempoSim = 1 - Math.abs((tempoH||70) - (tempoA||70)) / Math.max(1,((tempoH||70)+(tempoA||70))/2);
+
+  // H2H draw weight (more draws lower positive correlation)
+
+  let drawRate = 0;
+
+  if(h2hRaw){
+
+    const seq = h2hRaw.toUpperCase().replace(/[^WDL]/g,'').split('');
+
+    if(seq.length){
+
+      drawRate = seq.filter(c => c==='D').length / seq.length;
+
+    }
+
+  }
+
+  const rho = base * (1 + 0.9*(tempoSim - 0.5)) - 0.75 * drawRate;
+
+  return clamp(rho, -0.3, 0.45);
+
+}
+
+function drawZIP(lambda, p0){
+
+  if(Math.random() < p0) return 0;
+
+  let L = Math.exp(-lambda), p = 1, k = 0;
+
+  while(p > L){ k++; p *= Math.random(); if(k>20000) break; }
+
+  return Math.max(0, k-1);
+
+}
+
+function sampleBivarZIP(lh, la, rho, p0h, p0a){
+
+  // positive rho via shared Poisson part; negative rho via correlated lognormal
+
+  if(rho >= 0){
+
+    const shared = Math.max(0, Math.min(lh, la) * rho);
+
+    const hPart = Math.max(0, lh - shared), aPart = Math.max(0, la - shared);
+
+    const sh = (shared>0)? (function(){ let L=Math.exp(-shared), p=1,k=0; while(p>L){k++;p*=Math.random(); if(k>20000) break;} return Math.max(0,k-1); })():0;
+
+    return [ sh + drawZIP(hPart, p0h), sh + drawZIP(aPart, p0a) ];
+
+  } else {
+
+    // negative rho: correlated multiplicative noise
+
+    const sigma = 0.12;
+
+    const z1 = randNormal(0,sigma);
+
+    const z2 = rho*z1 + Math.sqrt(Math.max(0,1-rho*rho))*randNormal(0,sigma);
+
+    const lamH = Math.max(0.01, lh * Math.exp(z1 - 0.5*sigma*sigma));
+
+    const lamA = Math.max(0.01, la * Math.exp(z2 - 0.5*sigma*sigma));
+
+    return [ drawZIP(lamH, p0h), drawZIP(lamA, p0a) ];
+
+  }
+
+}
+
+
+
+/* ------------------------
+
+   Analyze driver
+
+   ------------------------ */
+
+document.getElementById('btnAnalyze').addEventListener('click', analyzeFull);
+
+
+
+function analyzeFull(){
+
+  // collect inputs
+
+  const teamH = (document.getElementById('teamHome').value || document.getElementById('matchLabel').value.split(' vs ')[0] || 'Home').trim();
+
+  const teamA = (document.getElementById('teamAway').value || document.getElementById('matchLabel').value.split(' vs ')[1] || 'Away').trim();
+
+  const xgH = Number.isFinite(parseFloat(document.getElementById('xgHome').value))? parseFloat(document.getElementById('xgHome').value) : 1.2;
+
+  const xgA = Number.isFinite(parseFloat(document.getElementById('xgAway').value))? parseFloat(document.getElementById('xgAway').value) : 1.1;
+
+  const convH = safe(document.getElementById('convHome').value, NaN);
+
+  const convA = safe(document.getElementById('convAway').value, NaN);
+
+  const tiH = safe(document.getElementById('tiHome').value,0), tiA = safe(document.getElementById('tiAway').value,0);
+
+  const csH = parseFloat(document.getElementById('csHome').value) || 0, csA = parseFloat(document.getElementById('csAway').value) || 0;
+
+  const absFwH = safe(document.getElementById('absFwHome').value,0), absFwA = safe(document.getElementById('absFwAway').value,0);
+
+  const errH = safe(document.getElementById('errHome').value,0), errA = safe(document.getElementById('errAway').value,0);
+
+  const tempoH = safe(document.getElementById('tempoHome').value,70), tempoA = safe(document.getElementById('tempoAway').value,68);
+
+  const h2h = document.getElementById('h2hRaw').value || '';
+
+  const alpha = clamp(safe(document.getElementById('alpha').value,0.15),0.01,0.99);
+
+  const runs = Math.max(2000, Math.min(200000, parseInt(safe(document.getElementById('mcRuns').value,80000))));
+
+  const baseRho = safe(document.getElementById('rho').value,0.12);
+
+  const ouLine = safe(document.getElementById('ouLine').value,2.5);
+
+  const hdpLine = safe(document.getElementById('hdpLine').value,0.25);
+
+
+
+  // league mean shrink target
+
+  const leagueMean = 1.35;
+
+  // shrink input xG to league mean
+
+  let lamH = alpha * xgH + (1-alpha) * leagueMean;
+
+  let lamA = alpha * xgA + (1-alpha) * leagueMean;
+
+
+
+  // absence & defensive pressure adjustments
+
+  lamH *= (1 - 0.08 * clamp(absFwH,0,3)); // missing forwards reduce scoring
+
+  lamA *= (1 - 0.08 * clamp(absFwA,0,3));
+
+  lamH *= (1 - 0.012 * clamp(tiA/30,0,1)); // opponent TI reduces scoring
+
+  lamA *= (1 - 0.012 * clamp(tiH/30,0,1));
+
+  // errors leading to goals (season est) — model heuristic: more errors increases opponent scoring tendency
+
+  lamH *= (1 + 0.03 * clamp(errH/10,0,1));
+
+  lamA *= (1 + 0.03 * clamp(errA/10,0,1));
+
+
+
+  // zero-inflation p0 derived from tempo & clean sheet & conversion
+
+  const p0H = estimateP0(tempoH, csH, convH);
+
+  const p0A = estimateP0(tempoA, csA, convA);
+
+
+
+  const rho = computeAdaptiveRho(baseRho, tempoH, tempoA, h2h);
+
+
+
+  // Monte Carlo
+
+  const freq = {}; const totals = {}; let hWin=0, draw=0, aWin=0, over=0;
+
+  for(let i=0;i<runs;i++){
+
+    const [gh, ga] = sampleBivarZIP(lamH, lamA, rho, p0H, p0A);
+
+    const sc = gh + '-' + ga; freq[sc] = (freq[sc]||0) + 1;
+
+    const t = gh + ga; totals[t] = (totals[t]||0) + 1;
+
+    if(gh > ga) hWin++; else if(gh === ga) draw++; else aWin++;
+
+    if(t > ouLine) over++;
+
+  }
+
+
+
+  const pHome = hWin / runs, pDraw = draw / runs, pAway = aWin / runs, pOver = over / runs;
+
+
+
+  // confidence measure from distribution variance
+
+  let meanTot=0, cnt=0;
+
+  for(const k in totals){ meanTot += parseInt(k) * totals[k]; cnt += totals[k]; }
+
+  meanTot = (cnt>0)? meanTot / cnt : 0;
+
+  let varTot=0;
+
+  for(const k in totals){ varTot += ((parseInt(k)-meanTot)**2) * totals[k]; }
+
+  varTot = (cnt>0)? varTot / cnt : 0;
+
+  const conf = clamp(1 - Math.min(1, varTot/9), 0.12, 0.98);
+
+
+
+  // top scores
+
+  const topScores = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([s,c])=>`${s} (${(100*c/runs).toFixed(2)}%)`).join('\n');
+
+
+
+  // edges (implied probabilities from odds)
+
+  function impliedProb(od){ if(!od || od<=0) return null; return 1/od; }
+
+  const impOUOverNow = impliedProb(safe(document.getElementById('ouOverNow').value,NaN));
+
+  const impHdpHomeNow = impliedProb(safe(document.getElementById('hdpHomeNow').value,NaN));
+
+
+
+  const ouEdge = (impOUOverNow!==null)? (pOver - impOUOverNow) : null;
+
+
+
+  // compute cover for home with HDP
+
+  let coverHome=0;
+
+  {
+
+    const hdp = hdpLine;
+
+    let w=0,push=0,lose=0;
+
+    for(const sc in freq){
+
+      const [gh,ga] = sc.split('-').map(x=>parseInt(x));
+
+      const v = freq[sc];
+
+      const diff = gh - ga - hdp;
+
+      if(diff > 0) w += v; else if(diff === 0) push += v; else lose += v;
+
+    }
+
+    coverHome = (w + 0.5*push)/runs;
+
+  }
+
+  const hdpEdgeHome = (impHdpHomeNow!==null)? (coverHome - impHdpHomeNow) : null;
+
+
+
+  // compose summary
+
+  const summaryTxt = `Match: ${teamH} vs ${teamA} (${document.getElementById('matchDate').value || ''})
+
+λ input: H ${xgH.toFixed(2)} | A ${xgA.toFixed(2)}
+
+λ adjusted: H ${lamH.toFixed(2)} | A ${lamA.toFixed(2)}
+
+ρ ${rho.toFixed(2)} • p0 H ${p0H.toFixed(2)} A ${p0A.toFixed(2)}
+
+MC runs: ${runs}
+
+
+
+1X2 → Home ${percent(pHome)} Draw ${percent(pDraw)} Away ${percent(pAway)}
+
+OU(${ouLine}) → Over ${percent(pOver)} Under ${percent(1-pOver)}
+
+
+
+Top scores:
+
+${topScores}
+
+
+
+Confidence ${(conf*100).toFixed(1)}%`;
+
+
+
+  document.getElementById('summary').textContent = summaryTxt;
+
+
+
+  // recommendations logic (simple but robust)
+
+  const recs = [];
+
+  if(hdpEdgeHome !== null && hdpEdgeHome > 0.02 && conf > 0.45) recs.push(`HDP Home recommended — Model ${percent(coverHome)} • Edge ${(hdpEdgeHome*100).toFixed(2)}%`);
+
+  if(ouEdge !== null && ouEdge > 0.02 && conf > 0.45) recs.push(`OU Over recommended — Model ${percent(pOver)} • Edge ${(ouEdge*100).toFixed(2)}%`);
+
+  if(recs.length === 0){
+
+    const best = [{t:'Home',p:pHome},{t:'Draw',p:pDraw},{t:'Away',p:pAway}].sort((a,b)=>b.p - a.p)[0];
+
+    recs.push(`Top pick by probability: ${best.t} (${percent(best.p)})`);
+
+  }
+
+  document.getElementById('bestRec').innerHTML = recs.map(r=>`<div>${r}</div>`).join('');
+
+
+
+  // trap / market table
+
+  document.getElementById('trapTable').textContent = `Market vs Model
+
+OU Over now: ${document.getElementById('ouOverNow').value} • Model Over ${percent(pOver)}
+
+HDP Home now: ${document.getElementById('hdpHomeNow').value} • Model cover ${percent(coverHome)}
+
+
+
+Edges: OU ${(ouEdge!==null? (ouEdge*100).toFixed(2)+'%':'N/A')} • HDP Home ${(hdpEdgeHome!==null? (hdpEdgeHome*100).toFixed(2)+'%':'N/A')}`;
+
+
+
+  // gauge & histogram
+
+  document.getElementById('gaugeFill').style.width = Math.round(conf*100) + '%';
+
+  document.getElementById('gaugeLabel').textContent = (conf>0.8? 'High' : (conf>0.55? 'Medium' : 'Low')) + ' confidence (' + (conf*100).toFixed(0) + '%)';
+
+
+
+  drawHistogram(totals);
+
+
+
+  // store result for CSV
+
+  window._lastResult = {freq, totals, runs, meta:{home:teamH, away:teamA, date:document.getElementById('matchDate').value}};
+
+  appendLog(`Analyze ${teamH} vs ${teamA} • runs ${runs} • conf ${(conf*100).toFixed(1)}%`);
+
+
+
+  // auto-download CSV
+
+  autoDownloadCSV();
+
+}
+
+
+
+/* ------------------------
+
+   Histogram draw
+
+   ------------------------ */
+
+function drawHistogram(totals){
+
+  const canvas = document.getElementById('hist');
+
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const keys = Object.keys(totals).map(k=>parseInt(k)).sort((a,b)=>a-b);
+
+  const vals = keys.map(k=>totals[k]||0);
+
+  const maxV = Math.max(...vals,1);
+
+  const pad = 40; const w = (canvas.width - pad*2) / Math.max(1, keys.length);
+
+  ctx.fillStyle = '#041018'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  for(let i=0;i<keys.length;i++){
+
+    const h = (vals[i]/maxV) * (canvas.height - 80);
+
+    ctx.fillStyle = '#0b74de';
+
+    ctx.fillRect(pad + i*w, canvas.height-50-h, w*0.7, h);
+
+    ctx.fillStyle = '#9fb3c5';
+
+    ctx.font = '10px Arial';
+
+    ctx.fillText(String(keys[i]), pad + i*w + 2, canvas.height - 30);
+
+  }
+
+}
+
+
+
+/* ------------------------
+
+   CSV helpers
+
+   ------------------------ */
+
+document.getElementById('btnDownload').addEventListener('click', ()=> downloadCSV(false));
+
+document.getElementById('btnDownloadLast').addEventListener('click', ()=> downloadCSV(true));
+
+function downloadCSV(lastOnly){
+
+  const data = window._lastResult;
+
+  if(!data){ alert('Run analysis first'); return; }
+
+  let csv = 'score,count,prob\\n';
+
+  const entries = Object.entries(data.freq).sort((a,b)=>b[1]-a[1]);
+
+  for(const [s,c] of entries) csv += `${s},${c},${(c/data.runs).toFixed(6)}\\n`;
+
+  const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a'); a.href = url;
+
+  a.download = `${data.meta.home||'home'}_vs_${data.meta.away||'away'}_mc.csv`;
+
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+
+  appendLog('CSV downloaded' + (lastOnly? ' (last)':''));
+
+}
+
+
+
+/* auto-download after analyze */
+
+function autoDownloadCSV(){
+
+  try{ downloadCSV(false); } catch(e){ console.warn('Auto-download blocked',e); }
+
+}
+
+
+
+/* ------------------------
+
+   Detect Trap
+
+   ------------------------ */
+
+document.getElementById('btnDetectTrap').addEventListener('click', ()=>{
+
+  const openOU = safe(document.getElementById('ouOverOpen').value,NaN), nowOU = safe(document.getElementById('ouOverNow').value,NaN);
+
+  const openHDP = safe(document.getElementById('hdpHomeOpen').value,NaN), nowHDP = safe(document.getElementById('hdpHomeNow').value,NaN);
+
+  const deltaOU = (nowOU && openOU)? ((nowOU-openOU)/openOU*100) : 0;
+
+  const deltaHDP = (nowHDP && openHDP)? ((nowHDP-openHDP)/openHDP*100) : 0;
+
+  let status = 'Stable';
+
+  if(Math.abs(deltaOU) > 10 || Math.abs(deltaHDP) > 10) status = 'Trap';
+
+  else if(Math.abs(deltaOU) > 4 || Math.abs(deltaHDP) > 4) status = 'Warning';
+
+  document.getElementById('trapTable').textContent = `Detect Trap:\nΔ OU: ${deltaOU.toFixed(1)}% • Δ HDP: ${deltaHDP.toFixed(1)}%\nStatus: ${status}`;
+
+  appendLog('Detect Trap executed: ' + status);
+
+});
+
+
+
+/* ------------------------
+
+   Reset & Save actual
+
+   ------------------------ */
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+
+  const keep = ['teamHome','teamAway','matchLabel'];
+
+  document.querySelectorAll('input').forEach(i=>{ if(!keep.includes(i.id)) i.value=''; });
+
+  document.getElementById('summary').textContent='Reset.';
+
+  document.getElementById('bestRec').innerHTML='Top recommendations will appear here.';
+
+  document.getElementById('trapTable').textContent='Trap status: —';
+
+  appendLog('Reset executed');
+
+});
+
+
+
+document.getElementById('btnSaveActual').addEventListener('click', ()=>{
+
+  const v = (document.getElementById('actualInput').value||'').trim();
+
+  if(!v.match(/^\\d+\\-\\d+$/)){ alert('Use format e.g. 0-0'); return; }
+
+  appendLog('Actual result saved: ' + v);
+
+  document.getElementById('actualInput').value='';
+
+});
+
+
+
+/* ------------------------
+
+   Initialize some fields (TI auto)
+
+   ------------------------ */
+
+(function(){ try{ document.getElementById('btnAutoTI').click(); document.getElementById('btnAutoTempo').click(); } catch(e){} })();
+
+
+
+</script>
+
+</body>
+
+</html>
+
