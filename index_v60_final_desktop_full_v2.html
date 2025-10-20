@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prediksi Full-Time — v60 Final (Desktop Full) - v2</title>
+<style>
+:root{
+  --bg:#061116; --panel:#0b1620; --card:#08121a; --muted:#9fb3c5; --accent:#0b74de; --ok:#27ae60; --danger:#e74c3c; --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial;background:var(--bg);color:#e6f3fb;padding:18px;}
+h1{margin:0 0 12px;font-size:20px}
+.wrap{max-width:1250px;margin:0 auto;display:grid;grid-template-columns:480px 1fr;gap:18px}
+.card{background:var(--panel);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 28px rgba(0,0,0,0.6)}
+label{display:block;font-size:13px;margin:6px 0;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--card);color:#e6f3fb}
+.row{display:flex;gap:8px}
+.row> *{flex:1}
+button{background:var(--accent);border:0;padding:8px 10px;border-radius:8px;color:white;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+#summary{white-space:pre-wrap;font-family:monospace;background:var(--glass);padding:10px;border-radius:8px;margin-top:8px;color:#d9f0ff;min-height:80px}
+.canvas-wrap{background:transparent;margin-top:8px;border-radius:8px;overflow:hidden}
+.controls{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.confirm{font-size:12px;color:var(--ok);margin-top:6px;opacity:0;transition:opacity .18s}
+.confirm.show{opacity:1}
+.status{font-size:12px;padding:6px;border-radius:6px;background:var(--glass);display:inline-block}
+.bad{color:var(--danger)} .good{color:var(--ok)}
+.rec{background:linear-gradient(90deg, rgba(11,116,222,0.06), rgba(23,165,137,0.03));padding:8px;border-radius:8px;margin-top:8px}
+.pre{background:var(--glass);padding:8px;border-radius:8px;margin-top:8px;white-space:pre-wrap;font-size:13px}
+.footer-controls{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>⚽ Prediksi Full-Time — v60 Final (Desktop Full) - v2</h1>
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h3>Match Info</h3>
+      <label>Home Team: <input id="teamHome" type="text" value="Atalanta"></label>
+      <label>Away Team: <input id="teamAway" type="text" value="Lazio"></label>
+
+      <h4 class="small">xG / SOT / Goals</h4>
+      <label class="row"><input id="xgHome" type="number" step="0.01" value="4.105"><input id="xgAway" type="number" step="0.01" value="5.78"></label>
+      <label class="row"><input id="sotHome" type="number" value="6.2"><input id="sotAway" type="number" value="4.1"></label>
+      <label class="row"><input id="goalsHome" type="number" value="9"><input id="goalsAway" type="number" value="5"></label>
+      <div class="controls">
+        <button id="btnAutoCR">Auto CR</button>
+        <button id="btnExample" class="btn-ghost">Fill Example</button>
+        <div id="onlineStatus" class="status muted">Status: <span id="netState">Checking...</span></div>
+      </div>
+
+      <h4 class="small" style="margin-top:10px">Attack / Possession</h4>
+      <label class="row"><input id="bigHome" type="number" placeholder="Big chances" value="3"><input id="bigAway" type="number" placeholder="Big chances" value="2"></label>
+      <label class="row"><input id="missHome" type="number" placeholder="Miss big" value="1"><input id="missAway" type="number" placeholder="Miss big" value="2"></label>
+      <label class="row"><input id="possHome" type="number" placeholder="Poss %" value="62"><input id="possAway" type="number" placeholder="Poss %" value="38"></label>
+
+      <h4 class="small" style="margin-top:10px">Defense / TI</h4>
+      <label class="row"><input id="tackleHome" type="number" value="22"><input id="tackleAway" type="number" value="17"></label>
+      <label class="row"><input id="interHome" type="number" value="9"><input id="interAway" type="number" value="7"></label>
+      <div class="controls">
+        <button id="btnAutoTI" class="btn-ghost">Auto TI</button>
+        <div class="small muted">TI = Tackles + Interceptions</div>
+      </div>
+      <label class="row"><input id="tiHome" readonly placeholder="TI Home"><input id="tiAway" readonly placeholder="TI Away"></label>
+
+      <label class="row"><input id="csHome" type="text" placeholder="CS Home e.g. 3/5 or 0.60" value="0.48"><input id="csAway" type="text" placeholder="CS Away e.g. 2/5 or 0.40" value="0.30"></label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button id="btnAutoCSPercentHome">Auto CS% (Home)</button>
+        <button id="btnAutoCSFetchHome" class="btn-ghost">Auto CS Fetch (Home)</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input id="last5Home" type="text" placeholder="Last5 Home e.g. 2-0,1-1,0-0,1-2,3-0">
+      </div>
+      <div id="confirmCSHome" class="confirm">✓ CS Home updated</div>
+
+      <div style="height:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button id="btnAutoCSPercentAway">Auto CS% (Away)</button>
+        <button id="btnAutoCSFetchAway" class="btn-ghost">Auto CS Fetch (Away)</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input id="last5Away" type="text" placeholder="Last5 Away e.g. 0-0,0-1,1-0,2-2,0-3">
+      </div>
+      <div id="confirmCSAway" class="confirm">✓ CS Away updated</div>
+
+      <h4 class="small" style="margin-top:10px">Absences / Errors</h4>
+      <label class="row"><input id="absDfHome" type="number" placeholder="Abs DF Home" value="0"><input id="absDfAway" type="number" placeholder="Abs DF Away" value="0"></label>
+      <label class="row"><input id="absFwHome" type="number" placeholder="Abs FW Home" value="1"><input id="absFwAway" type="number" placeholder="Abs FW Away" value="1"></label>
+      <label class="row"><input id="errHome" type="number" placeholder="Errors->goal Home" value="5"><input id="errAway" type="number" placeholder="Errors->goal Away" value="9"></label>
+
+      <h4 class="small" style="margin-top:10px">Tempo / H2H (manual)</h4>
+      <label class="row"><input id="tempoHome" type="number" value="70"><input id="tempoAway" type="number" value="68"></label>
+      <label><input id="h2hRaw" type="text" placeholder="H2H (manual) e.g. W,D,L,W,D"></label>
+
+      <h4 class="small" style="margin-top:10px">Odds (Open / Now)</h4>
+      <label class="row"><input id="hdpLine" type="number" step="0.25" value="0.25"><input id="ouLine" type="number" step="0.25" value="2.5"></label>
+      <label class="row"><input id="hdpHomeOpen" type="number" step="0.01" value="1.95"><input id="hdpHomeNow" type="number" step="0.01" value="1.88"></label>
+      <label class="row"><input id="hdpAwayOpen" type="number" step="0.01" value="1.95"><input id="hdpAwayNow" type="number" step="0.01" value="2.05"></label>
+      <label class="row"><input id="ouOverOpen" type="number" step="0.01" value="1.95"><input id="ouOverNow" type="number" step="0.01" value="1.88"></label>
+      <label class="row"><input id="ouUnderOpen" type="number" step="0.01" value="1.90"><input id="ouUnderNow" type="number" step="0.01" value="2.00"></label>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+        <label class="small">alpha: <input id="alpha" type="number" step="0.01" value="0.15" style="width:90px;margin-left:8px"></label>
+        <label class="small">MC runs: <input id="mcRuns" type="number" value="80000" step="1000" style="width:120px;margin-left:8px"></label>
+      </div>
+
+      <div class="controls" style="margin-top:12px">
+        <button id="btnAnalyze">Analyze</button>
+        <button id="btnReset" class="btn-ghost">Reset</button>
+        <button id="btnDownload" class="btn-ghost">Download CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3>Summary & Visual</h3>
+      <div id="summary">Klik <strong>Analyze</strong> untuk menjalankan simulasi.</div>
+      <div class="canvas-wrap"><canvas id="hist" width="760" height="180" style="width:100%;height:180px"></canvas></div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+        <div style="flex:1;background:var(--glass);padding:8px;border-radius:8px">
+          <div id="gaugeLabel" class="small">Confidence: -</div>
+          <div style="height:10px;background:#07121a;border-radius:8px;margin-top:6px"><div id="gaugeFill" style="height:10px;width:0%;background:var(--accent);border-radius:8px"></div></div>
+        </div>
+        <div style="width:300px"><div id="bestRec" class="rec">Recommendations</div></div>
+      </div>
+      <div class="pre"><pre id="trapTable">No data.</pre></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h4>Log Evaluasi</h4>
+      <div id="logArea" class="small pre">No logs yet.</div>
+      <div style="display:flex;gap:8px;margin-top:8px"><input id="actualInput" type="text" placeholder="Actual result e.g. 0-0"><button id="btnSaveActual" class="btn-ghost">Save Actual</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Utilities */
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function percent(x){return (100*x).toFixed(1)+'%';}
+function randNormal(mu=0,sigma=1){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return mu+Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*sigma;}
+
+/* Online status indicator */
+function updateOnlineStatus(){ const el = document.getElementById('netState'); el.textContent = navigator.onLine ? 'Online' : 'Offline'; el.className = navigator.onLine ? 'good' : 'bad'; }
+window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+/* Auto CR */
+document.getElementById('btnAutoCR').addEventListener('click', ()=>{
+  const gh=safe(document.getElementById('goalsHome').value,NaN), sh=safe(document.getElementById('sotHome').value,NaN);
+  const ga=safe(document.getElementById('goalsAway').value,NaN), sa=safe(document.getElementById('sotAway').value,NaN);
+  // safe write to conv fields (create if necessary)
+  let convH = document.getElementById('convHome'); if(!convH){ convH = document.createElement('input'); convH.type='hidden'; convH.id='convHome'; document.body.appendChild(convH); }
+  let convA = document.getElementById('convAway'); if(!convA){ convA = document.createElement('input'); convA.type='hidden'; convA.id='convAway'; document.body.appendChild(convA); }
+  if(sh>0) convH.value = (gh/sh).toFixed(2);
+  if(sa>0) convA.value = (ga/sa).toFixed(2);
+  // silent update
+  appendLog('Auto CR executed.');
+});
+
+/* Auto TI */
+document.getElementById('btnAutoTI').addEventListener('click', ()=>{
+  const tH=safe(document.getElementById('tackleHome').value,0), iH=safe(document.getElementById('interHome').value,0);
+  const tA=safe(document.getElementById('tackleAway').value,0), iA=safe(document.getElementById('interAway').value,0);
+  document.getElementById('tiHome').value = (tH + iH).toFixed(1);
+  document.getElementById('tiAway').value = (tA + iA).toFixed(1);
+  appendLog('Auto TI executed.');
+});
+
+/* Auto CS% from "a/b" */
+function autoCSPercent(fieldId, confirmId){
+  const el = document.getElementById(fieldId); const txt = (el.value||'').trim();
+  if(!txt.includes('/')){ showConfirm(confirmId); return; }
+  const parts = txt.split('/').map(s=>s.trim()); const a = parseFloat(parts[0]), b = parseFloat(parts[1]);
+  if(isNaN(a)||isNaN(b)||b===0){ el.value=''; return; }
+  el.value = (a/b).toFixed(2); showConfirm(confirmId); appendLog(fieldId+' Auto CS% executed.');
+}
+document.getElementById('btnAutoCSPercentHome').addEventListener('click', ()=>autoCSPercent('csHome','confirmCSHome'));
+document.getElementById('btnAutoCSPercentAway').addEventListener('click', ()=>autoCSPercent('csAway','confirmCSAway'));
+
+/* Auto CS Fetch from last5 (separate per team) */
+function autoCSFetch(last5Id, csId, confirmId, isHome){
+  const raw = (document.getElementById(last5Id).value||'').trim(); if(!raw) return;
+  const parts = raw.split(',').map(s=>s.trim()).filter(Boolean).slice(0,10);
+  if(parts.length===0) return;
+  let csCount=0, total=0;
+  for(const p of parts){
+    const m = p.match(/^(\d+)\s*[-:]\s*(\d+)$/);
+    if(m){
+      const g = parseInt(m[1],10), ga = parseInt(m[2],10);
+      if(isHome){ if(ga===0) csCount++; }
+      else { if(g===0) csCount++; }
+      total++;
+    } else {
+      // skip ambiguous tokens like W/D/L for fetch
+    }
+  }
+  if(total===0) return;
+  const ratio = csCount/total; document.getElementById(csId).value = ratio.toFixed(2); showConfirm(confirmId); appendLog(csId+' Auto CS Fetch executed.');
+}
+document.getElementById('btnAutoCSFetchHome').addEventListener('click', ()=>autoCSFetch('last5Home','csHome','confirmCSHome',true));
+document.getElementById('btnAutoCSFetchAway').addEventListener('click', ()=>autoCSFetch('last5Away','csAway','confirmCSAway',false));
+
+/* confirmation UI */
+function showConfirm(id){ const el = document.getElementById(id); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500); }
+
+/* Core helpers */
+function estimateP0(tempo, cs, conv){
+  const tn = clamp((tempo||70)/100,0,1);
+  let p0 = 0.08 + 0.14*(1 - tn) + 0.06*clamp(cs||0,0,1);
+  if(conv && conv>0.18) p0 *= 0.8;
+  return clamp(p0,0,0.30);
+}
+function computeAdaptiveRho(baseRho, tempoH, tempoA, h2hRaw){
+  const tempoSim = 1 - Math.abs((tempoH||70)-(tempoA||70)) / Math.max(1,((tempoH||70)+(tempoA||70))/2);
+  let drawRate = 0;
+  if(h2hRaw){ const chars = Array.from(h2hRaw.toUpperCase()).filter(c=>['W','D','L'].includes(c)); if(chars.length) drawRate = chars.filter(c=>'D'==c).length/chars.length; }
+  let rho = baseRho * (1 + 0.8*(tempoSim-0.5)) - 0.7 * drawRate;
+  return clamp(rho,-0.25,0.35);
+}
+function drawZIP(lambda, p0){ if(Math.random() < p0) return 0; let L=Math.exp(-lambda), p=1, k=0; while(p > L){ k++; p *= Math.random(); if(k>10000) break; } return Math.max(0,k-1); }
+function sampleBivarZIP(lh, la, rho, p0h, p0a){
+  if(rho >= 0){
+    const shared = Math.max(0, Math.min(lh,la) * rho);
+    const hPart = Math.max(0, lh - shared), aPart = Math.max(0, la - shared);
+    const sh = (shared>0)?(function(){ let L=Math.exp(-shared),k=0,p=1; while(p>L){k++;p*=Math.random(); if(k>10000) break;} return Math.max(0,k-1); })():0;
+    return [ sh + drawZIP(hPart,p0h), sh + drawZIP(aPart,p0a) ];
+  } else {
+    const sigma=0.12; const z1=randNormal(0,sigma); const z2 = rho*z1 + Math.sqrt(Math.max(0,1-rho*rho))*randNormal(0,sigma);
+    const lamH = Math.max(0.01, lh * Math.exp(z1 - 0.5*sigma*sigma)); const lamA = Math.max(0.01, la * Math.exp(z2 - 0.5*sigma*sigma));
+    return [ drawZIP(lamH,p0h), drawZIP(lamA,p0a) ];
+  }
+}
+
+/* Analyze */
+function analyze(){
+  const inputs = {
+    teamHome: document.getElementById('teamHome').value,
+    teamAway: document.getElementById('teamAway').value,
+    xgH: safe(document.getElementById('xgHome').value,NaN),
+    xgA: safe(document.getElementById('xgAway').value,NaN),
+    convH: safe(document.getElementById('convHome').value,NaN),
+    convA: safe(document.getElementById('convAway').value,NaN),
+    tiH: safe(document.getElementById('tiHome').value,0),
+    tiA: safe(document.getElementById('tiAway').value,0),
+    csH: parseFloat(document.getElementById('csHome').value) || 0,
+    csA: parseFloat(document.getElementById('csAway').value) || 0,
+    absFwH: safe(document.getElementById('absFwHome').value,0),
+    absFwA: safe(document.getElementById('absFwAway').value,0),
+    errH: safe(document.getElementById('errHome').value,0),
+    errA: safe(document.getElementById('errAway').value,0),
+    tempoH: safe(document.getElementById('tempoHome').value,70),
+    tempoA: safe(document.getElementById('tempoAway').value,68),
+    h2hRaw: document.getElementById('h2hRaw').value||'',
+    alpha: clamp(safe(document.getElementById('alpha').value,0.15),0.01,0.99),
+    mcRuns: Math.max(1000, Math.min(200000, parseInt(safe(document.getElementById('mcRuns').value,80000)))),
+    ouLine: safe(document.getElementById('ouLine').value,2.5),
+    hdpLine: safe(document.getElementById('hdpLine').value,0.25)
+  };
+
+  const leagueMean = 1.35;
+  let lamH_in = Number.isFinite(inputs.xgH) ? inputs.xgH : 1.2;
+  let lamA_in = Number.isFinite(inputs.xgA) ? inputs.xgA : 1.1;
+  let lamH = inputs.alpha * lamH_in + (1-inputs.alpha) * leagueMean;
+  let lamA = inputs.alpha * lamA_in + (1-inputs.alpha) * leagueMean;
+
+  lamH *= (1 - 0.08 * clamp(inputs.absFwH,0,3));
+  lamA *= (1 - 0.08 * clamp(inputs.absFwA,0,3));
+  lamH *= (1 - 0.01 * clamp(inputs.tiA/30,0,1));
+  lamA *= (1 - 0.01 * clamp(inputs.tiH/30,0,1));
+  lamH *= (1 + 0.03 * clamp(inputs.errH/10,0,1));
+  lamA *= (1 + 0.03 * clamp(inputs.errA/10,0,1));
+
+  const p0H = estimateP0(inputs.tempoH, inputs.csH, inputs.convH);
+  const p0A = estimateP0(inputs.tempoA, inputs.csA, inputs.convA);
+  const rho = computeAdaptiveRho(0.12, inputs.tempoH, inputs.tempoA, inputs.h2hRaw);
+
+  const runs = inputs.mcRuns;
+  const freq = {}; const totals = {}; let homeW=0, drawCnt=0, awayW=0, overCnt=0;
+  for(let i=0;i<runs;i++){
+    const [gh,ga] = sampleBivarZIP(lamH, lamA, rho, p0H, p0A);
+    const sc = gh+'-'+ga; freq[sc] = (freq[sc]||0)+1; const tot = gh+ga; totals[tot] = (totals[tot]||0)+1;
+    if(gh>ga) homeW++; else if(gh===ga) drawCnt++; else awayW++;
+    if(tot > inputs.ouLine) overCnt++;
+  }
+  const pHome = homeW/runs, pDraw = drawCnt/runs, pAway = awayW/runs, pOver = overCnt/runs;
+
+  let meanTot=0, cnt=0; for(const k in totals){ meanTot += parseInt(k)*totals[k]; cnt += totals[k]; } meanTot/=cnt;
+  let varTot=0; for(const k in totals){ varTot += ((parseInt(k)-meanTot)**2)*totals[k]; } varTot/=cnt;
+  const conf = clamp(1 - Math.min(1, varTot/9), 0.12, 0.98);
+
+  const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([s,c])=>`${s} (${(100*c/runs).toFixed(2)}%)`).join('\\n');
+  document.getElementById('summary').textContent =
+    `λ in: H ${lamH_in.toFixed(2)} | A ${lamA_in.toFixed(2)}\\nλ shrunk: H ${lamH.toFixed(2)} | A ${lamA.toFixed(2)}\\nρ ${rho.toFixed(2)} • p0 H ${p0H.toFixed(2)} A ${p0A.toFixed(2)}\\nRuns ${runs}\\n\\n1X2 → Home ${percent(pHome)} Draw ${percent(pDraw)} Away ${percent(pAway)}\\nOU(${inputs.ouLine}) → Over ${percent(pOver)} Under ${percent(1-pOver)}\\n\\nTop scores:\\n${top}\\n\\nConfidence ${(conf*100).toFixed(1)}%`;
+
+  function imp(od){ if(!od||od<=0) return null; return 1/od; }
+  const impOUOverNow = imp(safe(document.getElementById('ouOverNow').value,NaN));
+  const impHdpHomeNow = imp(safe(document.getElementById('hdpHomeNow').value,NaN));
+  const ouEdge = (impOUOverNow!==null) ? (pOver - impOUOverNow) : null;
+  const hdpHomeCover = (function(){ const hdp = inputs.hdpLine; let win=0,push=0,lose=0; for(const sc in freq){ const [gh,ga] = sc.split('-').map(x=>parseInt(x)); const v=freq[sc]; const diff = gh - ga - hdp; if(diff>0) win+=v; else if(diff===0) push+=v; else lose+=v; } return (win + 0.5*push)/runs; })();
+  const hdpEdgeHome = (impHdpHomeNow!==null) ? (hdpHomeCover - impHdpHomeNow) : null;
+
+  const recEl = document.getElementById('bestRec'); let recHtml='';
+  if(hdpEdgeHome!==null && hdpEdgeHome>0.02 && conf>0.45) recHtml += `<div style="color:var(--ok);font-weight:700">HDP Home recommended • Model ${percent(hdpHomeCover)} • Edge ${(hdpEdgeHome*100).toFixed(2)}%</div>`;
+  if(ouEdge!==null && ouEdge>0.02 && conf>0.45) recHtml += `<div style="color:var(--ok);font-weight:700">OU Over recommended • Model ${percent(pOver)} • Edge ${(ouEdge*100).toFixed(2)}%</div>`;
+  if(recHtml==='') recHtml = `<div class="small muted">No strong recommendations (check edges / confidence)</div>`;
+  recEl.innerHTML = recHtml;
+
+  document.getElementById('trapTable').textContent = `Market vs Model\nOU Over now: ${document.getElementById('ouOverNow').value} • Model Over ${percent(pOver)}\nHDP Home now: ${document.getElementById('hdpHomeNow').value} • Model cover ${percent(hdpHomeCover)}`;
+
+  document.getElementById('gaugeFill').style.width = Math.round(conf*100)+'%';
+  document.getElementById('gaugeLabel').textContent = (conf>0.8? 'High':'Medium') + ' confidence ('+ (conf*100).toFixed(0) + '%)';
+
+  drawHist(totals);
+
+  window._lastFreq = {freq:freq, totals:totals, runs:runs};
+
+  appendLog(`Analyze ${inputs.teamHome} vs ${inputs.teamAway} • runs ${runs} • conf ${(conf*100).toFixed(1)}%`);
+}
+
+function drawHist(totals){
+  const canvas = document.getElementById('hist'); const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+  const ks = Object.keys(totals).map(k=>parseInt(k)).sort((a,b)=>a-b); const vals = ks.map(k=>totals[k]||0); const maxV = Math.max(...vals,1); const pad=26; const w=(canvas.width-pad*2)/Math.max(ks.length,1);
+  ctx.fillStyle='#07121a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<ks.length;i++){ const h = (vals[i]/maxV)*(canvas.height-50); ctx.fillStyle='#0b74de'; ctx.fillRect(pad+i*w, canvas.height-30-h, w*0.78, h); ctx.fillStyle='#9fb3c5'; ctx.font='10px Arial'; ctx.fillText(String(ks[i]), pad+i*w, canvas.height-10); }
+}
+
+function appendLog(txt){ const now = new Date().toISOString().slice(0,19).replace('T',' '); const area = document.getElementById('logArea'); area.textContent = (area.textContent==='No logs yet.'? '': area.textContent + '\n') + `${now} • ${txt}`; localStorage.setItem('pred_logs', area.textContent); }
+(function(){ const saved = localStorage.getItem('pred_logs'); if(saved) document.getElementById('logArea').textContent = saved; })();
+
+/* Bindings */
+document.getElementById('btnAnalyze').addEventListener('click', analyze);
+document.getElementById('btnReset').addEventListener('click', ()=>{ document.querySelectorAll('input').forEach(i=>{ if(i.id!=='teamHome' && i.id!=='teamAway') i.value=''; }); document.getElementById('summary').textContent='Reset.'; });
+document.getElementById('btnDownload').addEventListener('click', ()=>{ const d = window._lastFreq; if(!d){ alert('Run analysis first.'); return; } let csv='score,count,probability\n'; const entries=Object.entries(d.freq).sort((a,b)=>b[1]-a[1]); for(const [s,c] of entries) csv += `${s},${c},${(c/d.runs).toFixed(6)}\n`; const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download = `${document.getElementById('teamHome').value}_vs_${document.getElementById('teamAway').value}_mc_freq.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); appendLog('CSV downloaded (freq).'); });
+document.getElementById('btnExample').addEventListener('click', ()=>{ document.getElementById('teamHome').value='Atalanta'; document.getElementById('teamAway').value='Lazio'; document.getElementById('xgHome').value='4.105'; document.getElementById('xgAway').value='5.78'; document.getElementById('sotHome').value='6.2'; document.getElementById('sotAway').value='4.1'; document.getElementById('goalsHome').value='9'; document.getElementById('goalsAway').value='5'; document.getElementById('tackleHome').value='22'; document.getElementById('interHome').value='9'; document.getElementById('tackleAway').value='17'; document.getElementById('interAway').value='7'; document.getElementById('last5Home').value='2-0,1-1,0-0,1-2,3-0'; document.getElementById('last5Away').value='0-0,0-1,1-0,2-2,0-3'; document.getElementById('alpha').value='0.15'; document.getElementById('mcRuns').value='80000'; document.getElementById('convHome').value=''; document.getElementById('convAway').value=''; appendLog('Example filled.'); });
+document.getElementById('btnSaveActual').addEventListener('click', ()=>{ const val=document.getElementById('actualInput').value.trim(); if(!val.match(/^\d+\-\d+$/)){ alert('Use format e.g. 0-0'); return; } appendLog(`Actual result ${document.getElementById('teamHome').value} ${val} ${document.getElementById('teamAway').value}`); document.getElementById('actualInput').value=''; });
+
+</script>
+</body>
+</html>
