@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prediksi Full-Time — v61 Ultra Realistic Full (Desktop)</title>
+<style>
+:root{
+  --bg:#041018; --panel:#0d1620; --card:#081217; --muted:#9fb3c5; --accent:#0b74de; --ok:#27ae60; --warn:#f1c40f; --danger:#e74c3c; --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial;background:var(--bg);color:#e6f3fb;padding:18px;}
+h1{margin:0 0 12px;font-size:20px}
+.container{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:520px 1fr;gap:18px}
+.card{background:var(--panel);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 28px rgba(0,0,0,0.6)}
+label{display:block;font-size:13px;margin:6px 0;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--card);color:#e6f3fb}
+.row{display:flex;gap:8px}
+.row> *{flex:1}
+button{background:var(--accent);border:0;padding:8px 10px;border-radius:8px;color:white;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+.panel-sub{background:var(--glass);padding:8px;border-radius:8px;margin-top:8px;font-size:13px;color:#dff3ff}
+#summary{white-space:pre-wrap;font-family:monospace;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:8px;margin-top:8px;color:#d9f0ff;min-height:120px}
+.canvas-wrap{background:transparent;margin-top:8px;border-radius:8px;overflow:hidden}
+.controls{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.confirm{font-size:12px;color:var(--ok);margin-top:6px;opacity:0;transition:opacity .18s}
+.confirm.show{opacity:1}
+.status{font-size:12px;padding:6px;border-radius:6px;background:var(--glass);display:inline-block}
+.rec{background:linear-gradient(90deg, rgba(11,116,222,0.06), rgba(23,165,137,0.03));padding:8px;border-radius:8px;margin-top:8px;color:#dff3ff}
+.pre{background:var(--glass);padding:8px;border-radius:8px;margin-top:8px;white-space:pre-wrap;font-size:13px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.bad{color:var(--danger)} .good{color:var(--ok)} .warn{color:var(--warn)}
+.kv{font-weight:700;color:#eaf7ff}
+</style>
+</head>
+<body>
+<h1>⚽ Prediksi Full-Time — v61 Ultra Realistic Full (Desktop)</h1>
+<div class="container">
+  <!-- Left: Inputs -->
+  <div class="card">
+    <h3>Match & Team Input</h3>
+    <label>Home Team: <input id="teamHome" type="text" value="Atalanta"></label>
+    <label>Away Team: <input id="teamAway" type="text" value="Lazio"></label>
+
+    <h4 class="small">Primary offensive metrics</h4>
+    <label class="row"><input id="xgHome" type="number" step="0.01" value="4.105"><input id="xgAway" type="number" step="0.01" value="5.78"></label>
+    <label class="row"><input id="sotHome" type="number" value="6.2"><input id="sotAway" type="number" value="4.1"></label>
+    <label class="row"><input id="goalsHome" type="number" value="9"><input id="goalsAway" type="number" value="5"></label>
+    <div class="controls"><button id="btnAutoCR">Auto CR</button><div class="small muted">CR = Goals / SOT</div></div>
+    <label class="row"><input id="convHome" type="text" placeholder="Conversion rate" readonly><input id="convAway" type="text" placeholder="Conversion rate" readonly></label>
+
+    <h4 class="small" style="margin-top:8px">Attack details</h4>
+    <label class="row"><input id="bigHome" type="number" placeholder="Big chances" value="3"><input id="bigAway" type="number" placeholder="Big chances" value="2"></label>
+    <label class="row"><input id="missHome" type="number" placeholder="Big missed" value="1"><input id="missAway" type="number" placeholder="Big missed" value="2"></label>
+    <label class="row"><input id="shotsHome" type="number" placeholder="Total shots" value="14"><input id="shotsAway" type="number" placeholder="Total shots" value="9"></label>
+    <label class="row"><input id="cornerHome" type="number" placeholder="Corners" value="6"><input id="cornerAway" type="number" placeholder="Corners" value="3"></label>
+    <label class="row"><input id="dribHome" type="number" placeholder="Dribbles" value="8"><input id="dribAway" type="number" placeholder="Dribbles" value="5"></label>
+    <label class="row"><input id="countHome" type="number" placeholder="Counter attacks" value="5"><input id="countAway" type="number" placeholder="Counter attacks" value="3"></label>
+    <label class="row"><input id="possHome" type="number" placeholder="Poss %" value="62"><input id="possAway" type="number" placeholder="Poss %" value="38"></label>
+
+    <h4 class="small" style="margin-top:8px">Defense & goalkeeper</h4>
+    <label class="row"><input id="csHome" type="text" placeholder="CS% e.g. 3/5 or 0.60" value="0.48"><input id="csAway" type="text" placeholder="CS% e.g. 2/5 or 0.40" value="0.30"></label>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button id="btnAutoCSPercentHome">Auto CS% (Home)</button>
+      <button id="btnAutoCSFetchHome" class="btn-ghost">Auto CS Fetch (Home)</button>
+    </div>
+    <label class="row"><input id="gcHome" type="number" placeholder="Goals conceded per game" value="0.8"><input id="gcAway" type="number" placeholder="Goals conceded per game" value="1.3"></label>
+    <label class="row"><input id="saveHome" type="number" placeholder="Saves per game" value="3.6"><input id="saveAway" type="number" placeholder="Saves per game" value="3.2"></label>
+    <label class="row"><input id="tackleHome" type="number" placeholder="Tackles" value="22"><input id="tackleAway" type="number" placeholder="Tackles" value="17"></label>
+    <label class="row"><input id="interHome" type="number" placeholder="Interceptions" value="9"><input id="interAway" type="number" placeholder="Interceptions" value="7"></label>
+    <div class="controls"><button id="btnAutoTI" class="btn-ghost">Auto TI</button><div class="small muted">TI = Tackles + Interceptions</div></div>
+    <label class="row"><input id="tiHome" readonly placeholder="TI Home"><input id="tiAway" readonly placeholder="TI Away"></label>
+    <label class="row"><input id="clearHome" type="number" placeholder="Clearances" value="35"><input id="clearAway" type="number" placeholder="Clearances" value="30"></label>
+    <label class="row"><input id="recoverHome" type="number" placeholder="Balls recovered" value="40"><input id="recoverAway" type="number" placeholder="Balls recovered" value="31"></label>
+    <label class="row"><input id="errHome" type="number" placeholder="Errors -> goal / season (est)" value="5"><input id="errAway" type="number" placeholder="Errors -> goal / season (est)" value="9"></label>
+    <label class="row"><input id="penHome" type="number" placeholder="Pen goals conceded" value="0"><input id="penAway" type="number" placeholder="Pen goals conceded" value="1"></label>
+
+    <h4 class="small" style="margin-top:8px">Availability / absences</h4>
+    <label class="small">Enter number of absent players per position (leave blank if none)</label>
+    <label class="row"><input id="absDfHome" type="number" placeholder="DF Home" value="0"><input id="absDfAway" type="number" placeholder="DF Away" value="0"></label>
+    <label class="row"><input id="absMfHome" type="number" placeholder="MF Home" value="0"><input id="absMfAway" type="number" placeholder="MF Away" value="0"></label>
+    <label class="row"><input id="absFwHome" type="number" placeholder="FW Home" value="1"><input id="absFwAway" type="number" placeholder="FW Away" value="1"></label>
+
+    <h4 class="small" style="margin-top:8px">Form / H2H / Tempo</h4>
+    <label class="row"><input id="last5Home" type="text" placeholder="Last5 Home e.g. 2-0,1-1,0-0,1-2,3-0"><input id="last5Away" type="text" placeholder="Last5 Away"></label>
+    <label><input id="h2hRaw" type="text" placeholder="H2H (manual) e.g. W,D,L,W,D"></label>
+    <label class="row"><input id="tempoHome" type="number" placeholder="Tempo index" value="70"><input id="tempoAway" type="number" placeholder="Tempo index" value="68"></label>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button id="btnAutoCSPercentAway">Auto CS% (Away)</button>
+      <button id="btnAutoCSFetchAway" class="btn-ghost">Auto CS Fetch (Away)</button>
+    </div>
+
+    <h4 class="small" style="margin-top:8px">Shot / Set-piece / Finishing (Auto index)</h4>
+    <label class="row"><input id="shotHome" type="number" placeholder="Shot index" value="75"><input id="shotAway" type="number" placeholder="Shot index" value="68"></label>
+    <label class="row"><input id="setHome" type="number" placeholder="Set-piece index" value="62"><input id="setAway" type="number" placeholder="Set-piece index" value="59"></label>
+    <label class="row"><input id="finishHome" type="number" placeholder="Finishing index" value="78"><input id="finishAway" type="number" placeholder="Finishing index" value="71"></label>
+    <div class="controls"><button id="btnAutoTempo" class="btn-ghost">Auto Tempo Index</button><div class="small muted">Auto fill tempo/shot/set/finish</div></div>
+
+    <h4 class="small" style="margin-top:8px">Fatigue & Travel</h4>
+    <label class="small">Stadium (manual) or leave blank to skip auto travel</label>
+    <label class="row"><input id="stadiumHome" type="text" placeholder="Stadium Home"><input id="stadiumAway" type="text" placeholder="Stadium Away"></label>
+    <label class="row"><input id="dayRest" type="number" placeholder="Days rest (home)" value="4"><input id="travelKm" type="number" placeholder="Travel km (away)" value="120"></label>
+    <div class="small muted">If stadiums provided and online, travel km can be fetched. Here manual entry.</div>
+
+    <h4 class="small" style="margin-top:8px">Odds & Model params</h4>
+    <label class="row"><input id="hdpLine" type="number" step="0.25" value="0.25"><input id="ouLine" type="number" step="0.25" value="2.5"></label>
+    <label class="row"><input id="hdpHomeOpen" type="number" step="0.01" value="1.95"><input id="hdpHomeNow" type="number" step="0.01" value="1.88"></label>
+    <label class="row"><input id="hdpAwayOpen" type="number" step="0.01" value="1.95"><input id="hdpAwayNow" type="number" step="0.01" value="2.05"></label>
+    <label class="row"><input id="ouOverOpen" type="number" step="0.01" value="1.95"><input id="ouOverNow" type="number" step="0.01" value="1.88"></label>
+    <label class="row"><input id="ouUnderOpen" type="number" step="0.01" value="1.90"><input id="ouUnderNow" type="number" step="0.01" value="2.00"></label>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+      <label class="small">alpha: <input id="alpha" type="number" step="0.01" value="0.15" style="width:90px;margin-left:8px"></label>
+      <label class="small">MC runs: <input id="mcRuns" type="number" value="80000" step="1000" style="width:120px;margin-left:8px"></label>
+      <label class="small">rho: <input id="rho" type="number" step="0.01" value="0.12" style="width:80px;margin-left:8px"></label>
+    </div>
+
+    <div class="controls" style="margin-top:12px">
+      <button id="btnAnalyze">Analyze</button>
+      <button id="btnExample" class="btn-ghost">Fill Example</button>
+      <button id="btnReset" class="btn-ghost">Reset</button>
+      <button id="btnDownload" class="btn-ghost">Download CSV</button>
+    </div>
+  </div>
+
+  <!-- Right: Output -->
+  <div>
+    <div class="card">
+      <h3>Summary & Visual</h3>
+      <div id="summary">Click <strong>Analyze</strong> to run full simulation.</div>
+      <div class="canvas-wrap"><canvas id="hist" width="760" height="200" style="width:100%;height:200px"></canvas></div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+        <div style="flex:1;background:var(--glass);padding:8px;border-radius:8px">
+          <div id="gaugeLabel" class="small">Confidence: -</div>
+          <div style="height:12px;background:#07121a;border-radius:8px;margin-top:6px"><div id="gaugeFill" style="height:12px;width:0%;background:var(--accent);border-radius:8px"></div></div>
+          <div style="margin-top:6px" class="small muted">Green=High confidence</div>
+        </div>
+        <div style="width:340px"><div id="bestRec" class="rec">Recommendations will appear here.</div></div>
+      </div>
+      <div class="pre"><pre id="trapTable">No market/trap data yet.</pre></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h4>Log Evaluasi</h4>
+      <div id="logArea" class="small pre">No logs yet.</div>
+      <div style="display:flex;gap:8px;margin-top:8px"><input id="actualInput" type="text" placeholder="Actual result e.g. 0-0"><button id="btnSaveActual" class="btn-ghost">Save Actual</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Helpers */
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function percent(x){return (100*x).toFixed(1)+'%';}
+function randNormal(mu=0,sigma=1){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return mu+Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*sigma;}
+
+/* Online status */
+function updateOnline(){ const s = navigator.onLine? 'Online':'Offline'; /* no visual element here; kept for compatibility */ }
+window.addEventListener('online', updateOnline); window.addEventListener('offline', updateOnline); updateOnline();
+
+/* Auto CR (fills hidden conv fields) */
+document.getElementById('btnAutoCR').addEventListener('click', ()=>{
+  const gh = safe(document.getElementById('goalsHome').value,NaN), sh=safe(document.getElementById('sotHome').value,NaN);
+  const ga = safe(document.getElementById('goalsAway').value,NaN), sa=safe(document.getElementById('sotAway').value,NaN);
+  let convH = document.getElementById('convHome'); if(!convH){ convH = document.createElement('input'); convH.type='hidden'; convH.id='convHome'; document.body.appendChild(convH); }
+  let convA = document.getElementById('convAway'); if(!convA){ convA = document.createElement('input'); convA.type='hidden'; convA.id='convAway'; document.body.appendChild(convA); }
+  if(sh>0) convH.value = (gh/sh).toFixed(3); if(sa>0) convA.value = (ga/sa).toFixed(3);
+  appendLog('Auto CR executed');
+});
+
+/* Auto TI */
+document.getElementById('btnAutoTI').addEventListener('click', ()=>{
+  const tH=safe(document.getElementById('tackleHome').value,0), iH=safe(document.getElementById('interHome').value,0);
+  const tA=safe(document.getElementById('tackleAway').value,0), iA=safe(document.getElementById('interAway').value,0);
+  document.getElementById('tiHome').value = (tH + iH).toFixed(1);
+  document.getElementById('tiAway').value = (tA + iA).toFixed(1);
+  appendLog('Auto TI executed');
+});
+
+/* Auto CS% from a/b */
+function autoCSPercent(id,confirmId){ const el=document.getElementById(id); const v=(el.value||'').trim(); if(!v.includes('/')){ showConfirm(confirmId); return; } const [a,b]=v.split('/').map(s=>parseFloat(s.trim())); if(isNaN(a)||isNaN(b)||b===0){ el.value=''; return;} el.value=(a/b).toFixed(2); showConfirm(confirmId); appendLog(id+' Auto CS%'); }
+document.getElementById('btnAutoCSPercentHome').addEventListener('click', ()=>autoCSPercent('csHome','confirmCSHome'));
+document.getElementById('btnAutoCSPercentAway').addEventListener('click', ()=>autoCSPercent('csAway','confirmCSAway'));
+
+/* Auto CS Fetch from last5 results */
+function autoCSFetch(lastId, csId, confirmId, isHome){
+  const raw=(document.getElementById(lastId).value||'').trim(); if(!raw) return;
+  const parts = raw.split(',').map(s=>s.trim()).filter(Boolean).slice(0,10);
+  if(parts.length===0) return;
+  let cs=0,tot=0;
+  for(const p of parts){
+    const m=p.match(/^(\d+)\s*[-:]\s*(\d+)$/);
+    if(m){ const g=parseInt(m[1],10), ga=parseInt(m[2],10); if(isHome){ if(ga===0) cs++; } else { if(g===0) cs++; } tot++; }
+  }
+  if(tot===0) return;
+  document.getElementById(csId).value = (cs/tot).toFixed(2); showConfirm(confirmId); appendLog(csId+' Auto CS Fetch');
+}
+document.getElementById('btnAutoCSFetchHome').addEventListener('click', ()=>autoCSFetch('last5Home','csHome','confirmCSHome',true));
+document.getElementById('btnAutoCSFetchAway').addEventListener('click', ()=>autoCSFetch('last5Away','csAway','confirmCSAway',false));
+
+/* Auto Tempo / shot / set / finish simple heuristic */
+document.getElementById('btnAutoTempo').addEventListener('click', ()=>{
+  const xgH=safe(document.getElementById('xgHome').value,1), sotH=safe(document.getElementById('sotHome').value,3), possH=safe(document.getElementById('possHome').value,50);
+  const xgA=safe(document.getElementById('xgAway').value,1), sotA=safe(document.getElementById('sotAway').value,3), possA=safe(document.getElementById('possAway').value,50);
+  document.getElementById('tempoHome').value = Math.round(clamp(50 + (xgH*8) + (sotH*2) + (possH-50)*0.2,40,92));
+  document.getElementById('tempoAway').value = Math.round(clamp(50 + (xgA*8) + (sotA*2) + (possA-50)*0.2,40,92));
+  document.getElementById('shotHome').value = Math.round(clamp(50 + xgH*10 + sotH*3,40,95));
+  document.getElementById('shotAway').value = Math.round(clamp(50 + xgA*10 + sotA*3,40,95));
+  document.getElementById('finishHome').value = Math.round(clamp(60 + (safe(document.getElementById('convHome')?.value,0)*100),45,95));
+  document.getElementById('finishAway').value = Math.round(clamp(60 + (safe(document.getElementById('convAway')?.value,0)*100),45,95));
+  document.getElementById('setHome').value = Math.round(clamp(40 + (possH/2),35,85));
+  document.getElementById('setAway').value = Math.round(clamp(40 + (possA/2),35,85));
+  appendLog('Auto Tempo/Shot/Finish executed');
+});
+
+/* confirmation helper */
+function showConfirm(id){ const el=document.getElementById(id); if(!el) return; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1400); }
+
+/* Core stats: p0, rho, ZIP bivariate */
+function estimateP0(tempo, cs, conv){ const tn=clamp((tempo||70)/100,0,1); let p0=0.08 + 0.14*(1-tn) + 0.06*clamp(cs||0,0,1); if(conv && conv>0.18) p0*=0.8; return clamp(p0,0,0.30); }
+function computeAdaptiveRho(base, tH,tA,h2h){ const tempoSim = 1 - Math.abs((tH||70)-(tA||70))/Math.max(1,((tH||70)+(tA||70))/2); let drawRate=0; if(h2h){ const ch=Array.from(h2h.toUpperCase()).filter(c=>['W','D','L'].includes(c)); if(ch.length) drawRate = ch.filter(c=>'D'==c).length/ch.length; } let rho = base * (1 + 0.8*(tempoSim-0.5)) - 0.7*drawRate; return clamp(rho,-0.25,0.35); }
+function drawZIP(lambda,p0){ if(Math.random() < p0) return 0; let L=Math.exp(-lambda), p=1, k=0; while(p>L){ k++; p*=Math.random(); if(k>10000) break; } return Math.max(0,k-1); }
+function sampleBivarZIP(lh,la,rho,p0h,p0a){
+  if(rho >= 0){
+    const shared = Math.max(0, Math.min(lh,la) * rho);
+    const hPart = Math.max(0, lh - shared), aPart = Math.max(0, la - shared);
+    const sh = (shared>0)?(function(){ let L=Math.exp(-shared),k=0,p=1; while(p>L){k++;p*=Math.random(); if(k>10000) break;} return Math.max(0,k-1); })():0;
+    return [ sh + drawZIP(hPart,p0h), sh + drawZIP(aPart,p0a) ];
+  } else {
+    const sigma=0.12; const z1=randNormal(0,sigma); const z2 = rho*z1 + Math.sqrt(Math.max(0,1-rho*rho))*randNormal(0,sigma);
+    const lamH = Math.max(0.01, lh * Math.exp(z1 - 0.5*sigma*sigma)); const lamA = Math.max(0.01, la * Math.exp(z2 - 0.5*sigma*sigma));
+    return [ drawZIP(lamH,p0h), drawZIP(lamA,p0a) ];
+  }
+}
+
+/* Analyze */
+
+function analyzeFull(){
+
+  const inps = {
+
+    teamH: document.getElementById('teamHome').value,
+
+    teamA: document.getElementById('teamAway').value,
+
+    xgH: safe(document.getElementById('xgHome').value,NaN),
+
+    xgA: safe(document.getElementById('xgAway').value,NaN),
+
+    convH: safe(document.getElementById('convHome')?.value,NaN),
+
+    convA: safe(document.getElementById('convAway')?.value,NaN),
+
+    tiH: safe(document.getElementById('tiHome').value,0), tiA: safe(document.getElementById('tiAway').value,0),
+
+    csH: parseFloat(document.getElementById('csHome').value) || 0, csA: parseFloat(document.getElementById('csAway').value) || 0,
+
+    absFwH: safe(document.getElementById('absFwHome').value,0), absFwA: safe(document.getElementById('absFwAway').value,0),
+
+    errH: safe(document.getElementById('errHome').value,0), errA: safe(document.getElementById('errAway').value,0),
+
+    tempoH: safe(document.getElementById('tempoHome').value,70), tempoA: safe(document.getElementById('tempoAway').value,68),
+
+    h2h: document.getElementById('h2hRaw').value||'',
+
+    alpha: clamp(safe(document.getElementById('alpha').value,0.15),0.01,0.99),
+
+    runs: Math.max(1000, Math.min(200000, parseInt(safe(document.getElementById('mcRuns').value,80000)))),
+
+    baseRho: safe(document.getElementById('rho').value,0.12),
+
+    ouLine: safe(document.getElementById('ouLine').value,2.5),
+
+    hdpLine: safe(document.getElementById('hdpLine').value,0.25)
+
+  };
+
+
+
+  const leagueMean = 1.35;
+
+  const lamH_in = Number.isFinite(inps.xgH) ? inps.xgH : leagueMean;
+
+  const lamA_in = Number.isFinite(inps.xgA) ? inps.xgA : leagueMean;
+
+  let lamH = inps.alpha * lamH_in + (1-inps.alpha) * leagueMean;
+
+  let lamA = inps.alpha * lamA_in + (1-inps.alpha) * leagueMean;
+
+
+
+  lamH *= (1 - 0.08 * clamp(inps.absFwH,0,3));
+
+  lamA *= (1 - 0.08 * clamp(inps.absFwA,0,3));
+
+  lamH *= (1 - 0.01 * clamp(inps.tiA/30,0,1));
+
+  lamA *= (1 - 0.01 * clamp(inps.tiH/30,0,1));
+
+  lamH *= (1 + 0.03 * clamp(inps.errH/10,0,1));
+
+  lamA *= (1 + 0.03 * clamp(inps.errA/10,0,1));
+
+
+
+  const p0H = estimateP0(inps.tempoH, inps.csH, inps.convH);
+
+  const p0A = estimateP0(inps.tempoA, inps.csA, inps.convA);
+
+  const rho = computeAdaptiveRho(inps.baseRho, inps.tempoH, inps.tempoA, inps.h2h);
+
+
+
+  const runs = inps.runs;
+
+  const freq = {}; const totals = {}; let hWin=0, d=0, aWin=0, over=0;
+
+  for(let i=0;i<runs;i++){
+
+    const [gh,ga] = sampleBivarZIP(lamH, lamA, rho, p0H, p0A);
+
+    const sc = gh+'-'+ga; freq[sc] = (freq[sc]||0)+1; const t = gh+ga; totals[t] = (totals[t]||0)+1;
+
+    if(gh>ga) hWin++; else if(gh===ga) d++; else aWin++;
+
+    if(t > inps.ouLine) over++;
+
+  }
+
+  const pHome = hWin/runs, pDraw = d/runs, pAway = aWin/runs, pOver = over/runs;
+
+
+
+  let mean=0,count=0; for(const k in totals){ mean += parseInt(k)*totals[k]; count += totals[k]; } mean/=count;
+
+  let varv=0; for(const k in totals){ varv += ((parseInt(k)-mean)**2)*totals[k]; } varv/=count;
+
+  const conf = clamp(1 - Math.min(1, varv/9), 0.12, 0.98);
+
+
+
+  const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([s,c])=>`${s} (${(100*c/runs).toFixed(2)}%)`).join('\n');
+
+
+
+  function imp(od){ if(!od||od<=0) return null; return 1/od; }
+
+  const impOUOverNow = imp(safe(document.getElementById('ouOverNow').value,NaN));
+
+  const impHdpHomeNow = imp(safe(document.getElementById('hdpHomeNow').value,NaN));
+
+
+
+  const ouEdge = (impOUOverNow!==null) ? (pOver - impOUOverNow) : null;
+
+  const coverHome = (function(){ const hdp = inps.hdpLine; let w=0,push=0,lose=0; for(const sc in freq){ const [gh,ga]=sc.split('-').map(x=>parseInt(x)); const v=freq[sc]; const diff = gh - ga - hdp; if(diff>0) w+=v; else if(diff===0) push+=v; else lose+=v; } return (w + 0.5*push)/runs; })();
+
+  const hdpEdgeHome = (impHdpHomeNow!==null) ? (coverHome - impHdpHomeNow) : null;
+
+
+
+  const recs = [];
+
+  if(hdpEdgeHome!==null && hdpEdgeHome>0.02 && conf>0.45) recs.push({text:`HDP Home recommended — Model ${percent(coverHome)} • Edge ${(hdpEdgeHome*100).toFixed(2)}%`,score:hdpEdgeHome});
+
+  if(ouEdge!==null && ouEdge>0.02 && conf>0.45) recs.push({text:`OU Over recommended — Model ${percent(pOver)} • Edge ${(ouEdge*100).toFixed(2)}%`,score:ouEdge});
+
+  if(recs.length===0){
+
+    const best = [{tag:'Home',p:pHome},{tag:'Draw',p:pDraw},{tag:'Away',p:pAway}].sort((a,b)=>b.p-a.p)[0];
+
+    recs.push({text:`Top pick by probability: ${best.tag} (${percent(best.p)})`,score:best.p});
+
+  }
+
+
+
+  const summary = `λ in: H ${lamH_in.toFixed(2)} | A ${lamA_in.toFixed(2)}\nλ adjusted: H ${lamH.toFixed(2)} | A ${lamA.toFixed(2)}\nρ ${rho.toFixed(2)} • p0 H ${p0H.toFixed(2)} A ${p0A.toFixed(2)}\nRuns ${runs}\n\n1X2 → Home ${percent(pHome)} Draw ${percent(pDraw)} Away ${percent(pAway)}\nOU(${inps.ouLine}) → Over ${percent(pOver)} Under ${percent(1-pOver)}\n\nTop scores:\n${top}\n\nConfidence ${(conf*100).toFixed(1)}%`;
+
+
+
+  document.getElementById('summary').textContent = summary;
+
+
+
+  const recEl = document.getElementById('bestRec'); recEl.innerHTML = recs.map(r=>`<div style="margin-bottom:6px">${r.text}</div>`).join('');
+
+  document.getElementById('trapTable').textContent = `Market vs Model\nOU Over now: ${document.getElementById('ouOverNow').value} • Model Over ${percent(pOver)}\nHDP Home now: ${document.getElementById('hdpHomeNow').value} • Model cover ${percent(coverHome)}\n\nEdges: OU ${(ouEdge!==null? (ouEdge*100).toFixed(2)+'%':'N/A')} • HDP Home ${(hdpEdgeHome!==null? (hdpEdgeHome*100).toFixed(2)+'%':'N/A')}`;
+
+
+
+  document.getElementById('gaugeFill').style.width = Math.round(conf*100)+'%';
+
+  document.getElementById('gaugeLabel').textContent = (conf>0.8? 'High':'Medium') + ' confidence ('+ (conf*100).toFixed(0) + '%)';
+
+
+
+  drawHistogram(totals);
+
+  window._lastResult = {freq, totals, runs};
+
+  appendLog(`Analyze ${inps.teamH} vs ${inps.teamA} • runs ${runs} • conf ${(conf*100).toFixed(1)}%`);
+
+}
+
+
+
+/* histogram drawer */
+
+function drawHistogram(totals){
+
+  const canvas = document.getElementById('hist'); const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const ks = Object.keys(totals).map(k=>parseInt(k)).sort((a,b)=>a-b); const vals = ks.map(k=>totals[k]||0); const maxV = Math.max(...vals,1);
+
+  const pad=30; const w=(canvas.width-pad*2)/Math.max(1,ks.length);
+
+  ctx.fillStyle='#041018'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  for(let i=0;i<ks.length;i++){ const h = (vals[i]/maxV)*(canvas.height-60); ctx.fillStyle='#0b74de'; ctx.fillRect(pad+i*w, canvas.height-40-h, w*0.7, h); ctx.fillStyle='#9fb3c5'; ctx.font='10px Arial'; ctx.fillText(String(ks[i]), pad+i*w+2, canvas.height-20); }
+
+}
+
+
+
+/* logs */
+
+function appendLog(txt){ const now=new Date().toISOString().slice(0,19).replace('T',' '); const area=document.getElementById('logArea'); area.textContent = (area.textContent==='No logs yet.'? '': area.textContent + '\n') + `${now} • ${txt}`; localStorage.setItem('pred_logs', area.textContent); }
+
+(function(){ const saved=localStorage.getItem('pred_logs'); if(saved) document.getElementById('logArea').textContent = saved; })();
+
+
+
+/* bindings */
+
+document.getElementById('btnAnalyze').addEventListener('click', analyzeFull);
+
+document.getElementById('btnReset').addEventListener('click', ()=>{ document.querySelectorAll('input').forEach(i=>{ if(i.id!=='teamHome' && i.id!=='teamAway') i.value=''; }); document.getElementById('summary').textContent='Reset.'; appendLog('Reset executed'); });
+
+document.getElementById('btnDownload').addEventListener('click', ()=>{ const data = window._lastResult; if(!data){ alert('Run analysis first'); return; } let csv = 'score,count,prob\n'; const entries = Object.entries(data.freq).sort((a,b)=>b[1]-a[1]); for(const [s,c] of entries) csv += `${s},${c},${(c/data.runs).toFixed(6)}\n`; const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`${document.getElementById('teamHome').value}_vs_${document.getElementById('teamAway').value}_mc.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); appendLog('CSV downloaded'); });
+
+document.getElementById('btnExample').addEventListener('click', ()=>{ document.getElementById('teamHome').value='Atalanta'; document.getElementById('teamAway').value='Lazio'; document.getElementById('xgHome').value='4.105'; document.getElementById('xgAway').value='5.78'; document.getElementById('sotHome').value='6.2'; document.getElementById('sotAway').value='4.1'; document.getElementById('goalsHome').value='9'; document.getElementById('goalsAway').value='5'; document.getElementById('tackleHome').value='22'; document.getElementById('interHome').value='9'; document.getElementById('tackleAway').value='17'; document.getElementById('interAway').value='7'; document.getElementById('last5Home').value='2-0,1-1,0-0,1-2,3-0'; document.getElementById('last5Away').value='0-0,0-1,1-0,2-2,0-3'; document.getElementById('mcRuns').value='80000'; appendLog('Example filled'); });
+
+document.getElementById('btnSaveActual').addEventListener('click', ()=>{ const val=document.getElementById('actualInput').value.trim(); if(!val.match(/^\d+\-\d+$/)){ alert('Use format e.g. 0-0'); return; } appendLog(`Actual result saved: ${val}`); document.getElementById('actualInput').value=''; });
+
+
+
+</script>
+
+</body>
+
+</html>
+
