@@ -1001,7 +1001,14 @@ document.getElementById('btnExample').addEventListener('click', ()=>{
 
 (function init(){ syncSliders(); setStatus('Ready'); })();
 
+// ---------- Connect coordinate buttons ----------
+document.getElementById('btnFindHome').addEventListener('click', () => {
+  findCoordinates('stadiumHome', 'latHome', 'lonHome', 'teamHome', 'statCoordHome');
+});
 
+document.getElementById('btnFindAway').addEventListener('click', () => {
+  findCoordinates('stadiumAway', 'latAway', 'lonAway', 'teamAway', 'statCoordAway');
+});
 
 </script>
 
