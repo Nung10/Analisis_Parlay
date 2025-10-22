@@ -1,88 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cari Koordinat Stadion / Nama Club (Akurat)</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button { padding: 10px; font-size: 16px; }
-    #result { margin-top: 20px; font-size: 18px; }
-    .box { margin-bottom: 15px; }
-    #map { width:100%; height:300px; margin-top:20px; border:1px solid #ccc; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Cari Koordinat Stadion / Club + Negara</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { padding: 10px; font-size: 16px; }
+        .box { margin-bottom: 15px; }
+        #result { margin-top: 20px; font-size: 18px; }
+        #map { width: 100%; height: 350px; margin-top: 20px; border:1px solid #ccc; }
+    </style>
 </head>
 <body>
 
-  <h2>🔍 Cari Titik Koordinat Stadion / Nama Club</h2>
+    <h2>📍 Cari Koordinat Stadion / Nama Club + Negara</h2>
 
-  <div class="box">
-    <input type="text" id="search" placeholder="Contoh: Gelora Bung Karno Stadium, Jakarta, Indonesia" size="60">
-    <button onclick="getCoordinates()">Cari Koordinat</button>
-  </div>
+    <div class="box">
+        <input type="text" id="stadium" placeholder="Nama Stadion atau Club (contoh: Old Trafford / Persib Bandung)" size="50">
+        <input type="text" id="country" placeholder="Negara (contoh: Inggris / Indonesia)" size="30">
+        <button onclick="getCoordinates()">Cari Koordinat</button>
+    </div>
 
-  <div id="result"></div>
-  <div id="map"></div>
+    <div id="result"></div>
+    <div id="map"></div>
 
-  <script>
-    let map, marker;
+    <script>
+        let map, marker;
 
-    function initMap(lat=0, lon=0) {
-      if (!map) {
-        map = new L.Map('map').setView([lat, lon], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-        marker = L.marker([lat, lon]).addTo(map);
-      } else {
-        map.setView([lat, lon], 15);
-        marker.setLatLng([lat, lon]);
-      }
-    }
+        function initMap(lat = 0, lon = 0) {
+            if (!map) {
+                map = new L.Map('map').setView([lat, lon], 2);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                marker = L.marker([lat, lon]).addTo(map);
+            } else {
+                map.setView([lat, lon], 15);
+                marker.setLatLng([lat, lon]);
+            }
+        }
 
-    function getCoordinates() {
-      const query = document.getElementById("search").value;
-      const country = "ID";  // filter ke Indonesia
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=${country}&limit=1`;
+        function getCoordinates() {
+            const stadium = document.getElementById("stadium").value;
+            const country = document.getElementById("country").value;
 
-      fetch(url, { headers: { 'User-Agent': 'stadium-finder/1.0 (your.email@domain.com)' } })
-        .then(response => response.json())
-        .then(data => {
-          if (data.length > 0) {
-            const place = data[0];
-            const lat = parseFloat(place.lat);
-            const lon = parseFloat(place.lon);
-            document.getElementById("result").innerHTML = `
-              <strong>Nama Dicari:</strong> ${query}<br>
-              <strong>Latitude:</strong> ${lat}<br>
-              <strong>Longitude:</strong> ${lon}<br>
-              <strong>Alamat Lengkap:</strong> ${place.display_name}<br>
-              <br>
-              <a href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">📍 Buka di Google Maps</a>
-            `;
-            initMap(lat, lon);
-          } else {
-            document.getElementById("result").innerHTML = "⚠️ Tidak ditemukan, coba nama lengkap dengan kota/negara.";
-            initMap(0,0);
-          }
-        })
-        .catch(err => {
-          document.getElementById("result").innerHTML = "Terjadi kesalahan: " + err;
-        });
-    }
+            if (!stadium) {
+                alert('Masukkan nama stadion atau klub terlebih dahulu!');
+                return;
+            }
 
-    // Muat Leaflet js
-    (function(){
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet/dist/leaflet.css';
-      document.head.append(link);
+            let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(stadium)}`;
+            if (country) {
+                url += `&countrycodes=${country.substring(0,2).toLowerCase()}`;
+            }
+            url += `&limit=1`;
 
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet/dist/leaflet.js';
-      script.onload = () => { initMap(0,0); };
-      document.body.append(script);
-    })();
-  </script>
+            fetch(url, { headers: { 'User-Agent': 'stadium-finder-app' } })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const place = data[0];
+                        const lat = parseFloat(place.lat);
+                        const lon = parseFloat(place.lon);
+
+                        document.getElementById("result").innerHTML = `
+                            <strong>Nama Dicari:</strong> ${stadium} (${country})<br>
+                            <strong>Latitude:</strong> ${lat}<br>
+                            <strong>Longitude:</strong> ${lon}<br>
+                            <strong>Alamat Lengkap:</strong> ${place.display_name}<br><br>
+                            <a href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">📌 Buka di Google Maps</a>
+                        `;
+
+                        initMap(lat, lon);
+                    } else {
+                        document.getElementById("result").innerHTML = "⚠️ Tidak ditemukan. Coba tambah kota/negara.";
+                        initMap(0, 0);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("result").innerHTML = "❌ Terjadi kesalahan: " + err;
+                });
+        }
+
+        // Load Leaflet Maps
+        (function () {
+            let css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://unpkg.com/leaflet/dist/leaflet.css';
+            document.head.appendChild(css);
+
+            let js = document.createElement('script');
+            js.src = 'https://unpkg.com/leaflet/dist/leaflet.js';
+            js.onload = () => { initMap(); };
+            document.body.appendChild(js);
+        })();
+    </script>
 
 </body>
 </html>
