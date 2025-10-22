@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Football Prediction v61.1 • Full Desktop (Online Geo, Dark)</title>
+<style>
+:root{
+  --bg:#041018; --panel:#071826; --card:#0b1220; --muted:#9fb3c5; --accent:#0b74de;
+  --ok:#27ae60; --warn:#f1c40f; --danger:#e74c3c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#e6f3fb;font-family:Inter, "Segoe UI", Arial, sans-serif}
+.container{width:100%;padding:18px 28px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.h-title{font-size:20px;font-weight:700}
+.h-sub{font-size:12px;color:var(--muted)}
+.panel{background:var(--panel);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.03);margin-bottom:12px}
+.label{display:block;font-size:13px;color:var(--muted);margin:6px 0}
+.input-row{display:flex;gap:8px}
+.input-row> *{flex:1}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--card);color:#e6f3fb}
+textarea{min-height:80px}
+.btn{background:var(--accent);border:0;padding:8px 12px;border-radius:8px;color:white;cursor:pointer}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+.small{font-size:12px;color:var(--muted)}
+.summary{white-space:pre-wrap;font-family:monospace;background:#08111a;padding:12px;border-radius:8px;margin-top:8px;color:#d9f0ff;min-height:220px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card-params{background:#05121a;padding:10px;border-radius:8px;margin-top:8px}
+.mode-toggle{display:flex;gap:8px}
+.btn-mode{padding:8px 12px;border-radius:8px;border:0;background:#16313e;color:#dff7f0;cursor:pointer}
+.btn-mode.active{background:var(--accent);color:#fff}
+.kv{font-weight:700;color:#eaf7ff}
+.canvas{background:#08111a;border:1px solid #0f1b26;border-radius:8px;margin-top:8px;padding:8px}
+canvas{display:block;width:100%;height:180px;background:transparent}
+.footer{margin-top:12px;padding:10px;text-align:center;color:var(--muted);font-size:12px}
+.status{font-size:13px;padding:6px 10px;border-radius:8px;background:#06232a;color:#bff0df;border:1px solid rgba(255,255,255,0.03)}
+.small-muted{font-size:11px;color:#9fb3c5}
+.result-card{background:#071a22;border-radius:8px;padding:8px;margin-top:8px;color:#dff7f0}
+.help{font-size:12px;color:#9fb3c5;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <div class="h-title">Football Prediction v61.1 • Full Desktop (Online Geo)</div>
+      <div class="h-sub">Theme: Dark • 1 column • Auto CSV • Nominatim fallback</div>
+    </div>
+    <div>
+      <div id="statusBar" class="status">Ready</div>
+    </div>
+  </div>
+
+  <!-- INPUT FORM -->
+  <div class="panel">
+    <h3>Match info & Teams</h3>
+    <label class="label">Competition: <input id="league" type="text" placeholder="e.g. Serie A"></label>
+    <div class="input-row" style="margin-top:6px">
+      <input id="matchLabel" type="text" placeholder="Ex: Atalanta vs Lazio">
+      <input id="matchDate" type="text" placeholder="YYYY-MM-DD">
+    </div>
+
+    <h4 style="margin-top:12px">Attack (Home | Away)</h4>
+    <div class="grid-2">
+      <div>
+        <label class="label kv">Home</label>
+        <label class="label">Team: <input id="teamHome" type="text" value="Atalanta"></label>
+        <label class="label">xG per game: <input id="xgHome" type="number" step="0.01" value="0.90"></label>
+        <label class="label">SOT: <input id="sotHome" type="number" value="6.2"></label>
+        <label class="label">Total Shots: <input id="shotsHome" type="number" value="14"></label>
+        <label class="label">Goals (recent total): <input id="goalsHome" type="number" value="9"></label>
+        <label class="label">Possession %: <input id="possHome" type="number" step="0.1" value="62"></label>
+      </div>
+      <div>
+        <label class="label kv">Away</label>
+        <label class="label">Team: <input id="teamAway" type="text" value="Lazio"></label>
+        <label class="label">xG per game: <input id="xgAway" type="number" step="0.01" value="0.78"></label>
+        <label class="label">SOT: <input id="sotAway" type="number" value="4.1"></label>
+        <label class="label">Total Shots: <input id="shotsAway" type="number" value="9"></label>
+        <label class="label">Goals (recent total): <input id="goalsAway" type="number" value="5"></label>
+        <label class="label">Possession %: <input id="possAway" type="number" step="0.1" value="38"></label>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="btnAutoCR" class="btn-ghost">Auto Conversion Rate</button>
+      <button id="btnAutoTI" class="btn-ghost">Auto TI (Tackles+Inter)</button>
+      <button id="btnAutoShot" class="btn-ghost">Auto Shot Index</button>
+      <button id="btnAutoTempo" class="btn-ghost">Auto Tempo</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div class="small-muted" id="statCR">CR: -</div>
+      <div class="small-muted" id="statTI">TI: -</div>
+      <div class="small-muted" id="statShot">Shot: -</div>
+      <div class="small-muted" id="statTempo">Tempo: -</div>
+    </div>
+
+    <h4 style="margin-top:12px">Defense & TI</h4>
+    <div class="grid-2">
+      <div>
+        <label class="label">Clean sheet ratio (decimal): <input id="csHome" type="text" value="0.48"></label>
+        <label class="label">Goals conceded (avg): <input id="gcHome" type="number" value="0.8"></label>
+        <label class="label">Saves per game: <input id="saveHome" type="number" value="3.6"></label>
+        <label class="label">Errors → goal (season est): <input id="errHome" type="number" value="5"></label>
+      </div>
+      <div>
+        <label class="label">Clean sheet ratio Away: <input id="csAway" type="text" value="0.30"></label>
+        <label class="label">Goals conceded Away: <input id="gcAway" type="number" value="1.3"></label>
+        <label class="label">Saves Away: <input id="saveAway" type="number" value="3.2"></label>
+        <label class="label">Errors Away: <input id="errAway" type="number" value="9"></label>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:8px">
+      <div>
+        <label class="label">Tackles Home: <input id="tackleHome" type="number" value="22"></label>
+        <label class="label">Interceptions Home: <input id="interHome" type="number" value="9"></label>
+        <label class="label">TI Home (auto): <input id="tiHome" readonly type="text"></label>
+      </div>
+      <div>
+        <label class="label">Tackles Away: <input id="tackleAway" type="number" value="17"></label>
+        <label class="label">Interceptions Away: <input id="interAway" type="number" value="7"></label>
+        <label class="label">TI Away (auto): <input id="tiAway" readonly type="text"></label>
+      </div>
+    </div>
+
+    <h4 style="margin-top:12px">Absences & Form / H2H / ELO</h4>
+    <div class="grid-2">
+      <div>
+        <label class="label">DF Home (abs): <input id="absDfHome" type="number" value="0"></label>
+        <label class="label">MF Home (abs): <input id="absMfHome" type="number" value="0"></label>
+        <label class="label">FW Home (abs): <input id="absFwHome" type="number" value="1"></label>
+        <label class="label">Form 5 Home (scores): <input id="last5Home" type="text" value="2-0,1-1,0-0,1-2,3-0"></label>
+      </div>
+      <div>
+        <label class="label">DF Away (abs): <input id="absDfAway" type="number" value="0"></label>
+        <label class="label">MF Away (abs): <input id="absMfAway" type="number" value="0"></label>
+        <label class="label">FW Away (abs): <input id="absFwAway" type="number" value="1"></label>
+        <label class="label">Form 5 Away: <input id="last5Away" type="text" value="0-0,0-1,1-0,2-2,0-3"></label>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <label class="label" style="flex:1">H2H (W/D/L sequence): <input id="h2hRaw" type="text" placeholder="W,D,L,W,D"></label>
+      <label class="label" style="width:180px">ELO Home: <input id="eloHome" type="number" value="1500"></label>
+      <label class="label" style="width:180px">ELO Away: <input id="eloAway" type="number" value="1500"></label>
+    </div>
+
+    <h4 style="margin-top:12px">Odds & Lines</h4>
+    <div class="grid-2">
+      <div>
+        <label class="label">HDP line: <input id="hdpLine" type="number" step="0.25" value="0.25"></label>
+        <label class="label">HDP Home Open: <input id="hdpHomeOpen" type="number" step="0.01" value="1.95"></label>
+        <label class="label">HDP Home Now: <input id="hdpHomeNow" type="number" step="0.01" value="1.88"></label>
+        <label class="label">HDP Away Open: <input id="hdpAwayOpen" type="number" step="0.01" value="1.95"></label>
+        <label class="label">HDP Away Now: <input id="hdpAwayNow" type="number" step="0.01" value="2.05"></label>
+      </div>
+      <div>
+        <label class="label">OU line: <input id="ouLine" type="number" step="0.25" value="2.5"></label>
+        <label class="label">OU Over Open: <input id="ouOverOpen" type="number" step="0.01" value="1.95"></label>
+        <label class="label">OU Over Now: <input id="ouOverNow" type="number" step="0.01" value="1.88"></label>
+        <label class="label">OU Under Open: <input id="ouUnderOpen" type="number" step="0.01" value="1.90"></label>
+        <label class="label">OU Under Now: <input id="ouUnderNow" type="number" step="0.01" value="2.00"></label>
+      </div>
+    </div>
+
+    <div class="card-params" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="mode-toggle">
+          <button id="leagueMode" class="btn-mode active">⚽ League</button>
+          <button id="cupMode" class="btn-mode">🏆 Cup</button>
+          <button id="customMode" class="btn-mode">🧠 Custom</button>
+        </div>
+        <div style="text-align:right" class="small-muted">Preset / Custom</div>
+      </div>
+
+      <div style="margin-top:8px">
+        <label class="small">Alpha (α) <span id="alphaValue">0.15</span></label>
+        <input id="alphaSlider" class="slider" type="range" min="0.02" max="0.30" step="0.01" value="0.15">
+        <input id="alphaInput" type="number" step="0.01" value="0.15" style="width:80px;margin-top:6px">
+        <label class="small">Rho (ρ) <span id="rhoValue">0.12</span></label>
+        <input id="rhoSlider" class="slider" type="range" min="-0.30" max="0.45" step="0.01" value="0.12">
+        <input id="rhoInput" type="number" step="0.01" value="0.12" style="width:80px;margin-top:6px">
+        <label class="small">MC Runs <span id="mcValue">40000</span></label>
+        <input id="mcSlider" class="slider" type="range" min="1000" max="200000" step="1000" value="40000">
+        <input id="mcInput" type="number" step="1000" value="40000" style="width:120px;margin-top:6px">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button id="btnAnalyze" class="btn">Analyze (Auto pre-calc → MC → Auto CSV)</button>
+      <button id="btnDetectTrap" class="btn-ghost">Detect Trap</button>
+      <button id="btnDownload" class="btn-ghost">Download CSV</button>
+      <button id="btnReset" class="btn-ghost">Reset</button>
+      <button id="btnExample" class="btn-ghost">Fill Example</button>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="panel">
+    <h3>Summary & Visual</h3>
+    <div id="summary" class="summary">Press "Analyze" to run prediction.</div>
+
+    <div class="canvas">
+      <canvas id="hist" width="900" height="180"></canvas>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-start">
+      <div style="flex:1;background:#071828;padding:12px;border-radius:8px">
+        <div id="gaugeLabel" class="small">Confidence: -</div>
+        <canvas id="confGauge" width="420" height="140"></canvas>
+        <div class="small-muted" style="margin-top:6px">Green = high confidence</div>
+      </div>
+      <div style="width:360px">
+        <div id="bestRec" class="result-card">Best recommendation appears here.</div>
+        <pre id="trapTable" class="small-muted" style="background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;margin-top:8px">Trap status: —</pre>
+      </div>
+    </div>
+
+    <h4 style="margin-top:12px">Stadium & Travel</h4>
+    <div class="grid-2">
+      <div>
+        <label class="label">Stadium Home: <input id="stadiumHome" type="text" placeholder="Gewiss Stadium"></label>
+        <label class="label">Lat Home: <input id="latHome" readonly type="text"></label>
+        <label class="label">Lon Home: <input id="lonHome" readonly type="text"></label>
+        <button id="btnFindHome" class="btn-ghost" style="margin-top:6px">Find Coordinates (Home)</button>
+        <div id="statCoordHome" class="small-muted">Coordinates: —</div>
+      </div>
+      <div>
+        <label class="label">Stadium Away: <input id="stadiumAway" type="text" placeholder="Stadio Olimpico"></label>
+        <label class="label">Lat Away: <input id="latAway" readonly type="text"></label>
+        <label class="label">Lon Away: <input id="lonAway" readonly type="text"></label>
+        <button id="btnFindAway" class="btn-ghost" style="margin-top:6px">Find Coordinates (Away)</button>
+        <div id="statCoordAway" class="small-muted">Coordinates: —</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:8px">
+      <div><label class="label">Travel Km: <input id="travelKm" type="number" value="0"></label></div>
+      <div><label class="label">Days Rest: <input id="dayRest" type="number" value="4"></label></div>
+    </div>
+
+    <div class="help">
+      Note: If you open this file directly (file://), some online queries may be blocked by the browser (CORS). Recommended: run a local server (Python `python -m http.server 8080`) and open via http://localhost:8080/...
+    </div>
+  </div>
+
+  <div class="footer">v61.1 • Full Desktop • Dark • Auto CSV • Online stadium search via OpenStreetMap (Nominatim)</div>
+</div>
+
+<script>
+/* ========== Utilities ========== */
+function safe(v,d=0){const x=parseFloat(v);return Number.isFinite(x)?x:d;}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function pct(x){return (100*x).toFixed(1)+'%';}
+function setStatus(s, temp=false){ document.getElementById('statusBar').textContent=s; if(temp) setTimeout(()=>{ document.getElementById('statusBar').textContent='Ready'; },2400); }
+
+/* ========== Small local DB (extendable) ========== */
+const STADIUM_DB = {
+  "gewiss": {lat:45.678, lon:9.704},
+  "stadio olimpico": {lat:41.9333, lon:12.4544},
+  "etihad": {lat:53.4831, lon:-2.2004},
+  "old trafford": {lat:53.4631, lon:-2.2913},
+  "san siro": {lat:45.4781, lon:9.1242}
+};
+const CLUB_DB = {
+  "atalanta": {lat:45.678, lon:9.704, stadium:'Gewiss Stadium'},
+  "lazio": {lat:41.930, lon:12.452, stadium:'Stadio Olimpico'}
+};
+
+/* ========== Auto-calc buttons ========== */
+document.getElementById('btnAutoTI').addEventListener('click', ()=>{
+  const tH = safe(document.getElementById('tackleHome').value,0), iH = safe(document.getElementById('interHome').value,0);
+  const tA = safe(document.getElementById('tackleAway').value,0), iA = safe(document.getElementById('interAway').value,0);
+  document.getElementById('tiHome').value = (tH + iH).toFixed(1);
+  document.getElementById('tiAway').value = (tA + iA).toFixed(1);
+  document.getElementById('statTI').textContent = `TI set: H ${(tH+iH).toFixed(1)} / A ${(tA+iA).toFixed(1)}`;
+  setStatus('Auto TI applied', true);
+});
+
+document.getElementById('btnAutoCR').addEventListener('click', ()=>{
+  const gh = safe(document.getElementById('goalsHome').value, NaN), sh = safe(document.getElementById('sotHome').value, NaN);
+  const ga = safe(document.getElementById('goalsAway').value, NaN), sa = safe(document.getElementById('sotAway').value, NaN);
+  if(sh>0) {
+    if(!document.getElementById('convHome')){ const e=document.createElement('input'); e.id='convHome'; e.readOnly=true; e.type='text'; e.style.width='100%'; document.getElementById('sotHome').parentNode.appendChild(e); }
+    document.getElementById('convHome').value = (gh/sh).toFixed(3);
+  }
+  if(sa>0) {
+    if(!document.getElementById('convAway')){ const e=document.createElement('input'); e.id='convAway'; e.readOnly=true; e.type='text'; e.style.width='100%'; document.getElementById('sotAway').parentNode.appendChild(e); }
+    document.getElementById('convAway').value = (ga/sa).toFixed(3);
+  }
+  document.getElementById('statCR').textContent = 'CR set';
+  setStatus('Auto CR applied', true);
+});
+
+document.getElementById('btnAutoShot').addEventListener('click', ()=> {
+  const xgH = safe(document.getElementById('xgHome').value,0), sotH = safe(document.getElementById('sotHome').value,0), shotsH = safe(document.getElementById('shotsHome').value,0), possH = clamp(safe(document.getElementById('possHome').value,50),0,100), bigH = safe(document.getElementById('bigHome')?.value,0), missH = safe(document.getElementById('missHome')?.value,0);
+  const xgA = safe(document.getElementById('xgAway').value,0), sotA = safe(document.getElementById('sotAway').value,0), shotsA = safe(document.getElementById('shotsAway').value,0), possA = clamp(safe(document.getElementById('possAway').value,50),0,100), bigA = safe(document.getElementById('bigAway')?.value,0), missA = safe(document.getElementById('missAway')?.value,0);
+  const sotRatioH = shotsH>0 ? (sotH/shotsH) : 0.45;
+  const sotRatioA = shotsA>0 ? (sotA/shotsA) : 0.45;
+  const possFactorH = 1 + (possH - 50)/100;
+  const possFactorA = 1 + (possA - 50)/100;
+  const shotH = clamp((sotRatioH * 100 * 0.35) + (xgH*15*0.4) + ((bigH-missH)*2.5) , 0, 200) * possFactorH;
+  const shotA = clamp((sotRatioA * 100 * 0.35) + (xgA*15*0.4) + ((bigA-missA)*2.5) , 0, 200) * possFactorA;
+  if(!document.getElementById('shotHome')){ const e=document.createElement('input'); e.id='shotHome'; e.readOnly=true; e.type='text'; e.style.width='100%'; document.getElementById('sotHome').parentNode.appendChild(e); }
+  if(!document.getElementById('shotAway')){ const e=document.createElement('input'); e.id='shotAway'; e.readOnly=true; e.type='text'; e.style.width='100%'; document.getElementById('sotAway').parentNode.appendChild(e); }
+  document.getElementById('shotHome').value = shotH.toFixed(1);
+  document.getElementById('shotAway').value = shotA.toFixed(1);
+  document.getElementById('statShot').textContent = 'Shot index set';
+  setStatus('Auto Shot applied', true);
+});
+
+document.getElementById('btnAutoTempo').addEventListener('click', ()=>{
+  const xgH = safe(document.getElementById('xgHome').value,1), sotH = safe(document.getElementById('sotHome').value,3), possH = safe(document.getElementById('possHome').value,50);
+  const xgA = safe(document.getElementById('xgAway').value,1), sotA = safe(document.getElementById('sotAway').value,3), possA = safe(document.getElementById('possAway').value,50);
+  const tH = Math.round(clamp(50 + (xgH*12) + (sotH*2) + ((possH-50)*0.25), 30, 95));
+  const tA = Math.round(clamp(50 + (xgA*12) + (sotA*2) + ((possA-50)*0.25), 30, 95));
+  if(!document.getElementById('tempoHome')){ const el=document.createElement('input'); el.id='tempoHome'; el.type='hidden'; document.body.appendChild(el); }
+  if(!document.getElementById('tempoAway')){ const el=document.createElement('input'); el.id='tempoAway'; el.type='hidden'; document.body.appendChild(el); }
+  document.getElementById('tempoHome').value = tH; document.getElementById('tempoAway').value = tA;
+  document.getElementById('statTempo').textContent = `Tempo set: H ${tH} / A ${tA}`;
+  setStatus('Auto Tempo applied', true);
+});
+
+/* ========== Online geocoding (Nominatim) with timeout & CORS check ========== */
+
+async function fetchOnlineCoords(query, timeoutMs=9000){
+
+  // build URL (limit=1). Optionally add &email=youremail@example.com
+
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query) + '&addressdetails=1';
+
+  // timeout helper
+
+  const controller = new AbortController();
+
+  const signal = controller.signal;
+
+  const timer = setTimeout(()=>controller.abort(), timeoutMs);
+
+  try{
+
+    const resp = await fetch(url, {signal});
+
+    clearTimeout(timer);
+
+    if(!resp.ok) return null;
+
+    const arr = await resp.json();
+
+    if(arr && arr.length>0) return { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon), display: arr[0].display_name };
+
+  }catch(e){
+
+    clearTimeout(timer);
+
+    console.warn('fetchOnlineCoords error', e);
+
+    return null;
+
+  }
+
+  return null;
+
+}
+
+
+
+async function findCoordinates(stadField, latField, lonField, clubField, statusField){
+
+  const sName = (document.getElementById(stadField).value||'').toLowerCase().trim();
+
+  const club = (document.getElementById(clubField).value||'').toLowerCase().trim();
+
+
+
+  // 1) try local stadium DB
+
+  if(sName){
+
+    for(const k in STADIUM_DB){
+
+      if(sName.includes(k) || k.includes(sName)){
+
+        document.getElementById(latField).value = STADIUM_DB[k].lat;
+
+        document.getElementById(lonField).value = STADIUM_DB[k].lon;
+
+        document.getElementById(statusField).textContent = 'Stadium found (local)';
+
+        computeTravel();
+
+        setStatus('Local stadium found', true);
+
+        return;
+
+      }
+
+    }
+
+  }
+
+  // 2) try local club DB
+
+  if(club){
+
+    for(const c in CLUB_DB){
+
+      if(club.includes(c) || c.includes(club)){
+
+        document.getElementById(latField).value = CLUB_DB[c].lat;
+
+        document.getElementById(lonField).value = CLUB_DB[c].lon;
+
+        document.getElementById(statusField).textContent = 'Club location used (local)';
+
+        computeTravel();
+
+        setStatus('Local club location used', true);
+
+        return;
+
+      }
+
+    }
+
+  }
+
+
+
+  // 3) fallback online (Nominatim)
+
+  const query = sName || club;
+
+  if(!query){
+
+    document.getElementById(statusField).textContent = 'No stadium/club name';
+
+    setStatus('No input for geocode', true);
+
+    return;
+
+  }
+
+  document.getElementById(statusField).textContent = 'Searching online...';
+
+  setStatus('Searching online (Nominatim)...', true);
+
+
+
+  // detect if running from file:// — browsers may block cross-origin requests.
+
+  if(location.protocol === 'file:'){
+
+    // Still try, but warn user about potential CORS block
+
+    document.getElementById(statusField).textContent = 'Running from file:// — online lookup may be blocked (use local server)';
+
+  }
+
+
+
+  // first try with "stadium" appended
+
+  let res = await fetchOnlineCoords(query + ' stadium');
+
+  if(!res){
+
+    // second try without 'stadium'
+
+    res = await fetchOnlineCoords(query);
+
+  }
+
+  if(res){
+
+    document.getElementById(latField).value = res.lat.toFixed(6);
+
+    document.getElementById(lonField).value = res.lon.toFixed(6);
+
+    document.getElementById(statusField).textContent = 'Found online: ' + (res.display||'');
+
+    computeTravel();
+
+    setStatus('Coordinates found (online)', true);
+
+    return;
+
+  }
+
+
+
+  // fail
+
+  document.getElementById(statusField).textContent = 'Not found (local & online)';
+
+  setStatus('Geocode failed', true);
+
+  computeTravel();
+
+}
+
+
+
+/* ========== Travel computation ========== */
+
+function computeTravel(){
+
+  const latH = parseFloat(document.getElementById('latHome').value) || NaN;
+
+  const lonH = parseFloat(document.getElementById('lonHome').value) || NaN;
+
+  const latA = parseFloat(document.getElementById('latAway').value) || NaN;
+
+  const lonA = parseFloat(document.getElementById('lonAway').value) || NaN;
+
+  if(isNaN(latH) || isNaN(lonH) || isNaN(latA) || isNaN(lonA)){ document.getElementById('travelKm').value = 0; return; }
+
+  const R=6371, toRad=x=>x*Math.PI/180;
+
+  const dLat=toRad(latA-latH), dLon=toRad(lonA-lonH);
+
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(latH))*Math.cos(toRad(latA))*Math.sin(dLon/2)**2;
+
+  const c=2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  const d=R*c;
+
+  document.getElementById('travelKm').value = Math.round(d);
+
+  setStatus('Travel computed: ' + Math.round(d) + ' km', true);
+
+}
+
+
+
+/* ========== Sliders & mode ========== */
+
+const alphaSlider = document.getElementById('alphaSlider'), rhoSlider = document.getElementById('rhoSlider'), mcSlider = document.getElementById('mcSlider');
+
+const alphaValue = document.getElementById('alphaValue'), rhoValue = document.getElementById('rhoValue'), mcValue = document.getElementById('mcValue');
+
+function syncSliders(){ alphaValue.textContent=parseFloat(alphaSlider.value).toFixed(2); rhoValue.textContent=parseFloat(rhoSlider.value).toFixed(2); mcValue.textContent=parseInt(mcSlider.value).toLocaleString(); document.getElementById('alphaInput').value=parseFloat(alphaSlider.value).toFixed(2); document.getElementById('rhoInput').value=parseFloat(rhoSlider.value).toFixed(2); document.getElementById('mcInput').value=parseInt(mcSlider.value); }
+
+alphaSlider.addEventListener('input', ()=>{ syncSliders(); setStatus('Alpha adjusted', true); }); rhoSlider.addEventListener('input', ()=>{ syncSliders(); setStatus('Rho adjusted', true); }); mcSlider.addEventListener('input', ()=>{ syncSliders(); setStatus('MC adjusted', true); });
+
+document.getElementById('alphaInput').addEventListener('change', ()=>{ alphaSlider.value=clamp(parseFloat(document.getElementById('alphaInput').value),0.02,0.30); syncSliders(); });
+
+document.getElementById('rhoInput').addEventListener('change', ()=>{ rhoSlider.value=clamp(parseFloat(document.getElementById('rhoInput').value),-0.30,0.45); syncSliders(); });
+
+document.getElementById('mcInput').addEventListener('change', ()=>{ mcSlider.value=clamp(parseInt(document.getElementById('mcInput').value),1000,200000); syncSliders(); });
+
+syncSliders();
+
+
+
+function setParams(a,r,m){ alphaSlider.value=a; rhoSlider.value=r; mcSlider.value=m; syncSliders(); }
+
+function updateModeButton(id){ document.querySelectorAll('.btn-mode').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+
+
+document.getElementById('leagueMode').addEventListener('click', ()=>{ setParams(0.15,0.12,40000); updateModeButton('leagueMode'); setStatus('League mode active', true); });
+
+document.getElementById('cupMode').addEventListener('click', ()=>{ setParams(0.24,0.20,80000); updateModeButton('cupMode'); setStatus('Cup mode active', true); });
+
+document.getElementById('customMode').addEventListener('click', ()=>{ const a=clamp(parseFloat(document.getElementById('alphaInput').value),0.02,0.30); const r=clamp(parseFloat(document.getElementById('rhoInput').value),-0.30,0.45); const m=clamp(parseInt(document.getElementById('mcInput').value),1000,200000); setParams(a,r,m); updateModeButton('customMode'); setStatus('Custom mode saved', true); });
+
+
+
+/* ========== Monte Carlo helpers ========== */
+
+function poissonSample(lambda){ let L=Math.exp(-lambda), p=1,k=0; while(p>L){k++; p*=Math.random(); if(k>20000) break;} return Math.max(0,k-1); }
+
+function drawZIP(lambda,p0){ if(Math.random()<p0) return 0; return poissonSample(lambda); }
+
+function sampleBivariateZIP(lh,la,rho,p0h,p0a){
+
+  if(rho>=0){ const shared = Math.max(0, Math.min(lh,la)*rho); const hPart=Math.max(0,lh-shared), aPart=Math.max(0,la-shared); const common = shared>0?poissonSample(shared):0; return [ common + drawZIP(hPart,p0h), common + drawZIP(aPart,p0a) ]; }
+
+  else { const sigma=0.12; const z1=(Math.random()*2-1)*sigma; const z2=rho*z1 + Math.sqrt(Math.max(0,1-rho*rho))*((Math.random()*2-1)*sigma); const lamH=Math.max(0.01, lh*Math.exp(z1-0.5*sigma*sigma)); const lamA=Math.max(0.01, la*Math.exp(z2-0.5*sigma*sigma)); return [ drawZIP(lamH,p0h), drawZIP(lamA,p0a) ]; }
+
+}
+
+function monteCarloDriver(lambdaH,lambdaA,rho,runs,p0h,p0a){
+
+  const scoreFreq={}, totals={}; let h=0,d=0,a=0;
+
+  for(let i=0;i<runs;i++){ const [gh,ga]=sampleBivariateZIP(lambdaH,lambdaA,rho,p0h,p0a); const k=`${gh}-${ga}`; scoreFreq[k]=(scoreFreq[k]||0)+1; totals[gh+ga]=(totals[gh+ga]||0)+1; if(gh>ga) h++; else if(gh===ga) d++; else a++; }
+
+  return {scoreFreq,totals,pHome:h/runs,pDraw:d/runs,pAway:a/runs};
+
+}
+
+function computeOUProbs(totals,line,runs){ let over=0,under=0; const isInt=Number.isInteger(line); for(const t in totals){ const g=parseInt(t), v=totals[t]; if(isInt){ if(g>line) over+=v; else if(g<line) under+=v; else { over+=0.5*v; under+=0.5*v; } } else { if(g>line) over+=v; else under+=v; } } return {over:over/runs, under:under/runs}; }
+
+function probCover(scoreFreq,hdp,runs){ let win=0,push=0,lose=0; for(const s in scoreFreq){ const [gh,ga]=s.split('-').map(Number); const v=scoreFreq[s]; const diff = gh - ga - hdp; if(diff>0) win+=v; else if(diff===0) push+=v; else lose+=v; } return (win+0.5*push)/runs; }
+
+function computeConfidence(totals){ let mean=0,count=0; for(const t in totals){ mean+=parseInt(t)*totals[t]; count+=totals[t]; } if(count===0) return 0.2; mean/=count; let varv=0; for(const t in totals){ varv += ((parseInt(t)-mean)**2)*totals[t]; } varv/=count; return clamp(1 - Math.min(1,varv/8), 0.12, 0.98); }
+
+
+
+/* ========== Analysis flow ========== */
+
+document.getElementById('btnAnalyze').addEventListener('click', ()=> {
+
+  try{ document.getElementById('btnAutoTI').click(); document.getElementById('btnAutoCR').click(); document.getElementById('btnAutoShot').click(); document.getElementById('btnAutoTempo').click(); setStatus('Auto pre-calcs done', true); } catch(e){ console.warn('precalc error',e); }
+
+  runAnalysis();
+
+});
+
+
+
+function runAnalysis(){
+
+  setStatus('Running analysis (MC)...');
+
+  const teamH = (document.getElementById('teamHome').value||'Home').trim();
+
+  const teamA = (document.getElementById('teamAway').value||'Away').trim();
+
+  const xgH = safe(document.getElementById('xgHome').value,1.2), xgA = safe(document.getElementById('xgAway').value,1.1);
+
+  const csH = parseFloat(document.getElementById('csHome').value)||0, csA = parseFloat(document.getElementById('csAway').value)||0;
+
+  const tiH = safe(document.getElementById('tiHome').value,0), tiA = safe(document.getElementById('tiAway').value,0);
+
+  const absFwH = safe(document.getElementById('absFwHome').value,0), absFwA = safe(document.getElementById('absFwAway').value,0);
+
+  const errH = safe(document.getElementById('errHome').value,0), errA = safe(document.getElementById('errAway').value,0);
+
+  const tempoH = safe(document.getElementById('tempoHome')?.value,70), tempoA = safe(document.getElementById('tempoAway')?.value,68);
+
+  const ouLine = safe(document.getElementById('ouLine').value,2.5), hdpLine = safe(document.getElementById('hdpLine').value,0.25);
+
+  const runs = Math.max(2000, Math.min(200000, parseInt(safe(document.getElementById('mcSlider').value,40000))));
+
+  const rhoBase = safe(document.getElementById('rhoSlider').value,0.12);
+
+  const alpha = safe(document.getElementById('alphaSlider').value,0.15);
+
+  const possH = clamp(safe(document.getElementById('possHome').value,50),0,100);
+
+  const possA = clamp(safe(document.getElementById('possAway').value,50),0,100);
+
+
+
+  // base lambda
+
+  const leagueMean = 1.35;
+
+  let lamH = alpha * xgH + (1 - alpha) * leagueMean;
+
+  let lamA = alpha * xgA + (1 - alpha) * leagueMean;
+
+
+
+  // absences
+
+  lamH *= (1 - 0.08 * clamp(absFwH,0,3));
+
+  lamA *= (1 - 0.08 * clamp(absFwA,0,3));
+
+
+
+  // defensive TI reduces opponent expected goals
+
+  lamH *= (1 - 0.012 * clamp(tiA/30,0,1));
+
+  lamA *= (1 - 0.012 * clamp(tiH/30,0,1));
+
+
+
+  // errors increase conceded
+
+  lamH *= (1 + 0.03 * clamp(errH/10,0,1));
+
+  lamA *= (1 + 0.03 * clamp(errA/10,0,1));
+
+
+
+  // travel fatigue
+
+  const travel = safe(document.getElementById('travelKm').value,0);
+
+  if(travel>500){ lamA *= (1 - clamp((travel-500)/2000,0,0.08)); lamH *= (1 - clamp((travel-500)/4000,0,0.04)); }
+
+
+
+  // p0 estimation
+
+  const convH = parseFloat(document.getElementById('convHome')?.value) || NaN;
+
+  const convA = parseFloat(document.getElementById('convAway')?.value) || NaN;
+
+  function estimateP0(tempo, cs, conv){
+
+    const tn = clamp((tempo-30)/65,0,1);
+
+    let p0 = 0.12 * (1 - tn) + 0.06 * clamp(cs,0,1);
+
+    if(conv && conv>0.18) p0 *= 0.85;
+
+    return clamp(p0,0,0.32);
+
+  }
+
+  const p0H = estimateP0(tempoH, csH, convH), p0A = estimateP0(tempoA, csA, convA);
+
+
+
+  // adapt rho
+
+  function adaptRho(base,tH,tA,h2hRaw){
+
+    const tempoSim = 1 - Math.abs((tH||70)-(tA||70)) / Math.max(1,((tH||70)+(tA||70))/2);
+
+    let drawRate = 0;
+
+    if(h2hRaw){ const seq = h2hRaw.toUpperCase().replace(/[^WDL]/g,'').split(''); if(seq.length) drawRate = seq.filter(c=>c==='D').length / seq.length; }
+
+    const r = base * (1 + 0.9*(tempoSim - 0.5)) - 0.75 * drawRate;
+
+    return clamp(r, -0.3, 0.45);
+
+  }
+
+  const h2hRaw = (document.getElementById('h2hRaw').value||'');
+
+  const rhoAdj = adaptRho(rhoBase, tempoH, tempoA, h2hRaw);
+
+
+
+  // possession advantage
+
+  const posAdv = (possH - possA)/100;
+
+  lamH *= (1 + 0.08 * posAdv);
+
+  lamA *= (1 - 0.08 * posAdv);
+
+
+
+  // shrink if too high
+
+  const avgLam = (lamH + lamA)/2;
+
+  if(avgLam > 3.0){ lamH *= 0.86; lamA *= 0.86; } else if(avgLam > 2.0){ lamH *= 0.94; lamA *= 0.94; }
+
+
+
+  // MC
+
+  const mc = monteCarloDriver(lamH, lamA, rhoAdj, runs, p0H, p0A);
+
+  const ou = computeOUProbs(mc.totals, ouLine, runs);
+
+  const coverH = probCover(mc.scoreFreq, hdpLine, runs);
+
+  const coverA = probCover(mc.scoreFreq, -hdpLine, runs);
+
+  const conf = computeConfidence(mc.totals);
+
+  const top = Object.entries(mc.scoreFreq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([s,c])=>`${s} (${(100*c/runs).toFixed(2)}%)`).join('\n');
+
+
+
+  function impliedProb(od){ if(!od || od<=0) return null; return 1/od; }
+
+  const ouOverNowImp = impliedProb(safe(document.getElementById('ouOverNow').value,NaN));
+
+  const hdpHomeNowImp = impliedProb(safe(document.getElementById('hdpHomeNow').value,NaN));
+
+  const ouEdge = (ouOverNowImp !== null)? (ou.over - ouOverNowImp) : null;
+
+  const hdpEdge = (hdpHomeNowImp !== null)? (coverH - hdpHomeNowImp) : null;
+
+
+
+  const recs = [];
+
+  if(hdpEdge !== null && hdpEdge > 0.02 && conf > 0.45) recs.push({type:'HDP Home', prob:coverH, edge:hdpEdge});
+
+  if(ouEdge !== null && ouEdge > 0.02 && conf > 0.45) recs.push({type:`OU Over ${ouLine}`, prob:ou.over, edge:ouEdge});
+
+  if(recs.length === 0){ const best = [{k:'Home',p:mc.pHome},{k:'Draw',p:mc.pDraw},{k:'Away',p:mc.pAway}].sort((a,b)=>b.p - a.p)[0]; recs.push({type:`Top pick ${best.k}`, prob:best.p, edge:null}); }
+
+
+
+  const summaryText =
+
+`Match: ${teamH} vs ${teamA} ${document.getElementById('matchDate').value? '('+document.getElementById('matchDate').value+')':''}
+
+λ input: H ${xgH.toFixed(2)} | A ${xgA.toFixed(2)}
+
+λ adjust: H ${lamH.toFixed(2)} | A ${lamA.toFixed(2)}
+
+ρ (adj): ${rhoAdj.toFixed(3)} • p0 H:${p0H.toFixed(2)} A:${p0A.toFixed(2)}
+
+MC runs: ${runs}
+
+
+
+1X2 → Home ${pct(mc.pHome)} | Draw ${pct(mc.pDraw)} | Away ${pct(mc.pAway)}
+
+OU(${ouLine}) → Over ${pct(ou.over)} | Under ${pct(ou.under)}
+
+HDP(${hdpLine}) → Home cover ${pct(coverH)} | Away cover ${pct(coverA)}
+
+
+
+Top scores:
+
+${top}
+
+
+
+Confidence ${(conf*100).toFixed(1)}%
+
+
+
+Recommendations:
+
+${recs.map(r => r.edge!==null ? `${r.type} • Model ${pct(r.prob)} • Edge ${(r.edge*100).toFixed(2)}%` : `${r.type} • ${pct(r.prob)}`).join('\n')}`;
+
+
+
+  document.getElementById('summary').textContent = summaryText;
+
+  document.getElementById('bestRec').innerHTML = recs.map(r=>`<div>${r.type}${r.edge!==null? ' • Edge '+(r.edge*100).toFixed(2)+'%':''} • ${pct(r.prob)}</div>`).join('');
+
+  document.getElementById('trapTable').textContent = `Market vs Model
+
+OU Over now: ${document.getElementById('ouOverNow').value} • Model Over ${pct(ou.over)}
+
+HDP Home now: ${document.getElementById('hdpHomeNow').value} • Model cover ${pct(coverH)}
+
+
+
+Edges: OU ${(ouEdge!==null? (ouEdge*100).toFixed(2)+'%':'N/A')} • HDP Home ${(hdpEdge!==null? (hdpEdge*100).toFixed(2)+'%':'N/A')}`;
+
+
+
+  drawHistogram(mc.totals); drawGauge(conf);
+
+
+
+  // store and auto-download CSV
+
+  window._lastPrediction = { meta:{home:teamH,away:teamA,date:document.getElementById('matchDate').value||''}, mc, runs: runs };
+
+  try{ downloadLastCSV(); setStatus('Analysis done • CSV downloaded', true); } catch(e){ setStatus('Analysis done', true); console.warn(e); }
+
+}
+
+
+
+/* ========== Viz ========== */
+
+function drawHistogram(totals){
+
+  const canvas=document.getElementById('hist'); const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const keys=Object.keys(totals).map(k=>parseInt(k)).sort((a,b)=>a-b); if(keys.length===0) return;
+
+  const vals=keys.map(k=>totals[k]); const maxV=Math.max(...vals,1);
+
+  const pad=40, w=(canvas.width-pad*2)/Math.max(1,keys.length);
+
+  ctx.fillStyle='#041018'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  for(let i=0;i<keys.length;i++){
+
+    const h=(vals[i]/maxV)*(canvas.height-80);
+
+    ctx.fillStyle='#0b74de'; ctx.fillRect(pad + i*w, canvas.height-50-h, w*0.7, h);
+
+    ctx.fillStyle='#9fb3c5'; ctx.font='10px Arial'; ctx.fillText(String(keys[i]), pad + i*w + 2, canvas.height - 30);
+
+  }
+
+  ctx.font='12px Arial'; ctx.fillStyle='#9fb3c5'; ctx.fillText('Distribution of Total Goals', 10, 14);
+
+}
+
+function drawGauge(conf){
+
+  const canvas=document.getElementById('confGauge'); if(!canvas) return; const ctx=canvas.getContext('2d'); const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h);
+
+  const cx=w/2, cy=h-8, r=Math.min(w,h)/2 - 10; const start=Math.PI, end=2*Math.PI;
+
+  ctx.beginPath(); ctx.arc(cx,cy,r,start,end); ctx.strokeStyle='#444'; ctx.lineWidth=10; ctx.stroke();
+
+  const angle = start + (end-start)*conf;
+
+  const grad=ctx.createLinearGradient(0,0,w,0); grad.addColorStop(0,'#ff4444'); grad.addColorStop(0.5,'#ffaa00'); grad.addColorStop(1,'#00cc66');
+
+  ctx.beginPath(); ctx.strokeStyle=grad; ctx.lineWidth=10; ctx.arc(cx,cy,r,start,angle); ctx.stroke();
+
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(angle - Math.PI); ctx.beginPath(); ctx.moveTo(-4,0); ctx.lineTo(4,0); ctx.lineTo(0,-r+5); ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
+
+  ctx.font='14px Arial'; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText(`Confidence ${(conf*100).toFixed(1)}%`, cx, cy - r - 10);
+
+  document.getElementById('gaugeLabel').textContent = (conf>0.8? 'High' : (conf>0.55? 'Medium' : 'Low')) + ' confidence (' + (conf*100).toFixed(0) + '%)';
+
+}
+
+
+
+/* ========== CSV download ========== */
+
+function downloadLastCSV(){
+
+  const data=window._lastPrediction; if(!data){ alert('Run analysis first'); return; }
+
+  let csv='score,count,prob\n'; const entries=Object.entries(data.mc.scoreFreq).sort((a,b)=>b[1]-a[1]);
+
+  for(const [s,c] of entries) csv += `${s},${c},${(c/data.runs).toFixed(6)}\n`;
+
+  const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+
+  const a=document.createElement('a'); a.href=url; a.download = `${data.meta.home||'home'}_vs_${data.meta.away||'away'}_mc.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+
+  setStatus('CSV downloaded', true);
+
+}
+
+document.getElementById('btnDownload').addEventListener('click', downloadLastCSV);
+
+
+
+
+
+/* ========== Detect trap, Reset, Example ========== */
+
+document.getElementById('btnDetectTrap').addEventListener('click', ()=>{
+
+  const openOU = safe(document.getElementById('ouOverOpen').value,NaN), nowOU = safe(document.getElementById('ouOverNow').value,NaN);
+
+  const openH = safe(document.getElementById('hdpHomeOpen').value,NaN), nowH = safe(document.getElementById('hdpHomeNow').value,NaN);
+
+  const deltaOU = (openOU && nowOU)? ((nowOU-openOU)/openOU*100) : 0;
+
+  const deltaH = (openH && nowH)? ((nowH-openH)/openH*100) : 0;
+
+  let status = 'Stable';
+
+  if(Math.abs(deltaOU) > 10 || Math.abs(deltaH) > 10) status = 'Trap';
+
+  else if(Math.abs(deltaOU) > 4 || Math.abs(deltaH) > 4) status = 'Warning';
+
+  document.getElementById('trapTable').textContent = `Detect Trap:\nΔ OU: ${deltaOU.toFixed(1)}% • Δ HDP: ${deltaH.toFixed(1)}%\nStatus: ${status}`;
+
+  setStatus('Trap detection: '+status, true);
+
+});
+
+
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+
+  const keep=['teamHome','teamAway','matchLabel']; document.querySelectorAll('input').forEach(i=>{ if(!keep.includes(i.id)) i.value=''; });
+
+  document.getElementById('summary').textContent='Reset.'; document.getElementById('bestRec').innerHTML='Best recommendation appears here.'; document.getElementById('trapTable').textContent='Trap status: —';
+
+  const ctx=document.getElementById('hist').getContext('2d'); ctx.clearRect(0,0,document.getElementById('hist').width,document.getElementById('hist').height);
+
+  const gctx=document.getElementById('confGauge').getContext('2d'); gctx.clearRect(0,0,document.getElementById('confGauge').width,document.getElementById('confGauge').height);
+
+  setStatus('Reset done', true);
+
+});
+
+
+
+document.getElementById('btnExample').addEventListener('click', ()=>{
+
+  document.getElementById('league').value='Serie A';
+
+  document.getElementById('matchLabel').value='Atalanta vs Lazio'; document.getElementById('matchDate').value='2025-10-19';
+
+  document.getElementById('teamHome').value='Atalanta'; document.getElementById('teamAway').value='Lazio';
+
+  document.getElementById('xgHome').value='0.90'; document.getElementById('xgAway').value='0.78';
+
+  document.getElementById('sotHome').value='6.2'; document.getElementById('sotAway').value='4.1';
+
+  document.getElementById('shotsHome').value='14'; document.getElementById('shotsAway').value='9';
+
+  document.getElementById('goalsHome').value='9'; document.getElementById('goalsAway').value='5';
+
+  document.getElementById('possHome').value='62'; document.getElementById('possAway').value='38';
+
+  document.getElementById('tackleHome').value='22'; document.getElementById('interHome').value='9';
+
+  document.getElementById('tackleAway').value='17'; document.getElementById('interAway').value='7';
+
+  document.getElementById('mcSlider').value='40000'; syncSliders();
+
+  setTimeout(()=>{ try{ document.getElementById('btnAutoCR').click(); document.getElementById('btnAutoTI').click(); document.getElementById('btnAutoShot').click(); document.getElementById('btnAutoTempo').click(); }catch(e){} },100);
+
+  setStatus('Example filled', true);
+
+});
+
+
+
+/* ========== Hook stadium buttons (fix) ========== */
+
+document.getElementById('btnFindHome').addEventListener('click', ()=> findCoordinates('stadiumHome','latHome','lonHome','teamHome','statCoordHome'));
+
+document.getElementById('btnFindAway').addEventListener('click', ()=> findCoordinates('stadiumAway','latAway','lonAway','teamAway','statCoordAway'));
+
+
+
+/* ========== Init ========== */
+
+(function init(){ syncSliders(); setStatus('Ready'); })();
+
+</script>
+</body>
+</html>
