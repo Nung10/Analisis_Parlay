@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Big Chance & Missed Estimator</title>
+<style>
+body {
+  background:#0b0f1a;
+  color:#e0e6f0;
+  font-family:Segoe UI, sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.container {
+  background:#101826;
+  padding:20px 30px;
+  border-radius:12px;
+  width:340px;
+  box-shadow:0 0 15px #0006;
+}
+h2 {text-align:center; margin-bottom:15px;}
+label {display:block; margin-top:8px; font-size:14px;}
+input {
+  width:100%; padding:6px; margin-top:4px;
+  border-radius:6px; border:1px solid #333; background:#1c2433; color:#fff;
+}
+button {
+  margin-top:16px; width:100%; padding:10px;
+  background:#007bff; border:none; border-radius:8px;
+  color:white; font-weight:600; cursor:pointer;
+}
+button:hover{background:#0096ff;}
+.result-box {
+  margin-top:15px; background:#0e1522; padding:10px; border-radius:8px;
+  font-size:14px; color:#9fe6b8;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Auto Big Chance & Missed Estimator</h2>
+  
+  <label>xG Home</label>
+  <input id="xgHome" type="number" step="0.1" placeholder="contoh: 2.3">
+  <label>SOT Home</label>
+  <input id="sotHome" type="number" step="0.1" placeholder="contoh: 6">
+  <label>Goals Home</label>
+  <input id="goalsHome" type="number" step="0.1" placeholder="contoh: 2">
+
+  <label style="margin-top:12px;">xG Away</label>
+  <input id="xgAway" type="number" step="0.1" placeholder="contoh: 1.8">
+  <label>SOT Away</label>
+  <input id="sotAway" type="number" step="0.1" placeholder="contoh: 4">
+  <label>Goals Away</label>
+  <input id="goalsAway" type="number" step="0.1" placeholder="contoh: 1">
+
+  <button onclick="autoBigEstimator()">Hitung Estimasi</button>
+
+  <div class="result-box" id="resultBox">Hasil estimasi akan muncul di sini...</div>
+</div>
+
+<script>
+function safe(v,d=0){const x=parseFloat(v);return isNaN(x)?d:x;}
+function autoBigEstimator(){
+  const xgH=safe(xgHome.value), sotH=safe(sotHome.value), goalsH=safe(goalsHome.value);
+  const xgA=safe(xgAway.value), sotA=safe(sotAway.value), goalsA=safe(goalsAway.value);
+
+  const bigH=(0.5*sotH+0.3*xgH).toFixed(1);
+  const missH=Math.max(0,bigH-goalsH).toFixed(1);
+  const bigA=(0.5*sotA+0.3*xgA).toFixed(1);
+  const missA=Math.max(0,bigA-goalsA).toFixed(1);
+
+  const res = `
+  <b>Home:</b> Big Chance ≈ ${bigH}, Missed ≈ ${missH}<br>
+  <b>Away:</b> Big Chance ≈ ${bigA}, Missed ≈ ${missA}`;
+  resultBox.innerHTML=res;
+}
+</script>
+</body>
+  </html>
