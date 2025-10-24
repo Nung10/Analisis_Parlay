@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Clean Sheet Ratio Estimator</title>
+<style>
+body {
+  background:#050b15;
+  color:#e6ecf5;
+  font-family:Segoe UI, sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+}
+.container {
+  background:#0e1728;
+  padding:25px 30px;
+  border-radius:12px;
+  box-shadow:0 0 15px #0008;
+  width:340px;
+}
+h2 {
+  text-align:center;
+  margin-bottom:15px;
+  color:#8fd4ff;
+}
+label {display:block; margin-top:10px; font-size:14px;}
+input {
+  width:100%;
+  padding:7px;
+  border-radius:6px;
+  border:1px solid #333;
+  background:#1a2433;
+  color:#fff;
+}
+button {
+  margin-top:15px;
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#007bff;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
+button:hover{background:#0091ff;}
+.result-box {
+  margin-top:15px;
+  background:#0b1322;
+  padding:10px;
+  border-radius:8px;
+  color:#a0ffb8;
+  font-size:15px;
+  text-align:center;
+}
+.copied {
+  color:#60ff7b;
+  font-size:13px;
+  margin-top:5px;
+  text-align:center;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Auto Clean Sheet Ratio</h2>
+
+  <label>Jumlah Clean Sheet</label>
+  <input type="number" id="csTotal" placeholder="contoh: 12">
+
+  <label>Total Pertandingan</label>
+  <input type="number" id="matchTotal" placeholder="contoh: 30">
+
+  <button onclick="calcCS()">Hitung & Salin</button>
+
+  <div class="result-box" id="resultBox">Masukkan data lalu klik tombol.</div>
+  <div class="copied" id="copyMsg"></div>
+</div>
+
+<script>
+function calcCS(){
+  const cs = parseFloat(document.getElementById('csTotal').value);
+  const mt = parseFloat(document.getElementById('matchTotal').value);
+  const out = document.getElementById('resultBox');
+  const msg = document.getElementById('copyMsg');
+
+  if(isNaN(cs) || isNaN(mt) || mt<=0){
+    out.innerHTML = "❌ Mohon isi angka yang valid.";
+    out.style.color="#ff8080";
+    msg.innerHTML = "";
+    return;
+  }
+
+  const ratio = (cs / mt).toFixed(3);
+  let level = "";
+  if(ratio >= 0.55) level = "🟢 Sangat Kuat";
+  else if(ratio >= 0.40) level = "🟡 Stabil";
+  else if(ratio >= 0.25) level = "🟠 Lemah";
+  else level = "🔴 Rentan";
+
+  out.innerHTML = `
+  Clean Sheet Ratio: <b>${ratio}</b><br>
+  Kategori: ${level}<br>
+  (Telah disalin otomatis)
+  `;
+  out.style.color="#a0ffb8";
+
+  navigator.clipboard.writeText(ratio)
+    .then(() => { msg.innerHTML = "📋 Rasio tersalin ke clipboard!"; })
+    .catch(() => { msg.innerHTML = "⚠️ Gagal menyalin otomatis."; });
+}
+</script>
+</body>
+</html>
