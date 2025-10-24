@@ -121,7 +121,40 @@
         <label>Errors → goal (season est) Away</label><input id="errAway" type="number" placeholder="7">
       </div>
     </div>
+!-- ✅ Clean Sheet Ratio Calculator (Home & Away) -->
+<div class="section" style="margin-top:10px;">
+  <h4>Clean Sheet Ratio Calculator</h4>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
 
+    <!-- Home -->
+    <div>
+      <label>Clean Sheets Home:</label>
+      <input type="number" id="cleanSheetHome" min="0" step="1" placeholder="e.g. 8">
+    </div>
+    <div>
+      <label>Total Matches Home:</label>
+      <input type="number" id="matchesHome" min="1" step="1" placeholder="e.g. 25">
+    </div>
+
+    <!-- Away -->
+    <div>
+      <label>Clean Sheets Away:</label>
+      <input type="number" id="cleanSheetAway" min="0" step="1" placeholder="e.g. 6">
+    </div>
+    <div>
+      <label>Total Matches Away:</label>
+      <input type="number" id="matchesAway" min="1" step="1" placeholder="e.g. 25">
+    </div>
+
+    <div>
+      <button id="calcCSRBoth" class="btn-ghost small">Calculate CSR (Both)</button>
+      <button id="resetCSR" class="btn-ghost small" style="margin-left:6px;">Reset</button>
+    </div>
+  </div>
+
+  <div id="csrResultHome" style="margin-top:6px;color:#7CFC00;font-weight:bold;"></div>
+  <div id="csrResultAway" style="margin-top:2px;color:#7CFC00;font-weight:bold;"></div>
+        </div>
     <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
       <label style="width:110px">Tackles Home</label><input id="tackleHome" type="number" value="18">
       <label style="width:140px">Interceptions Home</label><input id="interHome" type="number" value="9">
@@ -301,6 +334,33 @@ el('btnAutoTempo').addEventListener('click', ()=>{
   el('tempoHome').value = tempoH.toFixed(2); el('tempoAway').value = tempoA.toFixed(2);
 });
 
+// --- Clean Sheet Ratio Calculator ---
+document.getElementById("btnCalcCSR").addEventListener("click", function() {
+  const csH = parseFloat(document.getElementById("csCountHome").value) || 0;
+  const csT_H = parseFloat(document.getElementById("csTotalHome").value) || 0;
+  const csA = parseFloat(document.getElementById("csCountAway").value) || 0;
+  const csT_A = parseFloat(document.getElementById("csTotalAway").value) || 0;
+
+  const rH = csT_H > 0 ? (csH / csT_H).toFixed(2) : 0;
+  const rA = csT_A > 0 ? (csA / csT_A).toFixed(2) : 0;
+
+  document.getElementById("csrResult").innerHTML =
+    `✅ Clean Sheet Ratio Home: <b>${rH}</b><br>✅ Clean Sheet Ratio Away: <b>${rA}</b>`;
+
+  const mainH = document.getElementById("csHome");
+  const mainA = document.getElementById("csAway");
+  if (mainH && mainA) {
+    mainH.value = rH;
+    mainA.value = rA;
+  }
+});
+
+document.getElementById("btnResetCSR").addEventListener("click", function() {
+  ["csCountHome","csTotalHome","csCountAway","csTotalAway"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("csrResult").innerHTML = "";
+});
 /* ---------- Travel (Haversine) ---------- */
 function toRad(x){return x*Math.PI/180}
 function computeTravelKm(lat1,lon1,lat2,lon2){
