@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ODDS MASTER vA+++++ MAX — Light (Single File)</title>
+<style>
+  :root{
+    --bg:#ffffff; --card:#fbfdff; --text:#051124; --muted:#6b7280;
+    --accent:#0b69ff; --good:#059669; --warn:#b45309; --danger:#b91c1c;
+    --border:#e6eef6;
+  }
+  body{margin:0;padding:20px;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--text)}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:1.15rem}
+  .muted{color:var(--muted);font-size:0.92rem;margin-bottom:12px}
+  .card{background:var(--card);padding:14px;border-radius:10px;border:1px solid var(--border);box-shadow:0 8px 30px rgba(2,6,23,0.04)}
+  label{display:block;color:var(--muted);font-size:0.9rem;margin-top:8px}
+  input,select,button,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:white;color:var(--text);font-size:0.95rem}
+  .row{display:flex;gap:8px}
+  .btn{background:var(--accent);color:white;padding:9px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:8px;cursor:pointer}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:0.92rem;background:white}
+  th,td{padding:8px;border:1px solid var(--border);text-align:left}
+  th{background:#f1f5f9;color:var(--muted);font-weight:700}
+  .num{text-align:right}
+  .small{font-size:0.85rem;color:var(--muted)}
+  .tag{display:inline-block;padding:6px 10px;border-radius:8px;background:#eef2ff;color:var(--accent);font-weight:700}
+  .goodbg{background:#ecfdf5} .warnbg{background:#fffbeb} .badbg{background:#fff1f2}
+  .summary{margin-top:12px;padding:12px;border-radius:8px;border:1px solid var(--border);background:#ffffff}
+  .badge{display:inline-block;padding:6px 8px;border-radius:6px;background:#f1f5f9;color:var(--muted);font-weight:600;margin-right:6px}
+  pre{white-space:pre-wrap;font-size:0.92rem}
+  footer{margin-top:12px;font-size:0.82rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ODDS MASTER vA+++++ MAX <span class="small">— Light Mode (single file)</span></h1>
+  <div class="muted">Neutral analytics: HDP · O/U · 1X2 — auto rating dari gol & kebobolan — descriptive recommendation + full CSV export.</div>
+
+  <div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><span class="tag">Analyst</span> <strong id="titleMatch">Home vs Away</strong></div>
+      <div class="small" id="ts">—</div>
+    </div>
+
+    <!-- Inputs -->
+    <div style="margin-top:12px">
+      <div class="row">
+        <div style="flex:1">
+          <label>Home Team</label>
+          <input id="home" value="Home Team">
+        </div>
+        <div style="width:130px">
+          <label>HDP Line</label>
+          <input id="hdpLine" value="-0.5">
+        </div>
+        <div style="width:130px">
+          <label>O/U Line</label>
+          <input id="ouLine" value="2.5">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1">
+          <label>Away Team</label>
+          <input id="away" value="Away Team">
+        </div>
+        <div style="width:130px">
+          <label>Market depth (opt)</label>
+          <input id="marketDepth" placeholder="2000">
+        </div>
+        <div style="width:130px">
+          <label>Bankroll</label>
+          <input id="bankroll" value="1000">
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="row">
+        <div style="flex:1"><label>Odds HDP — Home</label><input id="oddsHomeHDP" value="1.90"></div>
+        <div style="flex:1"><label>Odds HDP — Away</label><input id="oddsAwayHDP" value="1.95"></div>
+        <div style="flex:1"><label>Odds Over</label><input id="oddsOver" value="1.85"></div>
+        <div style="flex:1"><label>Odds Under</label><input id="oddsUnder" value="2.05"></div>
+      </div>
+
+      <div style="margin-top:8px">
+        <label>Odds 1X2 — Home</label><input id="odds1" value="2.00">
+        <div class="row" style="margin-top:8px">
+          <div style="flex:1"><label>Odds 1X2 — Draw</label><input id="oddsX" value="3.40"></div>
+          <div style="width:200px"><label>Odds 1X2 — Away</label><input id="odds2" value="3.60"></div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)">
+
+      <div class="row">
+        <div style="flex:1"><label>Avg Goals Home FOR (last 5-10)</label><input id="avgGoalsHomeFor" value="1.9"></div>
+        <div style="width:150px"><label>Avg Conceded Home</label><input id="avgConcededHome" value="1.0"></div>
+        <div style="width:120px"><label>Home matches (N)</label><input id="homeMatches" placeholder="5"></div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1"><label>Avg Goals Away FOR (last 5-10)</label><input id="avgGoalsAwayFor" value="1.1"></div>
+        <div style="width:150px"><label>Avg Conceded Away</label><input id="avgConcededAway" value="1.6"></div>
+        <div style="width:120px"><label>Away matches (N)</label><input id="awayMatches" placeholder="5"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <button id="btnAnalyze" class="btn">Run Analysis</button>
+        <button id="btnSave" class="btn-ghost">💾 Save Full CSV</button>
+        <button id="btnClear" class="btn-ghost">Clear</button>
+        <div style="flex:1"></div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div id="recTitle" style="font-weight:700">— run analysis —</div>
+            <div id="recReason" class="small" style="margin-top:8px;color:var(--muted)">Descriptive recommendation akan tampil di sini (Bahasa Indonesia + istilah Inggris untuk clarity).</div>
+          </div>
+          <div style="text-align:right;min-width:220px">
+            <div class="badge" id="ratingSummary">Ratings: —</div>
+            <div class="badge" id="recConfidence">Confidence: —</div>
+            <div class="badge" id="trapBadge">Trap: —</div>
+            <div style="margin-top:6px" class="small" id="explainShort">Explain: —</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results table -->
+      <div style="margin-top:12px">
+        <h3 style="margin:8px 0 6px">All Markets — Results</h3>
+        <table id="resultTable">
+          <thead>
+            <tr><th>Market</th><th>Outcome</th><th class="num">Odds</th><th class="num">Implied%</th><th class="num">Fair% (adj)</th><th class="num">ValueScore</th><th class="num">Kelly%</th><th>Off/Def</th><th>Note</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Predictions -->
+      <div style="margin-top:12px">
+        <h3 style="margin:8px 0 6px">Prediksi Skor & Probabilitas</h3>
+        <div id="predictionPanel" class="small">— run analysis —</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Tip: gunakan field Market depth jika ingin peringatan liquidity. CSV menyimpan seluruh input+output. Untuk batch export minta fitur buffering.
+  </footer>
+</div>
+
+<script>
+/* ------------------ UTIL ------------------ */
+function toNum(v){ const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?0:n; }
+function now(){ return new Date().toLocaleString(); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function normalize(arr){ const s = arr.reduce((a,b)=>a+b,0); if(s<=0) return arr.map(()=>0); return arr.map(x=>x/s); }
+function impliedProb(odds){ const o=toNum(odds); return o>0?1/o:0; }
+function marketTwo(a,b){ const pA=impliedProb(a), pB=impliedProb(b), sum=pA+pB; const nf = normalize([pA,pB]); return {pA,pB,sum,overroundPct:(sum-1)*100,fA:nf[0],fB:nf[1]};}
+function marketThree(a,x,b){ const p1=impliedProb(a), pX=impliedProb(x), p2=impliedProb(b); const sum=p1+pX+p2; const nf = normalize([p1,pX,p2]); return {p1,pX,p2,sum,overroundPct:(sum-1)*100,f1:nf[0],fX:nf[1],f2:nf[2]};}
+function factorial(n){ if(n<=1) return 1; let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function poisson(k,lam){ return Math.exp(-lam) * Math.pow(lam,k) / factorial(k); }
+function kellyFraction(odds,fairProb){ if(!odds || odds<=1) return 0; const b = odds-1; const q = fairProb; const f = (q*b - (1-q))/b; if(!isFinite(f) || f<=0) return 0; return Math.min(0.2,f); }
+
+/* ------------------ RATING (AUTO, NEUTRAL) ------------------
+   final MAX rule:
+   raw = (avgFor * 60) - (avgConceded * 40) + 50
+   then clamp between 40..95 (keputusan konservatif supaya tidak ekstrem)
+   and normalize to 0..100 scale for downstream math
+*/
+function computeAutoRating(avgFor, avgConceded){
+  const raw = (toNum(avgFor) * 60) - (toNum(avgConceded) * 40) + 50;
+  const clipped = clamp(Math.round(raw), 40, 95);
+  const norm = Math.round(((clipped - 40) / (95 - 40)) * 100);
+  return {raw:clipped, norm};
+}
+
+/* simple Off/Def tag */
+function offDefLabel(avgFor, avgConceded){
+  const d = toNum(avgFor) - toNum(avgConceded);
+  if(d >= 0.6) return 'Strong Attack / Solid Def';
+  if(d >= 0.2) return 'Good Attack';
+  if(d >= -0.2) return 'Balanced';
+  if(d >= -0.6) return 'Weak Def';
+  return 'Weak Attack & Def';
+}
+
+/* ------------------ EXPECTED GOALS (NETRAL & STABLE) ------------------
+   Use rating difference + recent form & opponent conceded:
+   expectedHome = avgHomeFor*0.55 + avgAwayConceded*0.35 + (ratingDiff*0.1)
+   expectedAway = avgAwayFor*0.55 + avgHomeConceded*0.35 - (ratingDiff*0.1)
+   Then small home adv + clamp.
+*/
+function computeExpectedGoals(homeRating, awayRating, avgHfor, avgHcon, avgAfor, avgAcon){
+  const rd = (toNum(homeRating) - toNum(awayRating)) / 100; // -1..1
+  const h = toNum(avgHfor) * 0.55 + toNum(avgAcon) * 0.35 + (rd * 0.1);
+  const a = toNum(avgAfor) * 0.55 + toNum(avgHcon) * 0.35 - (rd * 0.1);
+  const homeExp = clamp(h + 0.12, 0.05, 6);
+  const awayExp = clamp(a, 0.05, 6);
+  const total = homeExp + awayExp;
+  return {homeExp, awayExp, total};
+}
+
+/* ------------------ VALUE & FAIR CALC ------------------ */
+function valueTwo(oddsA, oddsB, adjA=0, adjB=0){
+  const m = marketTwo(oddsA, oddsB);
+  let rA = m.fA + adjA, rB = m.fB + adjB;
+  rA = Math.max(1e-8, rA); rB = Math.max(1e-8, rB);
+  const [afA, afB] = normalize([rA, rB]);
+  const fairA = 1/afA, fairB = 1/afB;
+  const valA = (toNum(oddsA) / fairA) - 1, valB = (toNum(oddsB) / fairB) - 1;
+  return {m, afA, afB, fairA, fairB, scoreA: clamp(Math.round(valA*300)), scoreB: clamp(Math.round(valB*300))};
+}
+function valueThree(o1,oX,o2,adj1=0,adjX=0,adj2=0){
+  const m = marketThree(o1,oX,o2);
+  let r1=m.f1+adj1, rX=m.fX+adjX, r2=m.f2+adj2;
+  r1=Math.max(1e-8,r1); rX=Math.max(1e-8,rX); r2=Math.max(1e-8,r2);
+  const [af1,afX,af2]=normalize([r1,rX,r2]);
+  const fair1=1/af1,fairX=1/afX,fair2=1/af2;
+  return {m,af1,afX,af2,fair1,fairX,fair2,score1:clamp(Math.round(((toNum(o1)/fair1)-1)*220)),scoreX:clamp(Math.round(((toNum(oX)/fairX)-1)*220)),score2:clamp(Math.round(((toNum(o2)/fair2)-1)*220))};
+}
+
+/* ------------------ POISSON PREDICTION (UP TO 6-6) ------------------ */
+function predictPoisson(entry, homeRating, awayRating){
+  const exp = computeExpectedGoals(homeRating, awayRating, entry.avgGoalsHomeFor, entry.avgConcededHome, entry.avgGoalsAwayFor, entry.avgConcededAway);
+  const lambdaH = exp.homeExp;
+  const lambdaA = exp.awayExp;
+  const maxG = 6;
+  const list = []; let pHome=0,pDraw=0,pAway=0;
+  for(let i=0;i<=maxG;i++){
+    for(let j=0;j<=maxG;j++){
+      const p = poisson(i,lambdaH) * poisson(j,lambdaA);
+      list.push({i,j,p});
+      if(i>j) pHome+=p; else if(i===j) pDraw+=p; else pAway+=p;
+    }
+  }
+  list.sort((a,b)=>b.p-a.p);
+  const top = list.slice(0,8).map(x=>`${x.i}-${x.j} (${(x.p*100).toFixed(2)}%)`);
+  return {lambdaH, lambdaA, pHome, pDraw, pAway, top, totalExpected: exp.total};
+}
+
+/* ------------------ TRAP DETECTION (NEUTRAL) ------------------ */
+function detectTraps(entry, values, pred, marketDepth){
+  const rules = [];
+  if(pred.totalExpected > entry.ouLine + 0.6 && values.vO.afB > values.vO.afA + 0.06) rules.push({rule:'Expected total >> line but market favors Under', score:16});
+  if(pred.totalExpected < entry.ouLine - 0.6 && values.vO.afA > values.vO.afB + 0.06) rules.push({rule:'Expected total << line but market favors Over', score:16});
+  const margins = [values.vH.m.overroundPct, values.vO.m.overroundPct, values.vT.m.overroundPct];
+  if(Math.max(...margins) - Math.min(...margins) > 4) rules.push({rule:'Large market margin variance', score:12});
+  if(values.vT.af1 > 0.62 && values.vH.afA < 0.52) rules.push({rule:'1X2 strong HOME but HDP not', score:14});
+  if(values.vT.af2 > 0.62 && values.vH.afB < 0.52) rules.push({rule:'1X2 strong AWAY but HDP not', score:14});
+  if((entry.avgConcededHome + entry.avgConcededAway)/2 > 1.6 && entry.ouLine <= 2.25) rules.push({rule:'High conceded but low O/U line', score:12});
+  if(marketDepth && toNum(marketDepth) < 1000) rules.push({rule:'Low market depth', score:10});
+  const agg = rules.reduce((s,x)=>s+x.score,0);
+  return {rules, aggScore: agg};
+}
+
+/* ------------------ FINAL DECISION (NEUTRAL, MULTI-FACTOR) ------------------
+   Combine: value score (40%), model probability/poisson (30%), consistency & trap penalty (30%)
+*/
+function determineBest(values, entry, pred, trap, confidence){
+  const candidates = [];
+  if(values.vH.scoreA >= 55) candidates.push({market:'HDP',side:'HOME',score:values.vH.scoreA,odds:entry.oddsHomeHDP,trueProb:values.vH.afA,label:'Home HDP'});
+  if(values.vH.scoreB >= 55) candidates.push({market:'HDP',side:'AWAY',score:values.vH.scoreB,odds:entry.oddsAwayHDP,trueProb:values.vH.afB,label:'Away HDP'});
+  if(values.vO.scoreA >= 48) candidates.push({market:'O/U',side:'OVER',score:values.vO.scoreA,odds:entry.oddsOver,trueProb:values.vO.afA,label:'Over'});
+  if(values.vO.scoreB >= 48) candidates.push({market:'O/U',side:'UNDER',score:values.vO.scoreB,odds:entry.oddsUnder,trueProb:values.vO.afB,label:'Under'});
+  const bestT = Math.max(values.vT.score1, values.vT.scoreX, values.vT.score2);
+  if(bestT >= 55){
+    if(values.vT.score1===bestT) candidates.push({market:'1X2',side:'HOME',score:values.vT.score1,odds:entry.odds1,trueProb:values.vT.af1,label:'1X2 Home'});
+    else if(values.vT.scoreX===bestT) candidates.push({market:'1X2',side:'DRAW',score:values.vT.scoreX,odds:entry.oddsX,trueProb:values.vT.afX,label:'1X2 Draw'});
+    else candidates.push({market:'1X2',side:'AWAY',score:values.vT.score2,odds:entry.odds2,trueProb:values.vT.af2,label:'1X2 Away'});
+  }
+
+  // compute final composite score per candidate
+  const scored = candidates.map(c => {
+    const valueFactor = c.score/100; // 0..1
+    const modelFactor = (c.trueProb || 0); // normalized (0..1)
+    const trapPenalty = clamp(trap.aggScore / 100, 0, 1); // 0..1
+    const composite = (valueFactor * 0.4) + (modelFactor * 0.3) + ( (1 - trapPenalty) * 0.3 );
+    return Object.assign({}, c, {composite});
+  });
+
+  // filter safe by trap & confidence
+  const safe = scored.filter(c => trap.aggScore < 75 && confidence >= 28);
+  const chosen = (safe.length ? safe : scored).sort((a,b) => b.composite - a.composite)[0] || null;
+  return chosen;
+}
+
+/* ------------------ RENDER & CSV ------------------ */
+function renderAll(result){
+  document.getElementById('titleMatch').innerText = `${result.entry.home} vs ${result.entry.away}`;
+  document.getElementById('ts').innerText = `Analisis @ ${result.ts}`;
+  document.getElementById('ratingSummary').innerText = `Home ${result.ratingHomeDisplay} · Away ${result.ratingAwayDisplay}`;
+  document.getElementById('recConfidence').innerText = `Confidence: ${result.confidence}%`;
+  document.getElementById('trapBadge').innerText = `Trap: ${result.trap.aggScore}`;
+
+  // table
+  const tbody = document.querySelector('#resultTable tbody'); tbody.innerHTML = '';
+  function addRow(mkt, outcome, odds, implied, adjfair, valScore, kel, offdef, note, sev){
+    const tr = document.createElement('tr');
+    if(sev==='good') tr.className='goodbg'; else if(sev==='warn') tr.className='warnbg'; else if(sev==='bad') tr.className='badbg';
+    tr.innerHTML = `<td>${mkt}</td><td>${outcome}</td><td class="num">${Number(odds).toFixed(2)}</td><td class="num">${(implied*100).toFixed(2)}%</td><td class="num">${(adjfair*100).toFixed(2)}%</td><td class="num">${valScore}</td><td class="num">${(kel*100).toFixed(2)}%</td><td>${offdef||''}</td><td>${note||''}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  const vH = result.values.vH, vO = result.values.vO, vT = result.values.vT;
+  const offDefShort = `${result.offDefHome} / ${result.offDefAway}`;
+  addRow('HDP','Home', result.entry.oddsHomeHDP, vH.m.pA, vH.afA, vH.scoreA, kellyFraction(result.entry.oddsHomeHDP, vH.afA), offDefShort, vH.scoreA>=60?'Value':'', vH.scoreA>=60?'good':'');
+  addRow('HDP','Away', result.entry.oddsAwayHDP, vH.m.pB, vH.afB, vH.scoreB, kellyFraction(result.entry.oddsAwayHDP, vH.afB), offDefShort, vH.scoreB>=60?'Value':'', vH.scoreB>=60?'good':'');
+  addRow('O/U','Over', result.entry.oddsOver, vO.m.pA, vO.afA, vO.scoreA, kellyFraction(result.entry.oddsOver, vO.afA), '', vO.scoreA>=50?'Value':'', vO.scoreA>=50?'good':'');
+  addRow('O/U','Under', result.entry.oddsUnder, vO.m.pB, vO.afB, vO.scoreB, kellyFraction(result.entry.oddsUnder, vO.afB), '', vO.scoreB>=50?'Value':'', vO.scoreB>=50?'good':'');
+  addRow('1X2','Home', result.entry.odds1, vT.m.p1, vT.af1, vT.score1, kellyFraction(result.entry.odds1, vT.af1), offDefShort, vT.score1>=60?'Value':'', vT.score1>=60?'good':'');
+  addRow('1X2','Draw', result.entry.oddsX, vT.m.pX, vT.afX, vT.scoreX, kellyFraction(result.entry.oddsX, vT.afX), '', vT.scoreX>=60?'Value':'', vT.scoreX>=60?'good':'');
+  addRow('1X2','Away', result.entry.odds2, vT.m.p2, vT.af2, vT.score2, kellyFraction(result.entry.odds2, vT.af2), offDefShort, vT.score2>=60?'Value':'', vT.score2>=60?'good':'');
+
+  // predictions
+  const p = result.pred;
+  document.getElementById('predictionPanel').innerHTML = `<div>ExpGoals Home: ${p.lambdaH.toFixed(2)}, Away: ${p.lambdaA.toFixed(2)} · TotalExp ${(p.totalExpected).toFixed(2)}</div><div style="margin-top:6px">P(Home) ${(p.pHome*100).toFixed(2)}% · P(Draw) ${(p.pDraw*100).toFixed(2)}% · P(Away) ${(p.pAway*100).toFixed(2)}%</div><div style="margin-top:8px"><strong>Top lines:</strong> ${p.top.join(', ')}</div>`;
+
+  // descriptive rec
+  const best = result.best;
+  if(best){
+    document.getElementById('recTitle').innerText = `Prediksi Akhir: ${best.label} @ ${best.odds}`;
+    const reason = [];
+    reason.push(`Alasan utama: value score ${best.score} dan composite ranking (value & model & consistency).`);
+    reason.push(`Rating auto: Home ${result.ratingHomeDisplay} · Away ${result.ratingAwayDisplay}.`);
+    reason.push(`Expected total ${(p.totalExpected).toFixed(2)}; model P(Home) ${(p.pHome*100).toFixed(2)}% / Draw ${(p.pDraw*100).toFixed(2)}% / Away ${(p.pAway*100).toFixed(2)}%.`);
+    if(result.trap.rules && result.trap.rules.length) reason.push(`Warning: ${result.trap.rules.length} potential traps — ${result.trap.rules.map(r=>r.rule).join('; ')}`);
+    reason.push(`Rekomendasi: ${best.label}. Kelly guidance ${(kellyFraction(best.odds,best.trueProb)*100).toFixed(2)}% (cap 20%).`);
+    document.getElementById('recReason').innerText = reason.join(' ');
+    document.getElementById('explainShort').innerText = `Composite: ${(best.composite*100).toFixed(1)} · ValueScore: ${best.score}`;
+  } else {
+    document.getElementById('recTitle').innerText = 'Tidak ada rekomendasi kuat';
+    document.getElementById('recReason').innerText = `Trap score ${result.trap.aggScore}. Confidence ${result.confidence}%. Pertimbangkan skip.`;
+    document.getElementById('explainShort').innerText = 'No strong candidate';
+  }
+
+  window.lastSnapshot = result;
+}
+
+/* ------------------ MAIN ANALYZE ------------------ */
+
+function analyzeAll(){
+
+  const entry = {
+
+    ts: now(),
+
+    home: document.getElementById('home').value.trim() || 'Home',
+
+    away: document.getElementById('away').value.trim() || 'Away',
+
+    hdpLine: toNum(document.getElementById('hdpLine').value),
+
+    ouLine: toNum(document.getElementById('ouLine').value),
+
+    oddsHomeHDP: toNum(document.getElementById('oddsHomeHDP').value),
+
+    oddsAwayHDP: toNum(document.getElementById('oddsAwayHDP').value),
+
+    oddsOver: toNum(document.getElementById('oddsOver').value),
+
+    oddsUnder: toNum(document.getElementById('oddsUnder').value),
+
+    odds1: toNum(document.getElementById('odds1').value),
+
+    oddsX: toNum(document.getElementById('oddsX').value),
+
+    odds2: toNum(document.getElementById('odds2').value),
+
+    avgGoalsHomeFor: toNum(document.getElementById('avgGoalsHomeFor').value),
+
+    avgConcededHome: toNum(document.getElementById('avgConcededHome').value),
+
+    avgGoalsAwayFor: toNum(document.getElementById('avgGoalsAwayFor').value),
+
+    avgConcededAway: toNum(document.getElementById('avgConcededAway').value),
+
+    marketDepth: toNum(document.getElementById('marketDepth').value) || 2000,
+
+    bankroll: Math.max(1, toNum(document.getElementById('bankroll').value) || 1000)
+
+  };
+
+
+
+  // validate odds
+
+  const required = [entry.oddsHomeHDP,entry.oddsAwayHDP,entry.oddsOver,entry.oddsUnder,entry.odds1,entry.oddsX,entry.odds2];
+
+  if(required.some(x=>!x||x<=1.01)){ alert('Mohon isi semua odds dengan nilai valid (>1.01).'); return; }
+
+
+
+  // auto rating (MAX conservative clamps)
+
+  const arHome = computeAutoRating(entry.avgGoalsHomeFor, entry.avgConcededHome);
+
+  const arAway = computeAutoRating(entry.avgGoalsAwayFor, entry.avgConcededAway);
+
+  const ratingHome = arHome.norm;
+
+  const ratingAway = arAway.norm;
+
+  const ratingHomeDisplay = `${arHome.raw} → ${ratingHome}`;
+
+  const ratingAwayDisplay = `${arAway.raw} → ${ratingAway}`;
+
+
+
+  // off/def labels
+
+  const offDefHome = offDefLabel(entry.avgGoalsHomeFor, entry.avgConcededHome);
+
+  const offDefAway = offDefLabel(entry.avgGoalsAwayFor, entry.avgConcededAway);
+
+
+
+  // adj nudges: rating diff -> HDP & 1X2; total goals -> O/U
+
+  const ratingDiff = (ratingHome - ratingAway) / 100; // -1..1
+
+  const adjH = Math.tanh(ratingDiff * 1.6) * 0.07; // conservative small nudge
+
+  const rExp = computeExpectedGoals(ratingHome, ratingAway, entry.avgGoalsHomeFor, entry.avgConcededHome, entry.avgGoalsAwayFor, entry.avgConcededAway);
+
+  const adjO = Math.tanh((rExp.total - entry.ouLine) * 0.55) * 0.06;
+
+
+
+  // values (neutral)
+
+  const vH = valueTwo(entry.oddsHomeHDP, entry.oddsAwayHDP, adjH*0.9, -adjH*0.9); vH.m = marketTwo(entry.oddsHomeHDP, entry.oddsAwayHDP);
+
+  const vO = valueTwo(entry.oddsOver, entry.oddsUnder, adjO, -adjO); vO.m = marketTwo(entry.oddsOver, entry.oddsUnder);
+
+  const vT = valueThree(entry.odds1, entry.oddsX, entry.odds2, adjH*0.8, 0, -adjH*0.8); vT.m = marketThree(entry.odds1, entry.oddsX, entry.odds2);
+
+
+
+  const values = {vH, vO, vT};
+
+
+
+  // predictions
+
+  const pred = predictPoisson(entry, ratingHome, ratingAway);
+
+
+
+  // trap detection
+
+  const trap = detectTraps(entry, values, pred, entry.marketDepth);
+
+
+
+  // confidence: based on strongest value & market consistency
+
+  const strongest = Math.max(vH.scoreA, vH.scoreB, vO.scoreA, vO.scoreB, vT.score1, vT.scoreX, vT.score2);
+
+  let confidence = clamp(Math.round(strongest*0.45 + 35 - trap.aggScore*0.2));
+
+  if(confidence < 5) confidence = 5;
+
+
+
+  // best bet composite
+
+  const best = determineBest(values, entry, pred, trap, confidence);
+
+  if(best){
+
+    if(best.market==='HDP') best.trueProb = best.side==='HOME' ? values.vH.afA : values.vH.afB;
+
+    if(best.market==='O/U') best.trueProb = best.side==='OVER' ? values.vO.afA : values.vO.afB;
+
+    if(best.market==='1X2') best.trueProb = best.side==='HOME' ? values.vT.af1 : (best.side==='DRAW'? values.vT.afX : values.vT.af2);
+
+  }
+
+
+
+  // prepare result
+
+  const result = {
+
+    entry, values, pred, trap, best, confidence, ts: now(),
+
+    ratingHomeDisplay, ratingAwayDisplay, ratingHome, ratingAway, offDefHome, offDefAway
+
+  };
+
+
+
+  renderAll(result);
+
+  window.lastSnapshot = result;
+
+}
+
+
+
+/* ------------------ SAVE CSV (FULL) ------------------ */
+
+function saveCSV(){
+
+  const s = window.lastSnapshot;
+
+  if(!s){ alert('Jalankan analisis dulu.'); return; }
+
+  const header = [
+
+    'ts','home','away',
+
+    'ratingHome_raw','ratingHome_norm','ratingAway_raw','ratingAway_norm',
+
+    'avgGoalsHomeFor','avgConcededHome','avgGoalsAwayFor','avgConcededAway',
+
+    'hdpLine','ouLine','oddsHomeHDP','oddsAwayHDP','oddsOver','oddsUnder','odds1','oddsX','odds2',
+
+    'marketDepth','bankroll',
+
+    'vH_impliedHome%','vH_impliedAway%','vH_fairHome%','vH_fairAway%','vH_scoreHome','vH_scoreAway',
+
+    'vO_impliedOver%','vO_impliedUnder%','vO_fairOver%','vO_fairUnder%','vO_scoreOver','vO_scoreUnder',
+
+    'vT_implied1%','vT_impliedX%','vT_implied2%','vT_fair1%','vT_fairX%','vT_fair2%','vT_score1','vT_scoreX','vT_score2',
+
+    'pred_lambdaH','pred_lambdaA','pred_totalExpected','pred_pHome%','pred_pDraw%','pred_pAway%','pred_topScorelines',
+
+    'trapScore','trapRules',
+
+    'best_market','best_side','best_odds','best_trueProb','best_score',
+
+    'confidence'
+
+  ];
+
+
+
+  const best = s.best || {};
+
+  const predTop = s.pred.top.join(' | ');
+
+  const trapRules = s.trap.rules ? s.trap.rules.map(r=>r.rule).join(' | ') : '';
+
+
+
+  const row = [
+
+    `"${s.ts}"`,
+
+    `"${s.entry.home.replace(/"/g,'""')}"`,
+
+    `"${s.entry.away.replace(/"/g,'""')}"`,
+
+    s.ratingHome || '',
+
+    `"${s.ratingHomeDisplay}"`,
+
+    s.ratingAway || '',
+
+    `"${s.ratingAwayDisplay}"`,
+
+    s.entry.avgGoalsHomeFor,
+
+    s.entry.avgConcededHome,
+
+    s.entry.avgGoalsAwayFor,
+
+    s.entry.avgConcededAway,
+
+    s.entry.hdpLine,
+
+    s.entry.ouLine,
+
+    s.entry.oddsHomeHDP,
+
+    s.entry.oddsAwayHDP,
+
+    s.entry.oddsOver,
+
+    s.entry.oddsUnder,
+
+    s.entry.odds1,
+
+    s.entry.oddsX,
+
+    s.entry.odds2,
+
+    s.entry.marketDepth,
+
+    s.entry.bankroll,
+
+    (s.values.vH.m.pA*100).toFixed(3),
+
+    (s.values.vH.m.pB*100).toFixed(3),
+
+    (s.values.vH.afA*100).toFixed(3),
+
+    (s.values.vH.afB*100).toFixed(3),
+
+    s.values.vH.scoreA,
+
+    s.values.vH.scoreB,
+
+    (s.values.vO.m.pA*100).toFixed(3),
+
+    (s.values.vO.m.pB*100).toFixed(3),
+
+    (s.values.vO.afA*100).toFixed(3),
+
+    (s.values.vO.afB*100).toFixed(3),
+
+    s.values.vO.scoreA,
+
+    s.values.vO.scoreB,
+
+    (s.values.vT.m.p1*100).toFixed(3),
+
+    (s.values.vT.m.pX*100).toFixed(3),
+
+    (s.values.vT.m.p2*100).toFixed(3),
+
+    (s.values.vT.af1*100).toFixed(3),
+
+    (s.values.vT.afX*100).toFixed(3),
+
+    (s.values.vT.af2*100).toFixed(3),
+
+    s.values.vT.score1,
+
+    s.values.vT.scoreX,
+
+    s.values.vT.score2,
+
+    s.pred.lambdaH.toFixed(3),
+
+    s.pred.lambdaA.toFixed(3),
+
+    s.pred.totalExpected.toFixed(3),
+
+    (s.pred.pHome*100).toFixed(3),
+
+    (s.pred.pDraw*100).toFixed(3),
+
+    (s.pred.pAway*100).toFixed(3),
+
+    `"${predTop.replace(/"/g,'""')}"`,
+
+    s.trap.aggScore,
+
+    `"${trapRules.replace(/"/g,'""')}"`,
+
+    best.market || '',
+
+    best.side || '',
+
+    best.odds || '',
+
+    best.trueProb ? best.trueProb.toFixed(4) : '',
+
+    best.score || '',
+
+    s.confidence || ''
+
+  ].join(',');
+
+
+
+  const csv = header.join(',') + '\n' + row;
+
+  const blob = new Blob([csv], {type:'text/csv'});
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a'); a.href = url; a.download = `odds_master_vA_MAX_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+
+}
+
+
+
+/* ------------------ EVENTS ------------------ */
+
+document.getElementById('btnAnalyze').addEventListener('click', analyzeAll);
+
+document.getElementById('btnSave').addEventListener('click', saveCSV);
+
+document.getElementById('btnClear').addEventListener('click', ()=>{
+
+  ['home','away','hdpLine','ouLine','oddsHomeHDP','oddsAwayHDP','oddsOver','oddsUnder','odds1','oddsX','odds2','avgGoalsHomeFor','avgConcededHome','avgGoalsAwayFor','avgConcededAway','marketDepth','bankroll','homeMatches','awayMatches'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value='';});
+
+  document.querySelector('#resultTable tbody').innerHTML=''; document.getElementById('predictionPanel').innerText='— run analysis —'; document.getElementById('recTitle').innerText='— run analysis —'; document.getElementById('recReason').innerText='Descriptive recommendation akan tampil di sini.'; document.getElementById('ratingSummary').innerText='Ratings: —'; document.getElementById('recConfidence').innerText='Confidence: —'; document.getElementById('trapBadge').innerText='Trap: —'; document.getElementById('explainShort').innerText='Explain: —'; window.lastSnapshot=null;
+
+});
+
+
+
+/* ------------------ INIT ------------------ */
+
+analyzeAll();
+
+</script>
+
+</body>
+
+</html>
