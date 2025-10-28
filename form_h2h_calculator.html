@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hitung Form & H2H Index</title>
+<style>
+body {
+  background:#0a0f18; color:#e4e7ec; font-family:'Segoe UI',sans-serif;
+  margin:40px auto; max-width:600px; padding:20px;
+  border-radius:10px; box-shadow:0 0 10px #000;
+}
+h2 { text-align:center; color:#00b4d8; }
+section { background:#111a27; padding:15px; border-radius:10px; margin-bottom:20px; }
+input { width:100%; padding:8px; margin:5px 0; background:#1c2636; color:#e4e7ec; border:none; border-radius:6px; }
+button {
+  background:#0077b6; border:none; color:white; padding:10px 14px;
+  border-radius:6px; cursor:pointer; width:100%; margin-top:10px;
+}
+button:hover { background:#0096c7; }
+.result {
+  background:#122030; padding:10px; border-radius:6px; color:#00ff9d; text-align:center; font-weight:bold;
+}
+</style>
+</head>
+<body>
+<h2>⚽ Kalkulator Form & H2H Index</h2>
+
+<section>
+<h3>Performa Tim Terbaru (5 pertandingan)</h3>
+<p>Masukkan hasil terakhir: W=Menang, D=Seri, L=Kalah</p>
+<label>Home:</label>
+<input type="text" id="formHome" placeholder="Contoh: W W D L W">
+<label>Away:</label>
+<input type="text" id="formAway" placeholder="Contoh: L D L W D">
+<button id="btnForm">Hitung Form Index</button>
+<div class="result" id="resForm"></div>
+</section>
+
+<section>
+<h3>Head to Head (maks 5 pertemuan terakhir)</h3>
+<p>Masukkan pemenang tiap laga: H=Home, A=Away, D=Draw</p>
+<input type="text" id="h2hInput" placeholder="Contoh: H A D H A">
+<button id="btnH2H">Hitung H2H Index</button>
+<div class="result" id="resH2H"></div>
+</section>
+
+<script>
+function calcForm(str){
+  const arr=str.trim().toUpperCase().split(/\s+/).filter(x=>x);
+  let score=0;
+  arr.forEach(v=>{
+    if(v==='W') score+=3;
+    else if(v==='D') score+=1;
+  });
+  return (arr.length>0)?(score/(arr.length*3)).toFixed(2):'0.00';
+}
+function calcH2H(str){
+  const arr=str.trim().toUpperCase().split(/\s+/).filter(x=>x);
+  const total=arr.length||1;
+  const home=arr.filter(x=>x==='H').length;
+  const away=arr.filter(x=>x==='A').length;
+  return {
+    home:(home/total).toFixed(2),
+    away:(away/total).toFixed(2)
+  };
+}
+document.getElementById('btnForm').onclick=()=>{
+  const h=calcForm(document.getElementById('formHome').value);
+  const a=calcForm(document.getElementById('formAway').value);
+  document.getElementById('resForm').textContent=`Form Index → Home: ${h} | Away: ${a}`;
+};
+document.getElementById('btnH2H').onclick=()=>{
+  const res=calcH2H(document.getElementById('h2hInput').value);
+  document.getElementById('resH2H').textContent=`H2H Index → Home: ${res.home} | Away: ${res.away}`;
+};
+</script>
+</body>
+</html>
