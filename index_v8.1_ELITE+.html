@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Analisis Odds — v8.1 ELITE+ (Checked & Demo3)</title>
+  <style>
+    :root{--bg:#0b1220;--card:#0f1724;--muted:#9aa8bf;--accent:#22c1a9;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    body{margin:0;background:linear-gradient(180deg,#061226 0%,#02121f 100%);color:#e6eef8;padding:18px}
+    .wrap{max-width:1200px;margin:0 auto}
+    h1{margin:0 0 12px;font-size:20px}
+    .row{display:flex;gap:14px}
+    .col{flex:1}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.6)}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.04);background:transparent;color:inherit}
+    button{background:linear-gradient(90deg,var(--accent),#16a085);color:#021; border:0;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    table{width:100%;border-collapse:collapse}
+    td,th{padding:6px;border-bottom:1px solid rgba(255,255,255,.03);text-align:left}
+    .small{font-size:13px;color:var(--muted)}
+    .status{display:flex;gap:12px;align-items:center}
+    .dot{width:14px;height:14px;border-radius:50%}
+    .dot-green{background:var(--green)}.dot-yellow{background:var(--yellow)}.dot-white{background:#cbd5e1}.dot-red{background:var(--red)}
+    .bar{height:12px;background:var(--glass);border-radius:999px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:999px}
+    .hist{display:flex;align-items:end;gap:2px;height:100px;margin-top:8px}
+    .hist .col{width:6px;background:rgba(255,255,255,0.06)}
+    .muted{color:var(--muted)}
+    .form-input{height:40px}
+    @media (max-width:980px){.row{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Analisis Odds — v8.1 ELITE+ (Checked)</h1>
+
+    <div class="row" style="margin-bottom:12px">
+      <div class="col card">
+        <strong>Kontrol & Preset</strong>
+        <div style="margin-top:8px" class="small">Mode: <strong>Stat-first</strong>. Dual recommendation, demo 3-mode, SofaScore parser, clean-sheet & momentum.</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px">
+          <div><label>Strict Neutral</label><select id="strictNeutral"><option value="1">On</option><option value="0">Off</option></select></div>
+          <div><label>Integrity Min</label><input id="integrityMin" type="number" value="85"></div>
+          <div><label>Threshold Kuat (%)</label><input id="threshStrong" type="number" value="12"></div>
+          <div><label>Simulasi (sims)</label><input id="sims" type="number" value="10000"></div>
+        </div>
+      </div>
+
+      <div class="col card">
+        <strong>Quick Demos</strong>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="demoStrong">🟢 Demo Kuat</button>
+          <button id="demoTrap">🔴 Demo Trap</button>
+          <button id="demoNeutral">⚪ Demo Netral</button>
+          <button id="reset">🔄 Reset</button>
+        </div>
+        <div style="margin-top:12px" class="small muted">Tip: Isi data nyata lalu tekan <strong>Analisis Sekarang</strong>. Demo akan mengisi input tanpa merusak data kecuali kamu tekan demo.</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:12px">
+      <div class="col card">
+        <strong>Input Statistik & Rating (Home)</strong>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+          <div><label>GF Home</label><input id="gfHome" type="number" value="1.4"></div>
+          <div><label>GA Home</label><input id="gaHome" type="number" value="1.1"></div>
+          <div><label>Team Base Rating Home</label><input id="ratingHome" type="number" value="1500"></div>
+          <div><label>Clean Sheet Ratio Home (0-1)</label><input id="csHome" type="number" step="0.01" value="0.40"></div>
+          <div><label>Recent Form Home (SofaScore string)</label><input id="formHomeStr" class="form-input" placeholder="WWDLW or W W D L W"></div>
+          <div><label>Momentum Home (auto)</label><input id="momHome" type="number" step="0.01" value="0.00"></div>
+          <div><label>Fatigue factor (0-1)</label><input id="fatigueHome" type="number" step="0.01" value="0.0"></div>
+        </div>
+      </div>
+
+      <div class="col card">
+        <strong>Input Statistik & Rating (Away)</strong>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+          <div><label>GF Away</label><input id="gfAway" type="number" value="1.1"></div>
+          <div><label>GA Away</label><input id="gaAway" type="number" value="1.3"></div>
+          <div><label>Team Base Rating Away</label><input id="ratingAway" type="number" value="1400"></div>
+          <div><label>Clean Sheet Ratio Away (0-1)</label><input id="csAway" type="number" step="0.01" value="0.30"></div>
+          <div><label>Recent Form Away (SofaScore string)</label><input id="formAwayStr" class="form-input" placeholder="LDLDW or L D L D W"></div>
+          <div><label>Momentum Away (auto)</label><input id="momAway" type="number" step="0.01" value="0.00"></div>
+          <div><label>Fatigue factor (0-1)</label><input id="fatigueAway" type="number" step="0.01" value="0.0"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:12px">
+      <div class="col card">
+        <strong>Market Inputs</strong>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px">
+          <div><label>HDP Line</label><input id="hdpLine" type="text" value="-0.5"></div>
+          <div><label>Odds Home</label><input id="oddsHome" type="number" step="0.01" value="1.90"></div>
+          <div><label>Odds Away</label><input id="oddsAway" type="number" step="0.01" value="1.95"></div>
+          <div><label>Bookmaker Overround % (optional)</label><input id="overround" type="number" step="0.1" value="0"></div>
+          <div><label>OU Line</label><input id="ouLine" type="text" value="2.5"></div>
+          <div><label>Odds Over</label><input id="oddsOver" type="number" step="0.01" value="1.80"></div>
+          <div><label>Odds Under</label><input id="oddsUnder" type="number" step="0.01" value="2.02"></div>
+          <div><label>Bankroll</label><input id="bankroll" type="number" value="100"></div>
+        </div>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end"><button id="run">Analisis Sekarang</button></div>
+      </div>
+
+      <div class="col card">
+        <strong>Result</strong>
+        <div id="summary" style="margin-bottom:8px"></div>
+        <div id="cards" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        <div id="histogram" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Penjelasan & Tips</strong>
+      <div class="small muted" style="margin-top:8px">v8.1 ELITE+: parser SofaScore (dua tim), momentum berbobot, Poisson Monte Carlo, market intelligence, dan 3-mode demo. Parser menerima 'WWDLW', 'W W D L W', 'wlddw', 'W,D,L,W,W'.</div>
+    </div>
+  </div>
+
+  <script>
+    // --------------------- Helpers ---------------------
+    function toNum(v){const n=parseFloat(v); return isNaN(n)?0:n}
+    function pct(v){return (v*100).toFixed(1)+'%'}
+    function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+    function safeDiv(a,b){ return b===0?0:(a/b); }
+
+    // Poisson sampling (Knuth)
+    function samplePoisson(lambda){ if(lambda<=0) return 0; let L=Math.exp(-lambda), k=0, p=1; do{k++; p*=Math.random();} while(p>L); return k-1; }
+    function simulate(lambdaH, lambdaA, sims){ let counts={}, hw=0,dw=0,aw=0; for(let i=0;i<sims;i++){ const h=samplePoisson(lambdaH); const a=samplePoisson(lambdaA); counts[h+a]=(counts[h+a]||0)+1; if(h>a) hw++; else if(h===a) dw++; else aw++; } return {counts,hw,dw,aw}; }
+
+    // Composite team strength 0..10
+    function computeCompositeRating(gf,ga,rating,cs,formScore,momentum){ const perf = clamp((gf - ga + 2)/4,0,1); const power = clamp((rating - 1200)/800,0,1); const def = clamp(cs,0,1); const m = clamp((formScore*0.6 + momentum*0.4),0,1); const composite = (perf*0.4 + power*0.3 + def*0.2 + m*0.1) * 10; return Math.round(composite*10)/10; }
+
+    // logistic model for clean sheet probability
+    function cleanSheetProb(cs, ratingDiff){ const a=-1.5, b=2.5, c=0.01; const x = a + b*cs + c*ratingDiff; return 1/(1+Math.exp(-x)); }
+
+    // fair probability from odds (remove overround between two outcomes)
+    function fairPair(a,b){ if(!a||!b) return [0.5,0.5]; const pa=1/a, pb=1/b; const s=pa+pb; return [pa/s,pb/s]; }
+
+    // trap detection
+    function detectTraps(fairRatio, marketProb, statProb){ const reverseTrap = (marketProb - statProb) > 0.15; const fakeConsensus = fairRatio > 1.35; return {reverseTrap, fakeConsensus}; }
+
+    function computeIntegrity(fairRatio, trapFlags, ratingDiff){ let score=100 - Math.abs(1-fairRatio)*70; if(trapFlags.reverseTrap) score-=20; if(trapFlags.fakeConsensus) score-=15; score += clamp(ratingDiff/50,-10,10); return Math.round(clamp(score,0,100)); }
+
+    // adaptive confidence model
+    function adaptiveConfidence(p, integrity, volatility){ const base = Math.sqrt(p*p + (integrity/100)*(integrity/100)); return clamp(base*(1-volatility),0,1); }
+
+    // bayesian combine (stat-primary)
+    function bayesianCombine(pStat, pMarket, weightMarket){ const adj = pStat * (1 + weightMarket*(pMarket - 0.5)); return Math.max(0.0001, Math.min(0.9999, adj)); }
+
+    // conservative Kelly
+    function kellyConservative(p, odds, cap, vol){ if(!odds || odds<=1) return 0; const b=odds-1; const k=(b*p - (1/odds))/b; if(isNaN(k)||k<=0) return 0; return Math.min(k*(1 - vol), cap); }
+
+    function buildHistogram(counts,sims,container){ container.innerHTML=''; const keys=Object.keys(counts).map(k=>parseInt(k)).sort((a,b)=>a-b); if(keys.length===0){ container.innerHTML='<div class="small muted">No data</div>'; return; } const max=keys.reduce((m,k)=>Math.max(m,counts[k]),0); const wrap=document.createElement('div'); wrap.className='hist'; for(const k of keys){ const h=document.createElement('div'); h.className='col'; h.style.height = Math.max(3, (counts[k]/max)*100) + '%'; h.title = k + ' goals — ' + (counts[k]/sims).toFixed(3); wrap.appendChild(h); } container.appendChild(wrap); }
+
+    // --------------------- SofaScore Form Parser ---------------------
+    function parseFormString(s){
+      if(!s || typeof s!=='string') return {arr:[],score:0,momentum:0,normalized:0,clean:'N/A'};
+      // clean separators
+      const cleaned = s.replace(/[^WwDdLl]/g,'').toUpperCase();
+      if(cleaned.length===0) return {arr:[],score:0,momentum:0,normalized:0,clean:''};
+      const arr = cleaned.split('');
+      // convert to numeric: W=1,D=0,L=-1
+      const nums = arr.map(ch => ch==='W'?1: ch==='D'?0: -1);
+      // weighted momentum: latest games more weight (rightmost is latest)
+      const totalW = nums.length; let weightedSum=0, weightSum=0;
+      for(let i=0;i<nums.length;i++){ const weight = (i+1)/nums.length; // older smaller, newer larger
+        weightedSum += nums[i]*weight; weightSum += weight; }
+      const momentum = weightedSum/weightSum; // range approx -1..1
+      // normalize to 0..1 for formScore
+      const normalized = (momentum + 1)/2;
+      return {arr,nums,score: (nums.reduce((a,b)=>a+b,0)/nums.length),momentum: Math.round(momentum*100)/100,normalized: Math.round(normalized*100)/100,clean:arr.join('')};
+    }
+
+    // --------------------- Demo fillers ---------------------
+    function fillInputs(obj){ // only set if present to avoid overwriting unspecified
+      if(obj.gfHome!=null) document.getElementById('gfHome').value = obj.gfHome;
+      if(obj.gaHome!=null) document.getElementById('gaHome').value = obj.gaHome;
+      if(obj.ratingHome!=null) document.getElementById('ratingHome').value = obj.ratingHome;
+      if(obj.csHome!=null) document.getElementById('csHome').value = obj.csHome;
+      if(obj.formHome!=null) document.getElementById('formHomeStr').value = obj.formHome;
+      if(obj.gfAway!=null) document.getElementById('gfAway').value = obj.gfAway;
+      if(obj.gaAway!=null) document.getElementById('gaAway').value = obj.gaAway;
+      if(obj.ratingAway!=null) document.getElementById('ratingAway').value = obj.ratingAway;
+      if(obj.csAway!=null) document.getElementById('csAway').value = obj.csAway;
+      if(obj.formAway!=null) document.getElementById('formAwayStr').value = obj.formAway;
+      if(obj.oddsHome!=null) document.getElementById('oddsHome').value = obj.oddsHome;
+      if(obj.oddsAway!=null) document.getElementById('oddsAway').value = obj.oddsAway;
+      if(obj.oddsOver!=null) document.getElementById('oddsOver').value = obj.oddsOver;
+      if(obj.oddsUnder!=null) document.getElementById('oddsUnder').value = obj.oddsUnder;
+      if(obj.bank!=null) document.getElementById('bankroll').value = obj.bank;
+      // do NOT auto-run here; caller will run()
+    }
+
+    // three demo presets
+    const demoStrong = {
+      gfHome:2.3, gaHome:0.8, ratingHome:1580, csHome:0.55, formHome:'WWWDW',
+      gfAway:0.9, gaAway:1.6, ratingAway:1390, csAway:0.22, formAway:'LDLLW',
+      oddsHome:1.78, oddsAway:2.05, oddsOver:2.20, oddsUnder:1.72, bank:100
+    };
+    const demoTrap = {
+      gfHome:1.1, gaHome:1.0, ratingHome:1480, csHome:0.40, formHome:'WLDLW',
+      gfAway:1.0, gaAway:1.1, ratingAway:1470, csAway:0.38, formAway:'WLWWW',
+      oddsHome:1.60, oddsAway:2.30, oddsOver:1.62, oddsUnder:2.32, bank:100
+    };
+    const demoNeutral = {
+      gfHome:1.3, gaHome:1.2, ratingHome:1475, csHome:0.35, formHome:'WDLDW',
+      gfAway:1.25, gaAway:1.25, ratingAway:1470, csAway:0.34, formAway:'DWDLD',
+      oddsHome:1.95, oddsAway:1.95, oddsOver:1.95, oddsUnder:1.95, bank:100
+    };
+
+    // --------------------- Main run ---------------------
+    document.getElementById('run').addEventListener('click', ()=>run('manual'));
+    document.getElementById('demoStrong').addEventListener('click', ()=>{ fillInputs(demoStrong); run('demo'); });
+    document.getElementById('demoTrap').addEventListener('click', ()=>{ fillInputs(demoTrap); run('demo'); });
+    document.getElementById('demoNeutral').addEventListener('click', ()=>{ fillInputs(demoNeutral); run('demo'); });
+    document.getElementById('reset').addEventListener('click', ()=>location.reload());
+
+    function run(mode){
+      try{
+        const sims = Math.max(1000, parseInt(document.getElementById('sims').value)||10000);
+        const integrityMin = toNum(document.getElementById('integrityMin').value)||85;
+        const threshStrong = (toNum(document.getElementById('threshStrong').value)||12)/100;
+        const strictNeutral = document.getElementById('strictNeutral').value==='1';
+
+        // read inputs and parse forms
+        const gfH = toNum(document.getElementById('gfHome').value); const gaH = toNum(document.getElementById('gaHome').value);
+        const ratingH = toNum(document.getElementById('ratingHome').value); const csH = clamp(toNum(document.getElementById('csHome').value),0,1);
+        const formHomeStr = (document.getElementById('formHomeStr').value||'').toString();
+        const parsedHome = parseFormString(formHomeStr);
+        // apply momentum to mom field for transparency
+        const inferredMomH = parsedHome.momentum||0; document.getElementById('momHome').value = inferredMomH;
+        const momH = clamp(toNum(document.getElementById('momHome').value)||inferredMomH,0,1);
+        const fatH = clamp(toNum(document.getElementById('fatigueHome').value),0,1);
+
+        const gfA = toNum(document.getElementById('gfAway').value); const gaA = toNum(document.getElementById('gaAway').value);
+        const ratingA = toNum(document.getElementById('ratingAway').value); const csA = clamp(toNum(document.getElementById('csAway').value),0,1);
+        const formAwayStr = (document.getElementById('formAwayStr').value||'').toString();
+        const parsedAway = parseFormString(formAwayStr);
+        const inferredMomA = parsedAway.momentum||0; document.getElementById('momAway').value = inferredMomA;
+        const momA = clamp(toNum(document.getElementById('momAway').value)||inferredMomA,0,1);
+        const fatA = clamp(toNum(document.getElementById('fatigueAway').value),0,1);
+
+        const oddsH = toNum(document.getElementById('oddsHome').value); const oddsA = toNum(document.getElementById('oddsAway').value);
+        const ouLine = toNum(document.getElementById('ouLine').value)||2.5; const oddsO = toNum(document.getElementById('oddsOver').value); const oddsU = toNum(document.getElementById('oddsUnder').value);
+        const bank = toNum(document.getElementById('bankroll').value)||0;
+
+        // safe defaults
+        // compute formScore from parsed if available
+        const formScoreH = parsedHome.hasOwnProperty('normalized') ? parsedHome.normalized : ((parsedHome.score||0)+1)/2;
+        const formScoreA = parsedAway.hasOwnProperty('normalized') ? parsedAway.normalized : ((parsedAway.score||0)+1)/2;
+
+        // composite ratings
+        const compH = computeCompositeRating(gfH,gaH,ratingH,csH,formScoreH,momH);
+        const compA = computeCompositeRating(gfA,gaA,ratingA,csA,formScoreA,momA);
+        const ratingDiff = ratingH - ratingA;
+
+        // adjust lambdas
+        const baseH = Math.max(0.05, gfH*0.6 + gaA*0.4);
+        const baseA = Math.max(0.05, gfA*0.6 + gaH*0.4);
+        const scaleH = 0.8 + (compH/10)*0.9; const scaleA = 0.8 + (compA/10)*0.9;
+        const csProbH = cleanSheetProb(csH, ratingDiff); const csProbA = cleanSheetProb(csA, -ratingDiff);
+        const csEffectH = 1 - csProbA*0.45; const csEffectA = 1 - csProbH*0.45;
+        const momEffectH = 1 + (momH - 0.5)*0.3 - fatH*0.25; const momEffectA = 1 + (momA - 0.5)*0.3 - fatA*0.25;
+
+        const lambdaH = clamp(baseH * scaleH * csEffectH * momEffectH, 0.02, 5);
+        const lambdaA = clamp(baseA * scaleA * csEffectA * momEffectA, 0.02, 5);
+
+        // simulate
+        const sim = simulate(lambdaH, lambdaA, sims);
+        const pHomeStat = safeDiv(sim.hw, sims); const pDrawStat = safeDiv(sim.dw, sims); const pAwayStat = safeDiv(sim.aw, sims);
+        let overCount=0; for(const k in sim.counts){ if(parseInt(k) >= ouLine) overCount += sim.counts[k]; }
+        const pOverStat = safeDiv(overCount, sims); const pUnderStat = 1 - pOverStat;
+
+        // market fair probs
+        let pHomeMarket=0.5, pAwayMarket=0.5; if(oddsH && oddsA){ [pHomeMarket,pAwayMarket] = fairPair(oddsH, oddsA); }
+        let pOverMarket=0.5, pUnderMarket=0.5; if(oddsO && oddsU){ [pOverMarket,pUnderMarket] = fairPair(oddsO, oddsU); }
+
+        // trap detection
+        const fairRatioH = Math.max(oddsH||1, oddsA||1)/Math.min(oddsH||1, oddsA||1);
+        const fairRatioOU = Math.max(oddsO||1, oddsU||1)/Math.min(oddsO||1, oddsU||1);
+        const trapH = detectTraps(fairRatioH, Math.max(pHomeMarket,pAwayMarket), Math.max(pHomeStat,pAwayStat));
+        const trapOU = detectTraps(fairRatioOU, Math.max(pOverMarket,pUnderMarket), Math.max(pOverStat,pUnderStat));
+        const integrityH = computeIntegrity(fairRatioH, trapH, ratingDiff);
+        const integrityOU = computeIntegrity(fairRatioOU, trapOU, ratingDiff);
+
+        // volatility estimate
+        const vol = Math.min(0.6, Math.abs(pHomeMarket - pHomeStat) + Math.abs(pOverMarket - pOverStat));
+
+            // posteriors (stat-first)
+
+        const weightMarket = 0.25;
+
+        const pHomePost = clamp(bayesianCombine(pHomeStat, pHomeMarket, weightMarket), 0.0001, 0.9999);
+
+        const pAwayPost = clamp(bayesianCombine(pAwayStat, pAwayMarket, weightMarket), 0.0001, 0.9999);
+
+        const pOverPost = clamp(bayesianCombine(pOverStat, pOverMarket, weightMarket), 0.0001, 0.9999);
+
+        const pUnderPost = clamp(bayesianCombine(pUnderStat, pUnderMarket, weightMarket), 0.0001, 0.9999);
+
+
+
+        // normalize pairwise
+
+        const sumHA = (pHomePost + pAwayPost) || 1; const normHome = pHomePost / sumHA; const normAway = pAwayPost / sumHA;
+
+        const sumOU = (pOverPost + pUnderPost) || 1; const normOver = pOverPost / sumOU; const normUnder = pUnderPost / sumOU;
+
+
+
+        const confH = Math.abs(normHome - normAway); const confOU = Math.abs(normOver - normUnder);
+
+
+
+        // select top two
+
+        const options = [ {k:'Home',p:normHome,t:'HDP',odds:oddsH,integrity:integrityH,conf:confH}, {k:'Away',p:normAway,t:'HDP',odds:oddsA,integrity:integrityH,conf:confH}, {k:'Over',p:normOver,t:'OU',odds:oddsO,integrity:integrityOU,conf:confOU}, {k:'Under',p:normUnder,t:'OU',odds:oddsU,integrity:integrityOU,conf:confOU} ];
+
+        const valids = options.filter(o=>o.odds && !isNaN(o.p)); valids.sort((a,b)=>b.p - a.p);
+
+        const primary = valids[0]||null; const secondary = valids[1]||null;
+
+
+
+        function meetsPrimary(o){ return o && o.conf >= threshStrong && o.integrity >= integrityMin; }
+
+        function meetsSecondary(o){ return o && o.conf >= 0.07 && o.integrity >= (integrityMin-5); }
+
+
+
+        let statusType='white', title='Tidak Condong Kemanapun', integrityScore=Math.round((integrityH+integrityOU)/2);
+
+        let main=null, alt=null;
+
+        if(primary && meetsPrimary(primary)){
+
+          main=primary; statusType='green'; title=`Utama: ${primary.k} ${primary.t}`; if(secondary && meetsSecondary(secondary)){ alt=secondary; statusType='yellow'; }
+
+        } else if(primary && meetsSecondary(primary)){
+
+          alt=primary; statusType='yellow'; title=`Alternatif: ${primary.k} ${primary.t}`; }
+
+        else { if((trapH.reverseTrap||trapOU.reverseTrap||trapH.fakeConsensus||trapOU.fakeConsensus) && (integrityH<85 || integrityOU<85)){ statusType='red'; title='Trap Market — Hindari Taruhan'; } }
+
+
+
+        // render results
+
+        const summary = document.getElementById('summary'); const cards = document.getElementById('cards'); const hist = document.getElementById('histogram');
+
+        summary.innerHTML = '';
+
+        const statusDot = document.createElement('div'); statusDot.className = 'dot ' + (statusType==='green'?'dot-green':statusType==='yellow'?'dot-yellow':statusType==='red'?'dot-red':'dot-white');
+
+        const wrapper = document.createElement('div'); wrapper.style.display='flex'; wrapper.style.alignItems='center'; wrapper.style.gap='12px';
+
+        const text = document.createElement('div'); text.innerHTML = `<strong style='font-size:15px'>${statusType==='green'?'🟢':statusType==='yellow'?'🟡':statusType==='red'?'🔴':'⚪'} ${title}</strong><div class='small muted'>Integrity ${integrityScore} | ConfH ${(confH*100).toFixed(1)}% | ConfOU ${(confOU*100).toFixed(1)}%</div>`;
+
+        wrapper.appendChild(statusDot); wrapper.appendChild(text); summary.appendChild(wrapper);
+
+
+
+        // details cards
+
+        cards.innerHTML = '';
+
+        const statCard = document.createElement('div'); statCard.className='card'; statCard.innerHTML = `<strong>Statistik (Poisson MC)</strong><div class='small muted' style='margin-top:6px'>Exp Goals: Home ${lambdaH.toFixed(2)} — Away ${lambdaA.toFixed(2)} — Composite Rating ${compH} vs ${compA}</div><table style='margin-top:8px'><tr><th></th><th>Stat</th><th>Market (fair)</th><th>Final</th><th>Integrity</th></tr><tr><td>Home</td><td>${pct(pHomeStat)}</td><td>${pct(pHomeMarket)}</td><td>${pct(normHome)}</td><td>${integrityH}</td></tr><tr><td>Away</td><td>${pct(pAwayStat)}</td><td>${pct(pAwayMarket)}</td><td>${pct(normAway)}</td><td>${integrityH}</td></tr><tr><td>Over ${ouLine}</td><td>${pct(pOverStat)}</td><td>${pct(pOverMarket)}</td><td>${pct(normOver)}</td><td>${integrityOU}</td></tr><tr><td>Under ${ouLine}</td><td>${pct(pUnderStat)}</td><td>${pct(pUnderMarket)}</td><td>${pct(normUnder)}</td><td>${integrityOU}</td></tr></table><div class='small muted' style='margin-top:6px'>Momentum Home ${parsedHome.momentum} | Form ${parsedHome.clean || 'N/A'} — Momentum Away ${parsedAway.momentum} | Form ${parsedAway.clean || 'N/A'}</div>`;
+
+        cards.appendChild(statCard);
+
+
+
+        const marketCard = document.createElement('div'); marketCard.className='card'; marketCard.innerHTML = `<strong>Market & Recommendation</strong><div class='small muted' style='margin-top:6px'>Fair ratios H:${fairRatioH.toFixed(2)} | OU:${fairRatioOU.toFixed(2)} — Volatility ${(vol).toFixed(2)}</div>`;
+
+        if(main){ marketCard.innerHTML += `<div style='margin-top:8px;background:rgba(16,185,129,0.06);padding:8px;border-radius:8px'><strong>Rekomendasi Utama:</strong> ${main.k} (${main.t}) — Conf ${pct(main.p)} — Integrity ${main.integrity}`;
+
+          if(bank>0){ const volFactor = Math.abs(main.p - (1/main.odds)); const k = kellyConservative(main.p, main.odds, 0.15, volFactor); const stake=Math.round(bank*k*100)/100; marketCard.innerHTML += `<div class='small muted'>Saran stake konservatif: Rp ${stake} (Kelly ${(k*100).toFixed(2)}%)</div>`; }
+
+          marketCard.innerHTML += `</div>`; }
+
+        if(alt){ marketCard.innerHTML += `<div style='margin-top:8px;background:rgba(245,158,11,0.06);padding:8px;border-radius:8px'><strong>Alternatif:</strong> ${alt.k} (${alt.t}) — Conf ${pct(alt.p)} — Integrity ${alt.integrity}</div>`; }
+
+        if(!main && !alt){ marketCard.innerHTML += `<div style='margin-top:8px' class='small muted'>No reliable recommendation — market/stat tidak sejalan atau integritas rendah.</div>`; }
+
+        cards.appendChild(marketCard);
+
+
+
+        // histogram
+
+        hist.innerHTML = '<strong>Distribusi total gol (simulasi)</strong><div id="histBox"></div>';
+
+        buildHistogram(sim.counts,sims,document.getElementById('histBox'));
+
+
+
+        if(mode==='demo') document.getElementById('summary').scrollIntoView({behavior:'smooth'});
+
+      }catch(e){ console.error(e); alert('Terjadi error saat menjalankan analisis: '+e.message); }
+
+    }
+
+
+    // initial run
+    run();
+  </script>
+</body>
+</html>
