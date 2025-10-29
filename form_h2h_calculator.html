@@ -1,79 +1,97 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hitung Form & H2H Index</title>
+<title>Form & H2H Calculator + CSR & GA (v3)</title>
 <style>
-body {
-  background:#0a0f18; color:#e4e7ec; font-family:'Segoe UI',sans-serif;
-  margin:40px auto; max-width:600px; padding:20px;
-  border-radius:10px; box-shadow:0 0 10px #000;
-}
-h2 { text-align:center; color:#00b4d8; }
-section { background:#111a27; padding:15px; border-radius:10px; margin-bottom:20px; }
-input { width:100%; padding:8px; margin:5px 0; background:#1c2636; color:#e4e7ec; border:none; border-radius:6px; }
-button {
-  background:#0077b6; border:none; color:white; padding:10px 14px;
-  border-radius:6px; cursor:pointer; width:100%; margin-top:10px;
-}
-button:hover { background:#0096c7; }
-.result {
-  background:#122030; padding:10px; border-radius:6px; color:#00ff9d; text-align:center; font-weight:bold;
-}
+body{font-family:Arial,Helvetica,sans-serif;background:#08121a;color:#e6f2ff;margin:20px}
+section{background:#0b1a24;padding:14px;border-radius:10px;margin-bottom:16px;border:1px solid #123}
+label{display:block;margin-top:8px;font-size:14px}
+input{width:100%;padding:6px;border-radius:6px;border:1px solid #234;background:#07141c;color:#fff}
+button{margin-top:10px;padding:8px 12px;background:#0b74de;color:#fff;border:none;border-radius:6px;cursor:pointer}
+button:hover{background:#0d8bff}
+.result{margin-top:10px;background:#06131a;padding:10px;border-radius:6px;font-family:monospace}
+.copy-buttons{margin-top:6px;display:flex;gap:8px}
+.copy-buttons button{flex:1;background:#123b4d}
+.copy-buttons button:hover{background:#16516d}
 </style>
 </head>
 <body>
-<h2>⚽ Kalkulator Form & H2H Index</h2>
-
-<section>
-<h3>Performa Tim Terbaru (5 pertandingan)</h3>
-<p>Masukkan hasil terakhir: W=Menang, D=Seri, L=Kalah</p>
-<label>Home:</label>
-<input type="text" id="formHome" placeholder="Contoh: W W D L W">
-<label>Away:</label>
-<input type="text" id="formAway" placeholder="Contoh: L D L W D">
-<button id="btnForm">Hitung Form Index</button>
+<h2>⚽ Form & H2H Calculator + CSR & GA (v3)</h2>
+<p class="small">Versi ini menambahkan fitur <b>Salin Home/Away</b> untuk semua hasil.</p><section>
+<h3>Form Calculator</h3>
+<label>Menang:</label><input type="number" id="win" placeholder="Contoh: 3">
+<label>Seri:</label><input type="number" id="draw" placeholder="Contoh: 1">
+<label>Kalah:</label><input type="number" id="lose" placeholder="Contoh: 2">
+<button id="btnForm">Hitung Form</button>
 <div class="result" id="resForm"></div>
-</section>
-
-<section>
-<h3>Head to Head (maks 5 pertemuan terakhir)</h3>
-<p>Masukkan pemenang tiap laga: H=Home, A=Away, D=Draw</p>
-<input type="text" id="h2hInput" placeholder="Contoh: H A D H A">
-<button id="btnH2H">Hitung H2H Index</button>
+<div class="copy-buttons"><button id="copyFormHome">Salin Home</button><button id="copyFormAway">Salin Away</button></div>
+</section><section>
+<h3>Head-to-Head (H2H) Calculator</h3>
+<label>Menang Home:</label><input type="number" id="hWin" placeholder="Contoh: 2">
+<label>Menang Away:</label><input type="number" id="hLose" placeholder="Contoh: 3">
+<label>Seri:</label><input type="number" id="hDraw" placeholder="Contoh: 1">
+<button id="btnH2H">Hitung H2H</button>
 <div class="result" id="resH2H"></div>
-</section>
+<div class="copy-buttons"><button id="copyH2HHome">Salin Home</button><button id="copyH2HAway">Salin Away</button></div>
+</section><section>
+<h3>Clean Sheet Ratio (CSR)</h3>
+<label>Jumlah Clean Sheet:</label><input type="number" id="csCount" placeholder="Contoh: 5">
+<label>Total Pertandingan:</label><input type="number" id="csTotal" placeholder="Contoh: 12">
+<button id="btnCSR">Hitung CSR</button>
+<div class="result" id="resCSR"></div>
+<div class="copy-buttons"><button id="copyCSRHome">Salin Home</button><button id="copyCSRAway">Salin Away</button></div>
+</section><section>
+<h3>Goals Against (GA)</h3>
+<label>Total Kebobolan:</label><input type="number" id="gaCount" placeholder="Contoh: 13">
+<label>Total Pertandingan:</label><input type="number" id="gaTotal" placeholder="Contoh: 12">
+<button id="btnGA">Hitung GA</button>
+<div class="result" id="resGA"></div>
+<div class="copy-buttons"><button id="copyGAHome">Salin Home</button><button id="copyGAAway">Salin Away</button></div>
+</section><script>
+function safe(v,d=NaN){const x=parseFloat(v);return isNaN(x)?d:x;}
+function copyText(val){navigator.clipboard.writeText(val);}
 
-<script>
-function calcForm(str){
-  const arr=str.trim().toUpperCase().split(/\s+/).filter(x=>x);
-  let score=0;
-  arr.forEach(v=>{
-    if(v==='W') score+=3;
-    else if(v==='D') score+=1;
-  });
-  return (arr.length>0)?(score/(arr.length*3)).toFixed(2):'0.00';
-}
-function calcH2H(str){
-  const arr=str.trim().toUpperCase().split(/\s+/).filter(x=>x);
-  const total=arr.length||1;
-  const home=arr.filter(x=>x==='H').length;
-  const away=arr.filter(x=>x==='A').length;
-  return {
-    home:(home/total).toFixed(2),
-    away:(away/total).toFixed(2)
-  };
-}
-document.getElementById('btnForm').onclick=()=>{
-  const h=calcForm(document.getElementById('formHome').value);
-  const a=calcForm(document.getElementById('formAway').value);
-  document.getElementById('resForm').textContent=`Form Index → Home: ${h} | Away: ${a}`;
+let formVal='',h2hVal='',csrVal='',gaVal='';
+
+btnForm.onclick=()=>{
+  const w=safe(win.value,0),d=safe(draw.value,0),l=safe(lose.value,0);
+  const total=w+d+l;
+  const form= total>0 ? ((w*1 + d*0.5)/total).toFixed(2) : '0.00';
+  formVal=form;
+  resForm.textContent=`Form Index = ${form}`;
 };
-document.getElementById('btnH2H').onclick=()=>{
-  const res=calcH2H(document.getElementById('h2hInput').value);
-  document.getElementById('resH2H').textContent=`H2H Index → Home: ${res.home} | Away: ${res.away}`;
+
+btnH2H.onclick=()=>{
+  const hw=safe(hWin.value,0),hl=safe(hLose.value,0),hd=safe(hDraw.value,0);
+  const total=hw+hl+hd;
+  const h2h= total>0 ? ((hw*1 + hd*0.5)/total).toFixed(2) : '0.00';
+  h2hVal=h2h;
+  resH2H.textContent=`H2H Index = ${h2h}`;
 };
-</script>
-</body>
+
+btnCSR.onclick=()=>{
+  const c=safe(csCount.value,0),t=safe(csTotal.value,1);
+  const r=t>0?(c/t).toFixed(2):'0.00';
+  csrVal=r;
+  resCSR.textContent=`Clean Sheet Ratio = ${r}`;
+};
+
+btnGA.onclick=()=>{
+  const g=safe(gaCount.value,0),t=safe(gaTotal.value,1);
+  const r=t>0?(g/t).toFixed(2):'0.00';
+  gaVal=r;
+  resGA.textContent=`Goals Against per Match = ${r}`;
+};
+
+// Copy actions
+copyFormHome.onclick=()=>{if(formVal)copyText(formVal);};
+copyFormAway.onclick=()=>{if(formVal)copyText(formVal);};
+copyH2HHome.onclick=()=>{if(h2hVal)copyText(h2hVal);};
+copyH2HAway.onclick=()=>{if(h2hVal)copyText(h2hVal);};
+copyCSRHome.onclick=()=>{if(csrVal)copyText(csrVal);};
+copyCSRAway.onclick=()=>{if(csrVal)copyText(csrVal);};
+copyGAHome.onclick=()=>{if(gaVal)copyText(gaVal);};
+copyGAAway.onclick=()=>{if(gaVal)copyText(gaVal);};
+</script></body>
 </html>
